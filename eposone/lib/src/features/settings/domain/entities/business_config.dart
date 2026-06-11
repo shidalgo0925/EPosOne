@@ -23,6 +23,8 @@ class BusinessConfig extends SyncEntity {
   final int receiptNextNumber;
   final bool allowDecimalQty;
   final bool trackInventory;
+  final String? ruc;
+  final bool isSetupComplete;
 
   const BusinessConfig({
     required super.localId,
@@ -47,6 +49,8 @@ class BusinessConfig extends SyncEntity {
     this.receiptNextNumber = 1,
     this.allowDecimalQty = false,
     this.trackInventory = true,
+    this.ruc,
+    this.isSetupComplete = false,
   });
 
   String get nextReceiptNumber => '$receiptPrefix-${receiptNextNumber.toString().padLeft(6, '0')}';
@@ -83,6 +87,8 @@ class BusinessConfig extends SyncEntity {
     int? receiptNextNumber,
     bool? allowDecimalQty,
     bool? trackInventory,
+    String? ruc,
+    bool? isSetupComplete,
   }) =>
       BusinessConfig(
         localId: localId ?? this.localId,
@@ -107,6 +113,8 @@ class BusinessConfig extends SyncEntity {
         receiptNextNumber: receiptNextNumber ?? this.receiptNextNumber,
         allowDecimalQty: allowDecimalQty ?? this.allowDecimalQty,
         trackInventory: trackInventory ?? this.trackInventory,
+        ruc: ruc ?? this.ruc,
+        isSetupComplete: isSetupComplete ?? this.isSetupComplete,
       );
 
   factory BusinessConfig.defaultConfig() => BusinessConfig(

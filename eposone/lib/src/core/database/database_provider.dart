@@ -10,6 +10,7 @@ import 'package:eposone/src/features/sales/domain/entities/sale.dart';
 import 'package:eposone/src/features/sales/domain/entities/sale_item.dart';
 import 'package:eposone/src/features/cash_register/domain/entities/cash_register.dart';
 import 'package:eposone/src/features/settings/domain/entities/business_config.dart';
+import 'package:eposone/src/features/auth/domain/entities/cashier.dart';
 
 part 'database_provider.g.dart';
 
@@ -31,6 +32,7 @@ class Database extends _$Database {
         SaleItemSchema,
         CashRegisterSchema,
         BusinessConfigSchema,
+        CashierSchema,
       ],
       directory: dir.path,
       inspector: true,

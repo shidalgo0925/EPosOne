@@ -67,84 +67,94 @@ const BusinessConfigSchema = CollectionSchema(
       name: r'isPendingSync',
       type: IsarType.bool,
     ),
-    r'isSynced': PropertySchema(
+    r'isSetupComplete': PropertySchema(
       id: 10,
+      name: r'isSetupComplete',
+      type: IsarType.bool,
+    ),
+    r'isSynced': PropertySchema(
+      id: 11,
       name: r'isSynced',
       type: IsarType.bool,
     ),
     r'localId': PropertySchema(
-      id: 11,
+      id: 12,
       name: r'localId',
       type: IsarType.string,
     ),
     r'logoPath': PropertySchema(
-      id: 12,
+      id: 13,
       name: r'logoPath',
       type: IsarType.string,
     ),
     r'nextReceiptNumber': PropertySchema(
-      id: 13,
+      id: 14,
       name: r'nextReceiptNumber',
       type: IsarType.string,
     ),
     r'phone': PropertySchema(
-      id: 14,
+      id: 15,
       name: r'phone',
       type: IsarType.string,
     ),
     r'receiptFooter': PropertySchema(
-      id: 15,
+      id: 16,
       name: r'receiptFooter',
       type: IsarType.string,
     ),
     r'receiptHeader': PropertySchema(
-      id: 16,
+      id: 17,
       name: r'receiptHeader',
       type: IsarType.string,
     ),
     r'receiptNextNumber': PropertySchema(
-      id: 17,
+      id: 18,
       name: r'receiptNextNumber',
       type: IsarType.long,
     ),
     r'receiptPrefix': PropertySchema(
-      id: 18,
+      id: 19,
       name: r'receiptPrefix',
       type: IsarType.string,
     ),
+    r'ruc': PropertySchema(
+      id: 20,
+      name: r'ruc',
+      type: IsarType.string,
+    ),
     r'serverId': PropertySchema(
-      id: 19,
+      id: 21,
       name: r'serverId',
       type: IsarType.string,
     ),
     r'syncStatus': PropertySchema(
-      id: 20,
+      id: 22,
       name: r'syncStatus',
       type: IsarType.byte,
       enumMap: _BusinessConfigsyncStatusEnumValueMap,
     ),
     r'taxIncluded': PropertySchema(
-      id: 21,
+      id: 23,
       name: r'taxIncluded',
       type: IsarType.bool,
     ),
     r'taxName': PropertySchema(
-      id: 22,
+      id: 24,
       name: r'taxName',
       type: IsarType.string,
     ),
     r'taxRate': PropertySchema(
-      id: 23,
+      id: 25,
       name: r'taxRate',
       type: IsarType.double,
     ),
     r'trackInventory': PropertySchema(
-      id: 24,
+      id: 26,
       name: r'trackInventory',
       type: IsarType.bool,
     ),
     r'updatedAt': PropertySchema(
-      id: 25,
+      id: 27,
       name: r'updatedAt',
       type: IsarType.dateTime,
     )
@@ -212,6 +222,12 @@ int _businessConfigEstimateSize(
     }
   }
   {
+    final value = object.ruc;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
     final value = object.serverId;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
@@ -242,22 +258,24 @@ void _businessConfigSerialize(
   writer.writeString(offsets[7], object.email);
   writer.writeBool(offsets[8], object.isDeleted);
   writer.writeBool(offsets[9], object.isPendingSync);
-  writer.writeBool(offsets[10], object.isSynced);
-  writer.writeString(offsets[11], object.localId);
-  writer.writeString(offsets[12], object.logoPath);
-  writer.writeString(offsets[13], object.nextReceiptNumber);
-  writer.writeString(offsets[14], object.phone);
-  writer.writeString(offsets[15], object.receiptFooter);
-  writer.writeString(offsets[16], object.receiptHeader);
-  writer.writeLong(offsets[17], object.receiptNextNumber);
-  writer.writeString(offsets[18], object.receiptPrefix);
-  writer.writeString(offsets[19], object.serverId);
-  writer.writeByte(offsets[20], object.syncStatus.index);
-  writer.writeBool(offsets[21], object.taxIncluded);
-  writer.writeString(offsets[22], object.taxName);
-  writer.writeDouble(offsets[23], object.taxRate);
-  writer.writeBool(offsets[24], object.trackInventory);
-  writer.writeDateTime(offsets[25], object.updatedAt);
+  writer.writeBool(offsets[10], object.isSetupComplete);
+  writer.writeBool(offsets[11], object.isSynced);
+  writer.writeString(offsets[12], object.localId);
+  writer.writeString(offsets[13], object.logoPath);
+  writer.writeString(offsets[14], object.nextReceiptNumber);
+  writer.writeString(offsets[15], object.phone);
+  writer.writeString(offsets[16], object.receiptFooter);
+  writer.writeString(offsets[17], object.receiptHeader);
+  writer.writeLong(offsets[18], object.receiptNextNumber);
+  writer.writeString(offsets[19], object.receiptPrefix);
+  writer.writeString(offsets[20], object.ruc);
+  writer.writeString(offsets[21], object.serverId);
+  writer.writeByte(offsets[22], object.syncStatus.index);
+  writer.writeBool(offsets[23], object.taxIncluded);
+  writer.writeString(offsets[24], object.taxName);
+  writer.writeDouble(offsets[25], object.taxRate);
+  writer.writeBool(offsets[26], object.trackInventory);
+  writer.writeDateTime(offsets[27], object.updatedAt);
 }
 
 BusinessConfig _businessConfigDeserialize(
@@ -275,23 +293,25 @@ BusinessConfig _businessConfigDeserialize(
     currencySymbol: reader.readStringOrNull(offsets[5]),
     deletedAt: reader.readDateTimeOrNull(offsets[6]),
     email: reader.readStringOrNull(offsets[7]),
-    localId: reader.readString(offsets[11]),
-    logoPath: reader.readStringOrNull(offsets[12]),
-    phone: reader.readStringOrNull(offsets[14]),
-    receiptFooter: reader.readStringOrNull(offsets[15]) ?? 'Vuelva pronto',
+    isSetupComplete: reader.readBoolOrNull(offsets[10]) ?? false,
+    localId: reader.readString(offsets[12]),
+    logoPath: reader.readStringOrNull(offsets[13]),
+    phone: reader.readStringOrNull(offsets[15]),
+    receiptFooter: reader.readStringOrNull(offsets[16]) ?? 'Vuelva pronto',
     receiptHeader:
-        reader.readStringOrNull(offsets[16]) ?? 'Gracias por su compra',
-    receiptNextNumber: reader.readLongOrNull(offsets[17]) ?? 1,
-    receiptPrefix: reader.readStringOrNull(offsets[18]),
-    serverId: reader.readStringOrNull(offsets[19]),
+        reader.readStringOrNull(offsets[17]) ?? 'Gracias por su compra',
+    receiptNextNumber: reader.readLongOrNull(offsets[18]) ?? 1,
+    receiptPrefix: reader.readStringOrNull(offsets[19]),
+    ruc: reader.readStringOrNull(offsets[20]),
+    serverId: reader.readStringOrNull(offsets[21]),
     syncStatus: _BusinessConfigsyncStatusValueEnumMap[
-            reader.readByteOrNull(offsets[20])] ??
+            reader.readByteOrNull(offsets[22])] ??
         SyncStatus.pending,
-    taxIncluded: reader.readBoolOrNull(offsets[21]) ?? false,
-    taxName: reader.readStringOrNull(offsets[22]),
-    taxRate: reader.readDoubleOrNull(offsets[23]) ?? 0,
-    trackInventory: reader.readBoolOrNull(offsets[24]) ?? true,
-    updatedAt: reader.readDateTime(offsets[25]),
+    taxIncluded: reader.readBoolOrNull(offsets[23]) ?? false,
+    taxName: reader.readStringOrNull(offsets[24]),
+    taxRate: reader.readDoubleOrNull(offsets[25]) ?? 0,
+    trackInventory: reader.readBoolOrNull(offsets[26]) ?? true,
+    updatedAt: reader.readDateTime(offsets[27]),
   );
   return object;
 }
@@ -324,38 +344,42 @@ P _businessConfigDeserializeProp<P>(
     case 9:
       return (reader.readBool(offset)) as P;
     case 10:
-      return (reader.readBool(offset)) as P;
+      return (reader.readBoolOrNull(offset) ?? false) as P;
     case 11:
-      return (reader.readString(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 12:
-      return (reader.readStringOrNull(offset)) as P;
-    case 13:
       return (reader.readString(offset)) as P;
+    case 13:
+      return (reader.readStringOrNull(offset)) as P;
     case 14:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 15:
-      return (reader.readStringOrNull(offset) ?? 'Vuelva pronto') as P;
-    case 16:
-      return (reader.readStringOrNull(offset) ?? 'Gracias por su compra') as P;
-    case 17:
-      return (reader.readLongOrNull(offset) ?? 1) as P;
-    case 18:
       return (reader.readStringOrNull(offset)) as P;
+    case 16:
+      return (reader.readStringOrNull(offset) ?? 'Vuelva pronto') as P;
+    case 17:
+      return (reader.readStringOrNull(offset) ?? 'Gracias por su compra') as P;
+    case 18:
+      return (reader.readLongOrNull(offset) ?? 1) as P;
     case 19:
       return (reader.readStringOrNull(offset)) as P;
     case 20:
+      return (reader.readStringOrNull(offset)) as P;
+    case 21:
+      return (reader.readStringOrNull(offset)) as P;
+    case 22:
       return (_BusinessConfigsyncStatusValueEnumMap[
               reader.readByteOrNull(offset)] ??
           SyncStatus.pending) as P;
-    case 21:
-      return (reader.readBoolOrNull(offset) ?? false) as P;
-    case 22:
-      return (reader.readStringOrNull(offset)) as P;
     case 23:
-      return (reader.readDoubleOrNull(offset) ?? 0) as P;
+      return (reader.readBoolOrNull(offset) ?? false) as P;
     case 24:
-      return (reader.readBoolOrNull(offset) ?? true) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 25:
+      return (reader.readDoubleOrNull(offset) ?? 0) as P;
+    case 26:
+      return (reader.readBoolOrNull(offset) ?? true) as P;
+    case 27:
       return (reader.readDateTime(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -1356,6 +1380,16 @@ extension BusinessConfigQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'isPendingSync',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      isSetupCompleteEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'isSetupComplete',
         value: value,
       ));
     });
@@ -2490,6 +2524,160 @@ extension BusinessConfigQueryFilter
   }
 
   QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      rucIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'ruc',
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      rucIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'ruc',
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      rucEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'ruc',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      rucGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'ruc',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      rucLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'ruc',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      rucBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'ruc',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      rucStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'ruc',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      rucEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'ruc',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      rucContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'ruc',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      rucMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'ruc',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      rucIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'ruc',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      rucIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'ruc',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
       serverIdIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
@@ -3137,6 +3325,20 @@ extension BusinessConfigQuerySortBy
     });
   }
 
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
+      sortByIsSetupComplete() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSetupComplete', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
+      sortByIsSetupCompleteDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSetupComplete', Sort.desc);
+    });
+  }
+
   QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy> sortByIsSynced() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isSynced', Sort.asc);
@@ -3255,6 +3457,18 @@ extension BusinessConfigQuerySortBy
       sortByReceiptPrefixDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'receiptPrefix', Sort.desc);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy> sortByRuc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'ruc', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy> sortByRucDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'ruc', Sort.desc);
     });
   }
 
@@ -3488,6 +3702,20 @@ extension BusinessConfigQuerySortThenBy
     });
   }
 
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
+      thenByIsSetupComplete() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSetupComplete', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
+      thenByIsSetupCompleteDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSetupComplete', Sort.desc);
+    });
+  }
+
   QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy> thenByIsSynced() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isSynced', Sort.asc);
@@ -3619,6 +3847,18 @@ extension BusinessConfigQuerySortThenBy
       thenByReceiptPrefixDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'receiptPrefix', Sort.desc);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy> thenByRuc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'ruc', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy> thenByRucDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'ruc', Sort.desc);
     });
   }
 
@@ -3790,6 +4030,13 @@ extension BusinessConfigQueryWhereDistinct
     });
   }
 
+  QueryBuilder<BusinessConfig, BusinessConfig, QDistinct>
+      distinctByIsSetupComplete() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'isSetupComplete');
+    });
+  }
+
   QueryBuilder<BusinessConfig, BusinessConfig, QDistinct> distinctByIsSynced() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'isSynced');
@@ -3853,6 +4100,13 @@ extension BusinessConfigQueryWhereDistinct
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'receiptPrefix',
           caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QDistinct> distinctByRuc(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'ruc', caseSensitive: caseSensitive);
     });
   }
 
@@ -3977,6 +4231,13 @@ extension BusinessConfigQueryProperty
     });
   }
 
+  QueryBuilder<BusinessConfig, bool, QQueryOperations>
+      isSetupCompleteProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'isSetupComplete');
+    });
+  }
+
   QueryBuilder<BusinessConfig, bool, QQueryOperations> isSyncedProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'isSynced');
@@ -4033,6 +4294,12 @@ extension BusinessConfigQueryProperty
       receiptPrefixProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'receiptPrefix');
+    });
+  }
+
+  QueryBuilder<BusinessConfig, String?, QQueryOperations> rucProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'ruc');
     });
   }
 

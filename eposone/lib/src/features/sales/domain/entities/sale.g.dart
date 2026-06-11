@@ -27,111 +27,116 @@ const SaleSchema = CollectionSchema(
       name: r'cashRegisterId',
       type: IsarType.string,
     ),
-    r'cashierName': PropertySchema(
+    r'cashierId': PropertySchema(
       id: 2,
+      name: r'cashierId',
+      type: IsarType.string,
+    ),
+    r'cashierName': PropertySchema(
+      id: 3,
       name: r'cashierName',
       type: IsarType.string,
     ),
     r'change': PropertySchema(
-      id: 3,
+      id: 4,
       name: r'change',
       type: IsarType.double,
     ),
     r'createdAt': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'createdAt',
       type: IsarType.dateTime,
     ),
     r'customerId': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'customerId',
       type: IsarType.string,
     ),
     r'deletedAt': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'deletedAt',
       type: IsarType.dateTime,
     ),
     r'discount': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'discount',
       type: IsarType.double,
     ),
     r'isDeleted': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'isDeleted',
       type: IsarType.bool,
     ),
     r'isPendingSync': PropertySchema(
-      id: 9,
+      id: 10,
       name: r'isPendingSync',
       type: IsarType.bool,
     ),
     r'isSynced': PropertySchema(
-      id: 10,
+      id: 11,
       name: r'isSynced',
       type: IsarType.bool,
     ),
     r'localId': PropertySchema(
-      id: 11,
+      id: 12,
       name: r'localId',
       type: IsarType.string,
     ),
     r'notes': PropertySchema(
-      id: 12,
+      id: 13,
       name: r'notes',
       type: IsarType.string,
     ),
     r'paymentMethod': PropertySchema(
-      id: 13,
+      id: 14,
       name: r'paymentMethod',
       type: IsarType.byte,
       enumMap: _SalepaymentMethodEnumValueMap,
     ),
     r'receiptNumber': PropertySchema(
-      id: 14,
+      id: 15,
       name: r'receiptNumber',
       type: IsarType.string,
     ),
     r'saleDate': PropertySchema(
-      id: 15,
+      id: 16,
       name: r'saleDate',
       type: IsarType.dateTime,
     ),
     r'serverId': PropertySchema(
-      id: 16,
+      id: 17,
       name: r'serverId',
       type: IsarType.string,
     ),
     r'status': PropertySchema(
-      id: 17,
+      id: 18,
       name: r'status',
       type: IsarType.byte,
       enumMap: _SalestatusEnumValueMap,
     ),
     r'subtotal': PropertySchema(
-      id: 18,
+      id: 19,
       name: r'subtotal',
       type: IsarType.double,
     ),
     r'syncStatus': PropertySchema(
-      id: 19,
+      id: 20,
       name: r'syncStatus',
       type: IsarType.byte,
       enumMap: _SalesyncStatusEnumValueMap,
     ),
     r'taxAmount': PropertySchema(
-      id: 20,
+      id: 21,
       name: r'taxAmount',
       type: IsarType.double,
     ),
     r'total': PropertySchema(
-      id: 21,
+      id: 22,
       name: r'total',
       type: IsarType.double,
     ),
     r'updatedAt': PropertySchema(
-      id: 22,
+      id: 23,
       name: r'updatedAt',
       type: IsarType.dateTime,
     )
@@ -158,6 +163,12 @@ int _saleEstimateSize(
   var bytesCount = offsets.last;
   {
     final value = object.cashRegisterId;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.cashierId;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
     }
@@ -204,27 +215,28 @@ void _saleSerialize(
 ) {
   writer.writeDouble(offsets[0], object.amountPaid);
   writer.writeString(offsets[1], object.cashRegisterId);
-  writer.writeString(offsets[2], object.cashierName);
-  writer.writeDouble(offsets[3], object.change);
-  writer.writeDateTime(offsets[4], object.createdAt);
-  writer.writeString(offsets[5], object.customerId);
-  writer.writeDateTime(offsets[6], object.deletedAt);
-  writer.writeDouble(offsets[7], object.discount);
-  writer.writeBool(offsets[8], object.isDeleted);
-  writer.writeBool(offsets[9], object.isPendingSync);
-  writer.writeBool(offsets[10], object.isSynced);
-  writer.writeString(offsets[11], object.localId);
-  writer.writeString(offsets[12], object.notes);
-  writer.writeByte(offsets[13], object.paymentMethod.index);
-  writer.writeString(offsets[14], object.receiptNumber);
-  writer.writeDateTime(offsets[15], object.saleDate);
-  writer.writeString(offsets[16], object.serverId);
-  writer.writeByte(offsets[17], object.status.index);
-  writer.writeDouble(offsets[18], object.subtotal);
-  writer.writeByte(offsets[19], object.syncStatus.index);
-  writer.writeDouble(offsets[20], object.taxAmount);
-  writer.writeDouble(offsets[21], object.total);
-  writer.writeDateTime(offsets[22], object.updatedAt);
+  writer.writeString(offsets[2], object.cashierId);
+  writer.writeString(offsets[3], object.cashierName);
+  writer.writeDouble(offsets[4], object.change);
+  writer.writeDateTime(offsets[5], object.createdAt);
+  writer.writeString(offsets[6], object.customerId);
+  writer.writeDateTime(offsets[7], object.deletedAt);
+  writer.writeDouble(offsets[8], object.discount);
+  writer.writeBool(offsets[9], object.isDeleted);
+  writer.writeBool(offsets[10], object.isPendingSync);
+  writer.writeBool(offsets[11], object.isSynced);
+  writer.writeString(offsets[12], object.localId);
+  writer.writeString(offsets[13], object.notes);
+  writer.writeByte(offsets[14], object.paymentMethod.index);
+  writer.writeString(offsets[15], object.receiptNumber);
+  writer.writeDateTime(offsets[16], object.saleDate);
+  writer.writeString(offsets[17], object.serverId);
+  writer.writeByte(offsets[18], object.status.index);
+  writer.writeDouble(offsets[19], object.subtotal);
+  writer.writeByte(offsets[20], object.syncStatus.index);
+  writer.writeDouble(offsets[21], object.taxAmount);
+  writer.writeDouble(offsets[22], object.total);
+  writer.writeDateTime(offsets[23], object.updatedAt);
 }
 
 Sale _saleDeserialize(
@@ -236,29 +248,30 @@ Sale _saleDeserialize(
   final object = Sale(
     amountPaid: reader.readDouble(offsets[0]),
     cashRegisterId: reader.readStringOrNull(offsets[1]),
-    cashierName: reader.readStringOrNull(offsets[2]),
-    change: reader.readDouble(offsets[3]),
-    createdAt: reader.readDateTime(offsets[4]),
-    customerId: reader.readStringOrNull(offsets[5]),
-    deletedAt: reader.readDateTimeOrNull(offsets[6]),
-    discount: reader.readDoubleOrNull(offsets[7]) ?? 0,
-    localId: reader.readString(offsets[11]),
-    notes: reader.readStringOrNull(offsets[12]),
+    cashierId: reader.readStringOrNull(offsets[2]),
+    cashierName: reader.readStringOrNull(offsets[3]),
+    change: reader.readDouble(offsets[4]),
+    createdAt: reader.readDateTime(offsets[5]),
+    customerId: reader.readStringOrNull(offsets[6]),
+    deletedAt: reader.readDateTimeOrNull(offsets[7]),
+    discount: reader.readDoubleOrNull(offsets[8]) ?? 0,
+    localId: reader.readString(offsets[12]),
+    notes: reader.readStringOrNull(offsets[13]),
     paymentMethod:
-        _SalepaymentMethodValueEnumMap[reader.readByteOrNull(offsets[13])] ??
+        _SalepaymentMethodValueEnumMap[reader.readByteOrNull(offsets[14])] ??
             PaymentMethod.cash,
-    receiptNumber: reader.readStringOrNull(offsets[14]),
-    saleDate: reader.readDateTime(offsets[15]),
-    serverId: reader.readStringOrNull(offsets[16]),
-    status: _SalestatusValueEnumMap[reader.readByteOrNull(offsets[17])] ??
+    receiptNumber: reader.readStringOrNull(offsets[15]),
+    saleDate: reader.readDateTime(offsets[16]),
+    serverId: reader.readStringOrNull(offsets[17]),
+    status: _SalestatusValueEnumMap[reader.readByteOrNull(offsets[18])] ??
         SaleStatus.completed,
-    subtotal: reader.readDouble(offsets[18]),
+    subtotal: reader.readDouble(offsets[19]),
     syncStatus:
-        _SalesyncStatusValueEnumMap[reader.readByteOrNull(offsets[19])] ??
+        _SalesyncStatusValueEnumMap[reader.readByteOrNull(offsets[20])] ??
             SyncStatus.pending,
-    taxAmount: reader.readDouble(offsets[20]),
-    total: reader.readDouble(offsets[21]),
-    updatedAt: reader.readDateTime(offsets[22]),
+    taxAmount: reader.readDouble(offsets[21]),
+    total: reader.readDouble(offsets[22]),
+    updatedAt: reader.readDateTime(offsets[23]),
   );
   return object;
 }
@@ -277,47 +290,49 @@ P _saleDeserializeProp<P>(
     case 2:
       return (reader.readStringOrNull(offset)) as P;
     case 3:
-      return (reader.readDouble(offset)) as P;
-    case 4:
-      return (reader.readDateTime(offset)) as P;
-    case 5:
       return (reader.readStringOrNull(offset)) as P;
+    case 4:
+      return (reader.readDouble(offset)) as P;
+    case 5:
+      return (reader.readDateTime(offset)) as P;
     case 6:
-      return (reader.readDateTimeOrNull(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 7:
-      return (reader.readDoubleOrNull(offset) ?? 0) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 8:
-      return (reader.readBool(offset)) as P;
+      return (reader.readDoubleOrNull(offset) ?? 0) as P;
     case 9:
       return (reader.readBool(offset)) as P;
     case 10:
       return (reader.readBool(offset)) as P;
     case 11:
-      return (reader.readString(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 12:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 13:
+      return (reader.readStringOrNull(offset)) as P;
+    case 14:
       return (_SalepaymentMethodValueEnumMap[reader.readByteOrNull(offset)] ??
           PaymentMethod.cash) as P;
-    case 14:
-      return (reader.readStringOrNull(offset)) as P;
     case 15:
-      return (reader.readDateTime(offset)) as P;
-    case 16:
       return (reader.readStringOrNull(offset)) as P;
+    case 16:
+      return (reader.readDateTime(offset)) as P;
     case 17:
+      return (reader.readStringOrNull(offset)) as P;
+    case 18:
       return (_SalestatusValueEnumMap[reader.readByteOrNull(offset)] ??
           SaleStatus.completed) as P;
-    case 18:
-      return (reader.readDouble(offset)) as P;
     case 19:
+      return (reader.readDouble(offset)) as P;
+    case 20:
       return (_SalesyncStatusValueEnumMap[reader.readByteOrNull(offset)] ??
           SyncStatus.pending) as P;
-    case 20:
-      return (reader.readDouble(offset)) as P;
     case 21:
       return (reader.readDouble(offset)) as P;
     case 22:
+      return (reader.readDouble(offset)) as P;
+    case 23:
       return (reader.readDateTime(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -328,11 +343,15 @@ const _SalepaymentMethodEnumValueMap = {
   'cash': 0,
   'card': 1,
   'transfer': 2,
+  'yappy': 3,
+  'other': 4,
 };
 const _SalepaymentMethodValueEnumMap = {
   0: PaymentMethod.cash,
   1: PaymentMethod.card,
   2: PaymentMethod.transfer,
+  3: PaymentMethod.yappy,
+  4: PaymentMethod.other,
 };
 const _SalestatusEnumValueMap = {
   'completed': 0,
@@ -646,6 +665,152 @@ extension SaleQueryFilter on QueryBuilder<Sale, Sale, QFilterCondition> {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.greaterThan(
         property: r'cashRegisterId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<Sale, Sale, QAfterFilterCondition> cashierIdIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'cashierId',
+      ));
+    });
+  }
+
+  QueryBuilder<Sale, Sale, QAfterFilterCondition> cashierIdIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'cashierId',
+      ));
+    });
+  }
+
+  QueryBuilder<Sale, Sale, QAfterFilterCondition> cashierIdEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'cashierId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Sale, Sale, QAfterFilterCondition> cashierIdGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'cashierId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Sale, Sale, QAfterFilterCondition> cashierIdLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'cashierId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Sale, Sale, QAfterFilterCondition> cashierIdBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'cashierId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Sale, Sale, QAfterFilterCondition> cashierIdStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'cashierId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Sale, Sale, QAfterFilterCondition> cashierIdEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'cashierId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Sale, Sale, QAfterFilterCondition> cashierIdContains(
+      String value,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'cashierId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Sale, Sale, QAfterFilterCondition> cashierIdMatches(
+      String pattern,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'cashierId',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Sale, Sale, QAfterFilterCondition> cashierIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'cashierId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<Sale, Sale, QAfterFilterCondition> cashierIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'cashierId',
         value: '',
       ));
     });
@@ -2313,6 +2478,18 @@ extension SaleQuerySortBy on QueryBuilder<Sale, Sale, QSortBy> {
     });
   }
 
+  QueryBuilder<Sale, Sale, QAfterSortBy> sortByCashierId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'cashierId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Sale, Sale, QAfterSortBy> sortByCashierIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'cashierId', Sort.desc);
+    });
+  }
+
   QueryBuilder<Sale, Sale, QAfterSortBy> sortByCashierName() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'cashierName', Sort.asc);
@@ -2588,6 +2765,18 @@ extension SaleQuerySortThenBy on QueryBuilder<Sale, Sale, QSortThenBy> {
   QueryBuilder<Sale, Sale, QAfterSortBy> thenByCashRegisterIdDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'cashRegisterId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<Sale, Sale, QAfterSortBy> thenByCashierId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'cashierId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Sale, Sale, QAfterSortBy> thenByCashierIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'cashierId', Sort.desc);
     });
   }
 
@@ -2871,6 +3060,13 @@ extension SaleQueryWhereDistinct on QueryBuilder<Sale, Sale, QDistinct> {
     });
   }
 
+  QueryBuilder<Sale, Sale, QDistinct> distinctByCashierId(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'cashierId', caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<Sale, Sale, QDistinct> distinctByCashierName(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -3021,6 +3217,12 @@ extension SaleQueryProperty on QueryBuilder<Sale, Sale, QQueryProperty> {
   QueryBuilder<Sale, String?, QQueryOperations> cashRegisterIdProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'cashRegisterId');
+    });
+  }
+
+  QueryBuilder<Sale, String?, QQueryOperations> cashierIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'cashierId');
     });
   }
 

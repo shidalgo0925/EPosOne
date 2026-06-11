@@ -3,6 +3,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:eposone/src/core/database/database_provider.dart';
 import 'package:eposone/src/features/sales/domain/entities/sale.dart';
 import 'package:eposone/src/features/sales/domain/entities/sale_item.dart';
+import 'package:eposone/src/features/products/domain/entities/product.dart';
 
 part 'sale_repository.g.dart';
 
@@ -35,6 +36,27 @@ class SaleRepository {
     await _isar.writeTxn(() async {
       await _isar.sales.put(sale);
       await _isar.saleItems.putAll(items);
+    });
+    return sale;
+  }
+
+  Future<Sale> completeSale({
+    required Sale sale,
+    required List<SaleItem> items,
+    required bool trackInventory,
+  }) async {
+    await _isar.writeTxn(() async {
+      await _isar.sales.put(sale);
+      await _isar.saleItems.putAll(items);
+      if (trackInventory) {
+        for (final item in items) {
+          final product = await _isar.products.filter().localIdEqualTo(item.productId).findFirst();
+          if (product != null) {
+            final newStock = (product.stock - item.quantity).clamp(0, double.infinity).toDouble();
+            await _isar.products.put(product.copyWith(stock: newStock));
+          }
+        }
+      }
     });
     return sale;
   }

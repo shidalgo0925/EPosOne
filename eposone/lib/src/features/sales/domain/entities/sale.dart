@@ -3,7 +3,7 @@ import 'package:eposone/src/core/entities/sync_entity.dart';
 
 part 'sale.g.dart';
 
-enum PaymentMethod { cash, card, transfer }
+enum PaymentMethod { cash, card, transfer, yappy, other }
 
 enum SaleStatus { completed, cancelled, refunded }
 
@@ -26,6 +26,7 @@ class Sale extends SyncEntity {
   final SaleStatus status;
   final String? notes;
   final String? cashierName; // quien atendió
+  final String? cashierId;
   final String? cashRegisterId; // caja donde se hizo
 
   const Sale({
@@ -48,6 +49,7 @@ class Sale extends SyncEntity {
     this.status = SaleStatus.completed,
     this.notes,
     this.cashierName,
+    this.cashierId,
     this.cashRegisterId,
   });
 
@@ -80,6 +82,7 @@ class Sale extends SyncEntity {
     SaleStatus? status,
     String? notes,
     String? cashierName,
+    String? cashierId,
     String? cashRegisterId,
   }) =>
       Sale(
@@ -102,6 +105,7 @@ class Sale extends SyncEntity {
         status: status ?? this.status,
         notes: notes ?? this.notes,
         cashierName: cashierName ?? this.cashierName,
+        cashierId: cashierId ?? this.cashierId,
         cashRegisterId: cashRegisterId ?? this.cashRegisterId,
       );
 
@@ -117,6 +121,7 @@ class Sale extends SyncEntity {
     double discount = 0,
     String? notes,
     String? cashierName,
+    String? cashierId,
     String? cashRegisterId,
   }) =>
       Sale(
@@ -133,6 +138,7 @@ class Sale extends SyncEntity {
         paymentMethod: paymentMethod,
         notes: notes,
         cashierName: cashierName,
+        cashierId: cashierId,
         cashRegisterId: cashRegisterId,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),

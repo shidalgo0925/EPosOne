@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:eposone/src/features/sales/domain/entities/sale.dart';
 import 'package:eposone/src/features/sales/domain/entities/sale_item.dart';
+import 'package:eposone/src/features/pos/presentation/providers/pos_provider.dart';
 import 'package:eposone/src/features/sales/presentation/providers/sales_provider.dart';
 
 class SaleDetailScreen extends ConsumerWidget {
@@ -196,13 +197,7 @@ class SaleDetailScreen extends ConsumerWidget {
     }
   }
 
-  String _getPaymentLabel(PaymentMethod method) {
-    switch (method) {
-      case PaymentMethod.cash: return 'Efectivo';
-      case PaymentMethod.card: return 'Tarjeta';
-      case PaymentMethod.transfer: return 'Transferencia';
-    }
-  }
+  String _getPaymentLabel(PaymentMethod method) => paymentMethodLabel(method);
 }
 
 class _InfoRow extends StatelessWidget {
