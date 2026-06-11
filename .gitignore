@@ -1,0 +1,17 @@
+# Secretos y notas personales
+Dashboard.txt
+Trabajo y Readme.txt
+*.env
+.env.*
+
+# SDK / herramientas (instalar localmente)
+cmdline-tools/
+flutter.zip
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
