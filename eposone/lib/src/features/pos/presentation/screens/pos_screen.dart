@@ -9,6 +9,7 @@ import 'package:eposone/src/features/pos/presentation/providers/pos_provider.dar
 import 'package:eposone/src/features/products/domain/entities/product.dart';
 import 'package:eposone/src/features/products/presentation/providers/category_provider.dart';
 import 'package:eposone/src/features/products/presentation/providers/product_provider.dart';
+import 'package:eposone/src/core/theme/eposone_theme.dart';
 
 class PosScreen extends ConsumerStatefulWidget {
   const PosScreen({super.key});
@@ -60,13 +61,17 @@ class _PosScreenState extends ConsumerState<PosScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: EposOneLogo(fontSize: 22),
+            ),
             ListTile(
-              leading: const Icon(Icons.point_of_sale),
+              leading: Icon(Icons.point_of_sale, color: EposBrand.orange),
               title: const Text('Ventas / POS'),
               onTap: () => Navigator.pop(ctx),
             ),
             ListTile(
-              leading: const Icon(Icons.inventory_2),
+              leading: Icon(Icons.inventory_2, color: EposBrand.navy),
               title: const Text('Productos'),
               onTap: () {
                 Navigator.pop(ctx);
@@ -241,37 +246,51 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                     final p = list[i];
                     final out = p.stock <= 0;
                     return Material(
-                      color: out ? Colors.grey.shade900 : Theme.of(context).colorScheme.surfaceContainerHighest,
+                      color: out ? EposBrand.background : EposBrand.surface,
+                      elevation: out ? 0 : 1,
+                      shadowColor: Colors.black12,
                       borderRadius: BorderRadius.circular(12),
                       child: InkWell(
                         borderRadius: BorderRadius.circular(12),
                         onTap: out ? null : () => _addProduct(p),
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                p.name,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(fontWeight: FontWeight.bold, color: out ? Colors.grey : null),
-                              ),
-                              const Spacer(),
-                              if (config?.trackInventory == true)
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: out ? EposBrand.divider : EposBrand.divider.withValues(alpha: 0.5)),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
                                 Text(
-                                  out ? 'Sin stock' : 'Stock: ${p.stock.toStringAsFixed(0)}',
-                                  style: TextStyle(fontSize: 11, color: out ? Colors.red : Colors.grey),
+                                  p.name,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: out ? EposBrand.textSecondary : EposBrand.textPrimary,
+                                  ),
                                 ),
-                              Text(
-                                '$symbol${p.price.toStringAsFixed(2)}',
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: out ? Colors.grey : Theme.of(context).colorScheme.primary,
+                                const Spacer(),
+                                if (config?.trackInventory == true)
+                                  Text(
+                                    out ? 'Sin stock' : 'Stock: ${p.stock.toStringAsFixed(0)}',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: out ? Colors.red.shade400 : EposBrand.textSecondary,
+                                    ),
+                                  ),
+                                Text(
+                                  '$symbol${p.price.toStringAsFixed(2)}',
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: out ? EposBrand.textSecondary : EposBrand.orange,
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                       ),
@@ -301,8 +320,9 @@ class _TicketPanel extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Container(
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 8, offset: const Offset(0, -2))],
+        color: EposBrand.surface,
+        border: Border(top: BorderSide(color: EposBrand.divider)),
+        boxShadow: [BoxShadow(color: EposBrand.navy.withValues(alpha: 0.08), blurRadius: 12, offset: const Offset(0, -4))],
       ),
       child: SafeArea(
         top: false,
@@ -323,8 +343,9 @@ class _TicketPanel extends ConsumerWidget {
                       margin: const EdgeInsets.only(right: 8),
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey.shade700),
+                        border: Border.all(color: EposBrand.divider),
                         borderRadius: BorderRadius.circular(8),
+                        color: EposBrand.background,
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -357,7 +378,7 @@ class _TicketPanel extends ConsumerWidget {
                     children: [
                       Text('${cart.itemCount} items', style: const TextStyle(color: Colors.grey, fontSize: 12)),
                       Text('$symbol${totals.total.toStringAsFixed(2)}',
-                          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: EposBrand.navy)),
                     ],
                   ),
                   const Spacer(),

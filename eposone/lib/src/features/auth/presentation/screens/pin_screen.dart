@@ -6,6 +6,7 @@ import 'package:eposone/src/core/session/pos_session.dart';
 import 'package:eposone/src/features/auth/data/repositories/cashier_repository.dart';
 import 'package:eposone/src/features/auth/domain/entities/cashier.dart';
 import 'package:eposone/src/features/cash_register/data/repositories/cash_register_repository.dart';
+import 'package:eposone/src/core/theme/eposone_theme.dart';
 
 final activeCashiersProvider = FutureProvider<List<Cashier>>((ref) async {
   final repo = ref.watch(cashierRepositoryProvider);
@@ -79,19 +80,20 @@ class _PinScreenState extends ConsumerState<PinScreen> {
     final cashiersAsync = ref.watch(activeCashiersProvider);
 
     return Scaffold(
+      backgroundColor: EposBrand.background,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(
             children: [
-              const SizedBox(height: 24),
-              Icon(Icons.lock_outline, size: 48, color: Theme.of(context).colorScheme.primary),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
+              const EposBrandIcon(size: 64),
+              const SizedBox(height: 16),
               Text(
                 config?.businessName ?? 'EPOSOne',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: EposBrand.navy),
               ),
-              const Text('Ingresa tu PIN', style: TextStyle(color: Colors.grey)),
+              const Text('Ingresa tu PIN', style: TextStyle(color: EposBrand.textSecondary)),
               const SizedBox(height: 24),
               cashiersAsync.when(
                 data: (cashiers) => Wrap(
@@ -114,7 +116,7 @@ class _PinScreenState extends ConsumerState<PinScreen> {
                     height: 16,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: i < _pin.length ? Theme.of(context).colorScheme.primary : Colors.grey.shade700,
+                      color: i < _pin.length ? EposBrand.orange : EposBrand.divider,
                     ),
                   ),
                 ),
@@ -164,7 +166,7 @@ class _NumericKeypad extends StatelessWidget {
         final key = keys[index];
         if (key.isEmpty) return const SizedBox.shrink();
         return Material(
-          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+          color: EposBrand.surface,
           borderRadius: BorderRadius.circular(12),
           child: InkWell(
             borderRadius: BorderRadius.circular(12),
@@ -176,10 +178,16 @@ class _NumericKeypad extends StatelessWidget {
               }
             },
             onLongPress: key == '⌫' ? onBackspace : null,
-            child: Center(
-              child: Text(
-                key,
-                style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w600),
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: EposBrand.divider),
+              ),
+              child: Center(
+                child: Text(
+                  key,
+                  style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w600, color: EposBrand.navy),
+                ),
               ),
             ),
           ),
