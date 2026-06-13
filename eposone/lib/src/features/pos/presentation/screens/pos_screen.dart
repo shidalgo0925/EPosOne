@@ -10,6 +10,7 @@ import 'package:eposone/src/features/pos/presentation/widgets/pos_product_grid.d
 import 'package:eposone/src/features/pos/presentation/widgets/pos_ticket_panel.dart';
 import 'package:eposone/src/features/pos/presentation/utils/pos_layout.dart';
 import 'package:eposone/src/core/utils/view_insets.dart';
+import 'package:eposone/src/features/products/domain/entities/category.dart';
 import 'package:eposone/src/features/products/domain/entities/product.dart';
 import 'package:eposone/src/features/products/presentation/providers/category_provider.dart';
 import 'package:eposone/src/features/products/presentation/providers/product_provider.dart';
@@ -69,82 +70,89 @@ class _PosScreenState extends ConsumerState<PosScreen> {
     final session = ref.read(posSessionProvider);
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Padding(
-              padding: EdgeInsets.all(16),
-              child: EposOneLogo(fontSize: 22),
+      builder: (ctx) {
+        final maxHeight = MediaQuery.sizeOf(ctx).height * 0.85;
+        return SafeArea(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: maxHeight),
+            child: ListView(
+              shrinkWrap: true,
+              children: [
+                const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: EposOneLogo(fontSize: 22),
+                ),
+                ListTile(
+                  leading: Icon(Icons.point_of_sale, color: EposBrand.orange),
+                  title: const Text('Ventas / POS'),
+                  onTap: () => Navigator.pop(ctx),
+                ),
+                ListTile(
+                  leading: Icon(Icons.inventory_2, color: EposBrand.navy),
+                  title: const Text('Productos'),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    context.push('/products');
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.people),
+                  title: const Text('Clientes'),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    context.push('/customers');
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.receipt_long),
+                  title: const Text('Historial'),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    context.push('/sales');
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.account_balance_wallet),
+                  title: const Text('Caja'),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    context.push('/cash-register');
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.settings),
+                  title: const Text('Configuración'),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    context.push('/settings');
+                  },
+                ),
+                if (session?.role == CashierRole.admin)
+                  ListTile(
+                    leading: const Icon(Icons.dashboard),
+                    title: const Text('Panel admin'),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      context.push('/admin');
+                    },
+                  ),
+                const Divider(),
+                ListTile(
+                  leading: const Icon(Icons.lock),
+                  title: const Text('Bloquear pantalla'),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    ref.read(posSessionProvider.notifier).lock();
+                    context.go('/pin');
+                  },
+                ),
+              ],
             ),
-            ListTile(
-              leading: Icon(Icons.point_of_sale, color: EposBrand.orange),
-              title: const Text('Ventas / POS'),
-              onTap: () => Navigator.pop(ctx),
-            ),
-            ListTile(
-              leading: Icon(Icons.inventory_2, color: EposBrand.navy),
-              title: const Text('Productos'),
-              onTap: () {
-                Navigator.pop(ctx);
-                context.push('/products');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.people),
-              title: const Text('Clientes'),
-              onTap: () {
-                Navigator.pop(ctx);
-                context.push('/customers');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.receipt_long),
-              title: const Text('Historial'),
-              onTap: () {
-                Navigator.pop(ctx);
-                context.push('/sales');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.account_balance_wallet),
-              title: const Text('Caja'),
-              onTap: () {
-                Navigator.pop(ctx);
-                context.push('/cash-register');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.settings),
-              title: const Text('Configuración'),
-              onTap: () {
-                Navigator.pop(ctx);
-                context.push('/settings');
-              },
-            ),
-            if (session?.role == CashierRole.admin)
-              ListTile(
-                leading: const Icon(Icons.dashboard),
-                title: const Text('Panel admin'),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  context.push('/admin');
-                },
-              ),
-            const Divider(),
-            ListTile(
-              leading: const Icon(Icons.lock),
-              title: const Text('Bloquear pantalla'),
-              onTap: () {
-                Navigator.pop(ctx);
-                ref.read(posSessionProvider.notifier).lock();
-                context.go('/pin');
-              },
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -266,8 +274,8 @@ class _CatalogPane extends StatelessWidget {
   final TextEditingController searchController;
   final String searchQuery;
   final String? categoryFilter;
-  final AsyncValue categoriesAsync;
-  final AsyncValue productsAsync;
+  final AsyncValue<List<Category>> categoriesAsync;
+  final AsyncValue<List<Product>> productsAsync;
   final String symbol;
   final bool trackInventory;
   final int crossAxisCount;
@@ -349,9 +357,9 @@ class _CatalogPane extends StatelessWidget {
         Expanded(
           child: productsAsync.when(
             data: (products) {
-              var list = products.where((p) => p.isActive).toList();
+              var list = products.where((Product p) => p.isActive).toList();
               if (categoryFilter != null) {
-                list = list.where((p) => p.categoryId == categoryFilter).toList();
+                list = list.where((Product p) => p.categoryId == categoryFilter).toList();
               }
               return PosProductGrid(
                 products: list,
