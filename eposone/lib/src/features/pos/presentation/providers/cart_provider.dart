@@ -42,11 +42,13 @@ class CartState {
   final List<CartItem> items;
   final String? customerId;
   final double? discountPercent;
+  final String? openTicketId;
 
   const CartState({
     this.items = const [],
     this.customerId,
     this.discountPercent,
+    this.openTicketId,
   });
 
   double get subtotal => items.fold(0, (sum, i) => sum + i.subtotal);
@@ -59,12 +61,16 @@ class CartState {
   CartState copyWith({
     List<CartItem>? items,
     String? customerId,
+    bool clearCustomer = false,
     double? discountPercent,
+    String? openTicketId,
+    bool clearOpenTicket = false,
   }) =>
       CartState(
         items: items ?? this.items,
-        customerId: customerId ?? this.customerId,
+        customerId: clearCustomer ? null : (customerId ?? this.customerId),
         discountPercent: discountPercent ?? this.discountPercent,
+        openTicketId: clearOpenTicket ? null : (openTicketId ?? this.openTicketId),
       );
 }
 
@@ -120,11 +126,29 @@ class CartNotifier extends StateNotifier<CartState> {
   }
 
   void setCustomer(String? customerId) {
-    state = state.copyWith(customerId: customerId);
+    state = state.copyWith(customerId: customerId, clearCustomer: customerId == null);
   }
 
   void setGlobalDiscount(double? percent) {
     state = state.copyWith(discountPercent: percent);
+  }
+
+  void setOpenTicketId(String? id) {
+    state = state.copyWith(openTicketId: id, clearOpenTicket: id == null);
+  }
+
+  void loadCart({
+    required List<CartItem> items,
+    String? customerId,
+    String? openTicketId,
+    double? discountPercent,
+  }) {
+    state = CartState(
+      items: items,
+      customerId: customerId,
+      openTicketId: openTicketId,
+      discountPercent: discountPercent,
+    );
   }
 
   void clear() {

@@ -6,6 +6,7 @@ Sistema POS offline-first para pequeños negocios (Panamá). App Flutter en la c
 
 - [README de la app](eposone/README.md) — instalación, arquitectura y funcionalidades
 - [Revisión de arquitectura](EPOSONE_ARCHITECTURE_REVIEW.md) — auditoría técnica y roadmap
+- [Paridad vs Loyverse](EPOSONE_vs_LOYVERSE.md) — matriz de funcionalidades, gaps y backlog L1–L6
 
 ## Inicio rápido
 

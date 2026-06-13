@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:eposone/src/core/providers/business_config_provider.dart';
+import 'package:eposone/src/core/utils/view_insets.dart';
 import 'package:eposone/src/features/pos/presentation/providers/cart_provider.dart';
 import 'package:eposone/src/features/pos/presentation/providers/pos_provider.dart';
 import 'package:eposone/src/features/sales/domain/entities/sale.dart';
@@ -81,7 +82,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Cobrar')),
       body: ListView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
         children: [
           Center(
             child: Column(
@@ -169,18 +170,21 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
               ),
             ],
           ],
-          const SizedBox(height: 32),
-          SizedBox(
-            height: 56,
-            child: FilledButton.icon(
-              onPressed: _processing ? null : () => _confirm(totals.total),
-              icon: _processing
-                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Icon(Icons.check_circle),
-              label: const Text('Confirmar pago'),
-            ),
-          ),
+          const SizedBox(height: 16),
         ],
+      ),
+      bottomNavigationBar: Padding(
+        padding: EdgeInsets.fromLTRB(16, 8, 16, ViewInsets.bottom(context)),
+        child: SizedBox(
+          height: 56,
+          child: FilledButton.icon(
+            onPressed: _processing ? null : () => _confirm(totals.total),
+            icon: _processing
+                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                : const Icon(Icons.check_circle),
+            label: const Text('Confirmar pago'),
+          ),
+        ),
       ),
     );
   }

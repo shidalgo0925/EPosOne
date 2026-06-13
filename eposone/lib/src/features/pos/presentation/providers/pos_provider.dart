@@ -8,6 +8,8 @@ import 'package:eposone/src/features/sales/domain/entities/sale.dart';
 import 'package:eposone/src/features/sales/domain/entities/sale_item.dart';
 import 'package:eposone/src/features/sales/presentation/providers/sales_provider.dart';
 import 'package:eposone/src/features/settings/data/repositories/business_config_repository.dart';
+import 'package:eposone/src/features/pos/data/repositories/open_ticket_repository.dart';
+import 'package:eposone/src/features/pos/presentation/providers/open_ticket_provider.dart';
 
 /// Estado del checkout
 class CheckoutState {
@@ -151,6 +153,11 @@ final completeSaleProvider = Provider<Future<Sale?> Function()>((ref) {
       items: items,
       trackInventory: config.trackInventory,
     );
+
+    if (cart.openTicketId != null) {
+      await ref.read(openTicketRepositoryProvider).deleteTicket(cart.openTicketId!);
+      ref.invalidate(openTicketsCountProvider);
+    }
 
     ref.read(cartProvider.notifier).clear();
     ref.read(checkoutProvider.notifier).reset();

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:eposone/src/core/providers/business_config_provider.dart';
+import 'package:eposone/src/core/utils/view_insets.dart';
 import 'package:eposone/src/features/pos/presentation/providers/pos_provider.dart';
 import 'package:eposone/src/features/sales/domain/entities/sale.dart';
 import 'package:eposone/src/features/sales/domain/entities/sale_item.dart';
@@ -85,7 +86,7 @@ class ReceiptScreen extends ConsumerWidget {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.fromLTRB(16, 16, 16, ViewInsets.bottom(context)),
                 child: Column(
                   children: [
                     SizedBox(
