@@ -36,11 +36,12 @@ Modelo freemium: TPV base gratis; historial ilimitado, empleados e inventario av
 
 | Ámbito | Paridad |
 |--------|---------|
-| Ecosistema Loyverse completo (TPV + BO + KDS + CDS + Dashboard) | **~50–55%** |
-| TPV operativo básico (PIN → venta → cobro → recibo → caja) | **~80%** |
+| Ecosistema Loyverse completo (TPV + BO + KDS + CDS + Dashboard) | **~55–60%** |
+| TPV operativo (PIN → venta → cobro → recibo → caja) | **~85–88%** |
+| Restaurante / tickets abiertos (guardar, split, merge, pre-cuenta) | **~90%** |
 | Flujo crítico end-to-end con persistencia local | **✅ Funcional** |
 
-> La auditoría previa (`EPOSONE_ARCHITECTURE_REVIEW.md`) reflejaba el estado **antes** del rediseño Loyverse-style. El checkout ya persiste ventas, descuenta stock y asocia cajero/caja.
+> Última auditoría: jun 2026 (`master` post-L2). El checkout persiste ventas, descuenta stock, asocia cajero/caja y soporta tickets abiertos avanzados. Ver `EPOSONE_ARCHITECTURE_REVIEW.md` para el estado previo al rediseño Loyverse-style.
 
 ---
 
@@ -67,8 +68,8 @@ Leyenda: ✅ Implementado · ⚠️ Parcial · ❌ No implementado · 🔮 Roadm
 | Monto inicial en caja | ✅ | |
 | Cierre de turno | ⚠️ | `/cash-register` — cierre manual, sin flujo POS integrado |
 | Arqueo (teórico vs real) | ⚠️ | Campos en entidad; UI básica |
-| Gestión de tesorería (entradas/salidas) | ❌ | |
-| Resumen de turno (bruto, neto, reembolsos, por método) | ❌ | |
+| Gestión de tesorería (entradas/salidas) | ❌ | L4.1 |
+| Resumen de turno (bruto, neto, reembolsos, por método) | ⚠️ | Conteo y total en `/cash-register`; sin desglose por método ni reembolsos |
 | Ventas asociadas a turno/caja | ✅ | `cashRegisterId` en `Sale` |
 
 ### 4.3 Pantalla POS (ventas)
@@ -112,7 +113,7 @@ Leyenda: ✅ Implementado · ⚠️ Parcial · ❌ No implementado · 🔮 Roadm
 | Funcionalidad Loyverse | EPOSOne | Notas |
 |------------------------|---------|-------|
 | Lista master-detail (tablet) | ✅ | `SalesHistoryScreen` lista + panel detalle |
-| Búsqueda por recibo | ✅ | Barra búsqueda por número / cliente |
+| Búsqueda por recibo | ✅ | Número, cajero, total, método de pago (no por nombre de cliente) |
 | Detalle: empleado, TPV, ITBMS, método | ⚠️ | Parcial en detalle/recibo |
 | **REEMBOLSAR** | ✅ | Acción en detalle; revierte stock |
 | Recibo visual post-venta | ✅ | `/receipt/:id` |
@@ -181,9 +182,10 @@ Menú → Artículos / Modificadores / Descuentos
 
 ```
 /splash → /onboarding (1ª vez) → /pin → /cash/open → /pos
-  → /payment → /receipt/:id → /pos (nueva venta)
-Menú POS → /products, /sales, /cash-register, /admin (admin)
-Bloqueo → /pin
+  → [GUARDAR → /tickets/pick] → tickets abiertos (abrir, cobrar, editar, mover, dividir, fusionar, pre-cuenta)
+  → /payment [/payment/split] → /receipt/:id → /pos (nueva venta)
+Menú POS → /products, /sales (master-detail tablet + reembolso), /cash-register, /settings/open-tickets, /admin (admin)
+Bloqueo por inactividad → /pin
 ```
 
 Rutas definidas en `eposone/lib/src/core/router/app_router.dart`.
@@ -207,7 +209,11 @@ Prioridad sugerida para acercarse al TPV Loyverse sin bloquear FE Panamá.
 | L1.5 | Cliente en ticket | ✅ `CustomerPickerTile` |
 | L1.6 | Fotos en grid | ✅ `PosProductGrid` + `imagePath` |
 
-### L2 — Cobro avanzado y recibos
+**Open Tickets V1.1** (extensión L1, jun 2026): slots predefinidos, split/merge de tickets, pre-cuenta, aviso carrito sin guardar — ver §4.3 y §7.
+
+### L2 — Cobro avanzado y recibos ✅ Implementado (jun 2026)
+
+**Meta:** cobro y consulta de ventas equivalentes a Loyverse TPV.
 
 | ID | Historia | Estado |
 |----|----------|--------|
@@ -215,7 +221,7 @@ Prioridad sugerida para acercarse al TPV Loyverse sin bloquear FE Panamá.
 | L2.2 | Dividir cuenta | ✅ Split por ítems o partes iguales |
 | L2.3 | Reembolso | ✅ REEMBOLSAR; revierte stock |
 | L2.4 | Recibos master-detail | ✅ Lista + detalle en tablet |
-| L2.5 | Búsqueda recibo | ✅ Por número / cliente |
+| L2.5 | Búsqueda recibo | ✅ Por número, cajero, total, método |
 
 ### L3 — Catálogo enriquecido
 
@@ -273,17 +279,40 @@ Entidades actuales relevantes: `Sale`, `SaleItem`, `Product`, `Category`, `Custo
 
 ## 8. QA — checklist de regresión POS
 
-Ejecutar en dispositivo Android tras cada fase:
+Ejecutar en dispositivo Android tras cada fase. Marcado ✅ = verificado en desarrollo jun 2026; repetir en tablet T10 antes de release.
 
-- [ ] Primer uso: onboarding → PIN default → abrir caja → vender
-- [ ] Venta efectivo con cambio correcto
-- [ ] Venta tarjeta / Yappy sin monto manual
-- [ ] Stock decrementa cuando `trackInventory = true`
-- [ ] Correlativo de recibo incrementa
-- [ ] Bloqueo por inactividad pide PIN
-- [ ] Admin accede a `/admin`; cajero no
-- [ ] Historial `/sales` muestra venta recién creada
-- [ ] Tras cambio de schema Isar: documentar si requiere borrar datos app
+### Flujo base (L1)
+
+- [x] Primer uso: onboarding → PIN default → abrir caja → vender
+- [x] Venta efectivo con cambio correcto
+- [x] Venta tarjeta / Yappy sin monto manual
+- [x] Stock decrementa cuando `trackInventory = true`
+- [x] Correlativo de recibo incrementa
+- [x] Bloqueo por inactividad pide PIN
+- [x] Admin accede a `/admin`; cajero no
+- [x] Historial `/sales` muestra venta recién creada
+
+### Cobro y recibos (L2)
+
+- [x] Montos rápidos efectivo (B/.1, B/.5, B/.10, B/.20, Exacto)
+- [x] Dividir cuenta al cobrar (por ítems y partes iguales)
+- [x] Reembolso revierte stock cuando `trackInventory = true`
+- [x] Master-detail recibos en tablet + búsqueda por número
+
+### Tickets abiertos (V1 + V1.1)
+
+- [x] Guardar ticket → slot predefinido o nombre libre
+- [x] Abrir / cobrar / editar / mover ticket
+- [x] Dividir ticket (mover líneas a otro ticket)
+- [x] Fusionar dos tickets
+- [x] Pre-cuenta desde sheet o carrito activo
+- [x] Aviso al abrir otro ticket con carrito sin guardar
+
+### Pendiente / regresión schema
+
+- [ ] Impresión recibo y pre-cuenta (L5 — hoy stub)
+- [ ] Descuento manual en POS (L3.2 — modelo listo, UI pendiente)
+- [ ] Tras cambio de schema Isar (`PredefinedTicket`, campos extendidos): **borrar datos app** en upgrade desde builds pre-jun 2026
 
 ---
 
@@ -305,7 +334,7 @@ Ejecutar en dispositivo Android tras cada fase:
 1. **No clonar Back Office Loyverse** — EN1 es el destino para administración web.
 2. **Priorizar TPV en tablet** — mayoría de clientes EasyTech usan tablet en caja.
 3. **Offline-first no negociable** — sync es capa posterior (L6).
-4. **FE Panamá es ventaja competitiva** — no está en Loyverse; planificar después de L2.
+4. **FE Panamá es ventaja competitiva** — no está en Loyverse; planificar tras L4 (turno) o en paralelo con L5.
 5. **Marca EasyTech** — no usar verde Loyverse; paleta naranja/navy propia.
 
 ---
