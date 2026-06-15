@@ -69,7 +69,23 @@ class ReceiptDocumentService {
     final name = sale.receiptNumber ?? sale.localId;
     final file = File('${dir.path}/recibo_$name.pdf');
     await file.writeAsBytes(bytes);
-    await Share.shareXFiles([XFile(file.path)], text: 'Recibo $name');
+
+    final business = config?.businessName ?? 'EPOSOne';
+    final receiptNo = sale.receiptNumber ?? sale.localId;
+    final message = StringBuffer()
+      ..writeln('$business')
+      ..writeln('Recibo: $receiptNo')
+      ..writeln('Total: $symbol${sale.total.toStringAsFixed(2)}');
+    if (sale.tipAmount > 0) {
+      message.writeln('Propina: $symbol${sale.tipAmount.toStringAsFixed(2)}');
+    }
+    message.write(config?.receiptFooter ?? 'Gracias por su compra');
+
+    await Share.shareXFiles(
+      [XFile(file.path, mimeType: 'application/pdf', name: 'recibo_$name.pdf')],
+      text: message.toString(),
+      subject: 'Recibo $receiptNo — $business',
+    );
   }
 
   static Future<void> printBillPreview({

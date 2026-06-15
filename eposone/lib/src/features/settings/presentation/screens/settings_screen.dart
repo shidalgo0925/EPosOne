@@ -18,6 +18,20 @@ class SettingsScreen extends StatelessWidget {
             onTap: () => context.push('/settings/printer'),
           ),
           ListTile(
+            leading: const Icon(Icons.dashboard_customize_outlined),
+            title: const Text('Páginas POS'),
+            subtitle: const Text('Pestañas de catálogo en el TPV'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/settings/pos-pages'),
+          ),
+          ListTile(
+            leading: const Icon(Icons.tune),
+            title: const Text('Modificadores'),
+            subtitle: const Text('Extras, tamaños, personalizaciones'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/settings/modifiers'),
+          ),
+          ListTile(
             leading: const Icon(Icons.receipt_long_outlined),
             title: const Text('Tickets abiertos'),
             subtitle: const Text('Nombres predefinidos, tipo de orden'),

@@ -57,44 +57,49 @@ const OpenTicketLineSchema = CollectionSchema(
       name: r'localId',
       type: IsarType.string,
     ),
-    r'openTicketId': PropertySchema(
+    r'modifiersJson': PropertySchema(
       id: 8,
+      name: r'modifiersJson',
+      type: IsarType.string,
+    ),
+    r'openTicketId': PropertySchema(
+      id: 9,
       name: r'openTicketId',
       type: IsarType.string,
     ),
     r'productId': PropertySchema(
-      id: 9,
+      id: 10,
       name: r'productId',
       type: IsarType.string,
     ),
     r'productName': PropertySchema(
-      id: 10,
+      id: 11,
       name: r'productName',
       type: IsarType.string,
     ),
     r'quantity': PropertySchema(
-      id: 11,
+      id: 12,
       name: r'quantity',
       type: IsarType.double,
     ),
     r'serverId': PropertySchema(
-      id: 12,
+      id: 13,
       name: r'serverId',
       type: IsarType.string,
     ),
     r'syncStatus': PropertySchema(
-      id: 13,
+      id: 14,
       name: r'syncStatus',
       type: IsarType.byte,
       enumMap: _OpenTicketLinesyncStatusEnumValueMap,
     ),
     r'unitPrice': PropertySchema(
-      id: 14,
+      id: 15,
       name: r'unitPrice',
       type: IsarType.double,
     ),
     r'updatedAt': PropertySchema(
-      id: 15,
+      id: 16,
       name: r'updatedAt',
       type: IsarType.dateTime,
     )
@@ -120,6 +125,12 @@ int _openTicketLineEstimateSize(
 ) {
   var bytesCount = offsets.last;
   bytesCount += 3 + object.localId.length * 3;
+  {
+    final value = object.modifiersJson;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   bytesCount += 3 + object.openTicketId.length * 3;
   bytesCount += 3 + object.productId.length * 3;
   bytesCount += 3 + object.productName.length * 3;
@@ -146,14 +157,15 @@ void _openTicketLineSerialize(
   writer.writeBool(offsets[5], object.isSynced);
   writer.writeDouble(offsets[6], object.lineTotal);
   writer.writeString(offsets[7], object.localId);
-  writer.writeString(offsets[8], object.openTicketId);
-  writer.writeString(offsets[9], object.productId);
-  writer.writeString(offsets[10], object.productName);
-  writer.writeDouble(offsets[11], object.quantity);
-  writer.writeString(offsets[12], object.serverId);
-  writer.writeByte(offsets[13], object.syncStatus.index);
-  writer.writeDouble(offsets[14], object.unitPrice);
-  writer.writeDateTime(offsets[15], object.updatedAt);
+  writer.writeString(offsets[8], object.modifiersJson);
+  writer.writeString(offsets[9], object.openTicketId);
+  writer.writeString(offsets[10], object.productId);
+  writer.writeString(offsets[11], object.productName);
+  writer.writeDouble(offsets[12], object.quantity);
+  writer.writeString(offsets[13], object.serverId);
+  writer.writeByte(offsets[14], object.syncStatus.index);
+  writer.writeDouble(offsets[15], object.unitPrice);
+  writer.writeDateTime(offsets[16], object.updatedAt);
 }
 
 OpenTicketLine _openTicketLineDeserialize(
@@ -167,16 +179,17 @@ OpenTicketLine _openTicketLineDeserialize(
     deletedAt: reader.readDateTimeOrNull(offsets[1]),
     discount: reader.readDoubleOrNull(offsets[2]) ?? 0,
     localId: reader.readString(offsets[7]),
-    openTicketId: reader.readString(offsets[8]),
-    productId: reader.readString(offsets[9]),
-    productName: reader.readString(offsets[10]),
-    quantity: reader.readDouble(offsets[11]),
-    serverId: reader.readStringOrNull(offsets[12]),
+    modifiersJson: reader.readStringOrNull(offsets[8]),
+    openTicketId: reader.readString(offsets[9]),
+    productId: reader.readString(offsets[10]),
+    productName: reader.readString(offsets[11]),
+    quantity: reader.readDouble(offsets[12]),
+    serverId: reader.readStringOrNull(offsets[13]),
     syncStatus: _OpenTicketLinesyncStatusValueEnumMap[
-            reader.readByteOrNull(offsets[13])] ??
+            reader.readByteOrNull(offsets[14])] ??
         SyncStatus.pending,
-    unitPrice: reader.readDouble(offsets[14]),
-    updatedAt: reader.readDateTime(offsets[15]),
+    unitPrice: reader.readDouble(offsets[15]),
+    updatedAt: reader.readDateTime(offsets[16]),
   );
   return object;
 }
@@ -205,22 +218,24 @@ P _openTicketLineDeserializeProp<P>(
     case 7:
       return (reader.readString(offset)) as P;
     case 8:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 9:
       return (reader.readString(offset)) as P;
     case 10:
       return (reader.readString(offset)) as P;
     case 11:
-      return (reader.readDouble(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 12:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDouble(offset)) as P;
     case 13:
+      return (reader.readStringOrNull(offset)) as P;
+    case 14:
       return (_OpenTicketLinesyncStatusValueEnumMap[
               reader.readByteOrNull(offset)] ??
           SyncStatus.pending) as P;
-    case 14:
-      return (reader.readDouble(offset)) as P;
     case 15:
+      return (reader.readDouble(offset)) as P;
+    case 16:
       return (reader.readDateTime(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -811,6 +826,160 @@ extension OpenTicketLineQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.greaterThan(
         property: r'localId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<OpenTicketLine, OpenTicketLine, QAfterFilterCondition>
+      modifiersJsonIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'modifiersJson',
+      ));
+    });
+  }
+
+  QueryBuilder<OpenTicketLine, OpenTicketLine, QAfterFilterCondition>
+      modifiersJsonIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'modifiersJson',
+      ));
+    });
+  }
+
+  QueryBuilder<OpenTicketLine, OpenTicketLine, QAfterFilterCondition>
+      modifiersJsonEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'modifiersJson',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OpenTicketLine, OpenTicketLine, QAfterFilterCondition>
+      modifiersJsonGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'modifiersJson',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OpenTicketLine, OpenTicketLine, QAfterFilterCondition>
+      modifiersJsonLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'modifiersJson',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OpenTicketLine, OpenTicketLine, QAfterFilterCondition>
+      modifiersJsonBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'modifiersJson',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OpenTicketLine, OpenTicketLine, QAfterFilterCondition>
+      modifiersJsonStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'modifiersJson',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OpenTicketLine, OpenTicketLine, QAfterFilterCondition>
+      modifiersJsonEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'modifiersJson',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OpenTicketLine, OpenTicketLine, QAfterFilterCondition>
+      modifiersJsonContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'modifiersJson',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OpenTicketLine, OpenTicketLine, QAfterFilterCondition>
+      modifiersJsonMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'modifiersJson',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OpenTicketLine, OpenTicketLine, QAfterFilterCondition>
+      modifiersJsonIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'modifiersJson',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<OpenTicketLine, OpenTicketLine, QAfterFilterCondition>
+      modifiersJsonIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'modifiersJson',
         value: '',
       ));
     });
@@ -1737,6 +1906,20 @@ extension OpenTicketLineQuerySortBy
   }
 
   QueryBuilder<OpenTicketLine, OpenTicketLine, QAfterSortBy>
+      sortByModifiersJson() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'modifiersJson', Sort.asc);
+    });
+  }
+
+  QueryBuilder<OpenTicketLine, OpenTicketLine, QAfterSortBy>
+      sortByModifiersJsonDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'modifiersJson', Sort.desc);
+    });
+  }
+
+  QueryBuilder<OpenTicketLine, OpenTicketLine, QAfterSortBy>
       sortByOpenTicketId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'openTicketId', Sort.asc);
@@ -1965,6 +2148,20 @@ extension OpenTicketLineQuerySortThenBy
   }
 
   QueryBuilder<OpenTicketLine, OpenTicketLine, QAfterSortBy>
+      thenByModifiersJson() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'modifiersJson', Sort.asc);
+    });
+  }
+
+  QueryBuilder<OpenTicketLine, OpenTicketLine, QAfterSortBy>
+      thenByModifiersJsonDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'modifiersJson', Sort.desc);
+    });
+  }
+
+  QueryBuilder<OpenTicketLine, OpenTicketLine, QAfterSortBy>
       thenByOpenTicketId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'openTicketId', Sort.asc);
@@ -2129,6 +2326,14 @@ extension OpenTicketLineQueryWhereDistinct
   }
 
   QueryBuilder<OpenTicketLine, OpenTicketLine, QDistinct>
+      distinctByModifiersJson({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'modifiersJson',
+          caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<OpenTicketLine, OpenTicketLine, QDistinct>
       distinctByOpenTicketId({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'openTicketId', caseSensitive: caseSensitive);
@@ -2238,6 +2443,13 @@ extension OpenTicketLineQueryProperty
   QueryBuilder<OpenTicketLine, String, QQueryOperations> localIdProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'localId');
+    });
+  }
+
+  QueryBuilder<OpenTicketLine, String?, QQueryOperations>
+      modifiersJsonProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'modifiersJson');
     });
   }
 

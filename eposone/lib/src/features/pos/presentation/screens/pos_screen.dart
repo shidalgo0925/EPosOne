@@ -15,6 +15,12 @@ import 'package:eposone/src/features/products/domain/entities/category.dart';
 import 'package:eposone/src/features/products/domain/entities/product.dart';
 import 'package:eposone/src/features/products/presentation/providers/category_provider.dart';
 import 'package:eposone/src/features/products/presentation/providers/product_provider.dart';
+import 'package:eposone/src/features/products/data/repositories/modifier_repository.dart';
+import 'package:eposone/src/features/products/domain/entities/selected_modifier.dart';
+import 'package:eposone/src/features/pos/presentation/widgets/modifier_picker_sheet.dart';
+import 'package:eposone/src/features/pos/presentation/providers/pos_page_provider.dart';
+import 'package:eposone/src/features/pos/domain/entities/pos_page.dart';
+import 'package:eposone/src/features/inventory/presentation/providers/inventory_provider.dart';
 import 'package:eposone/src/core/theme/eposone_theme.dart';
 
 class PosScreen extends ConsumerStatefulWidget {
@@ -28,6 +34,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
   final _searchController = TextEditingController();
   String _searchQuery = '';
   String? _categoryFilter;
+  String? _selectedPageId;
 
   @override
   void initState() {
@@ -44,7 +51,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
     super.dispose();
   }
 
-  void _addProduct(Product product) {
+  void _addProduct(Product product) async {
     final config = ref.read(businessConfigProvider);
     if (config?.trackInventory == true && product.stock <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -55,7 +62,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
 
     final cart = ref.read(cartProvider);
     final existing = cart.items.where((i) => i.product.localId == product.localId);
-    final qtyInCart = existing.isEmpty ? 0.0 : existing.first.quantity;
+    final qtyInCart = existing.isEmpty ? 0.0 : existing.fold(0.0, (s, i) => s + i.quantity);
     if (config?.trackInventory == true && qtyInCart + 1 > product.stock) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Stock insuficiente: ${product.name}'), backgroundColor: Colors.orange),
@@ -63,7 +70,22 @@ class _PosScreenState extends ConsumerState<PosScreen> {
       return;
     }
 
-    ref.read(cartProvider.notifier).addProduct(product);
+    final modifierRepo = ref.read(modifierRepositoryProvider);
+    final groups = await modifierRepo.getGroupsForProduct(product.localId);
+    if (!mounted) return;
+
+    List<SelectedModifier> modifiers = const [];
+    if (groups.isNotEmpty) {
+      final selected = await showModifierPickerSheet(
+        context,
+        groups: groups,
+        symbol: config?.currencySymbol ?? 'B/.',
+      );
+      if (selected == null || !mounted) return;
+      modifiers = selected;
+    }
+
+    ref.read(cartProvider.notifier).addProduct(product, modifiers: modifiers);
     ref.read(posSessionProvider.notifier).touch();
   }
 
@@ -121,6 +143,16 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                     context.push('/products');
                   },
                 ),
+                if (ref.read(businessConfigProvider)?.trackInventory == true)
+                  ListTile(
+                    leading: const Icon(Icons.warehouse_outlined),
+                    title: const Text('Inventario'),
+                    subtitle: const Text('Bajo stock, ajustes'),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      context.push('/inventory');
+                    },
+                  ),
                 ListTile(
                   leading: const Icon(Icons.people),
                   title: const Text('Clientes'),
@@ -199,6 +231,14 @@ class _PosScreenState extends ConsumerState<PosScreen> {
         : ref.watch(productsSearchProvider(_searchQuery));
     final categoriesAsync = ref.watch(categoriesProvider);
     final cart = ref.watch(cartProvider);
+    final posPagesAsync = ref.watch(posPagesListProvider);
+    final posPages = posPagesAsync.valueOrNull ?? [];
+    if (posPages.isNotEmpty &&
+        (_selectedPageId == null || !posPages.any((p) => p.localId == _selectedPageId))) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _selectedPageId = posPages.first.localId);
+      });
+    }
     final isTablet = PosLayout.isTablet(context);
     final screenWidth = MediaQuery.sizeOf(context).width;
     final gridColumns = isTablet
@@ -295,6 +335,43 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                 ],
               ),
             ),
+          if (trackInventory)
+            Consumer(
+              builder: (context, ref, _) {
+                final countAsync = ref.watch(lowStockCountProvider);
+                return countAsync.when(
+                  data: (count) {
+                    if (count <= 0) return const SizedBox.shrink();
+                    return Material(
+                      color: Colors.orange.withValues(alpha: 0.12),
+                      child: InkWell(
+                        onTap: () => context.push('/inventory'),
+                        child: Container(
+                          height: 26,
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          child: Row(
+                            children: [
+                              Icon(Icons.warning_amber, size: 14, color: Colors.orange.shade800),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  '$count producto${count == 1 ? '' : 's'} bajo stock mínimo',
+                                  style: const TextStyle(fontSize: 11, color: EposBrand.navy),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              const Text('Ver', style: TextStyle(fontSize: 11, color: EposBrand.orange, fontWeight: FontWeight.w600)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                  loading: () => const SizedBox.shrink(),
+                  error: (_, __) => const SizedBox.shrink(),
+                );
+              },
+            ),
           Expanded(
             child: isTablet
           ? Row(
@@ -314,6 +391,9 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                     onSearchChanged: (v) => setState(() => _searchQuery = v),
                     onCategoryChanged: (id) => setState(() => _categoryFilter = id),
                     onProductTap: _addProduct,
+                    posPages: posPages,
+                    selectedPageId: _selectedPageId,
+                    onPageSelected: (id) => setState(() => _selectedPageId = id),
                   ),
                 ),
                 Expanded(
@@ -337,6 +417,9 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                     onSearchChanged: (v) => setState(() => _searchQuery = v),
                     onCategoryChanged: (id) => setState(() => _categoryFilter = id),
                     onProductTap: _addProduct,
+                    posPages: posPages,
+                    selectedPageId: _selectedPageId,
+                    onPageSelected: (id) => setState(() => _selectedPageId = id),
                   ),
                 ),
                 if (cart.items.isNotEmpty)
@@ -353,7 +436,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
   }
 }
 
-class _CatalogPane extends StatelessWidget {
+class _CatalogPane extends ConsumerWidget {
   final TextEditingController searchController;
   final String searchQuery;
   final String? categoryFilter;
@@ -365,6 +448,9 @@ class _CatalogPane extends StatelessWidget {
   final ValueChanged<String> onSearchChanged;
   final ValueChanged<String?> onCategoryChanged;
   final ValueChanged<Product> onProductTap;
+  final List<PosPage> posPages;
+  final String? selectedPageId;
+  final ValueChanged<String>? onPageSelected;
 
   const _CatalogPane({
     required this.searchController,
@@ -378,10 +464,19 @@ class _CatalogPane extends StatelessWidget {
     required this.onSearchChanged,
     required this.onCategoryChanged,
     required this.onProductTap,
+    this.posPages = const [],
+    this.selectedPageId,
+    this.onPageSelected,
   });
 
+  bool get _usePageMode => posPages.isNotEmpty && searchQuery.isEmpty && selectedPageId != null;
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final pageProductsAsync = _usePageMode
+        ? ref.watch(posPageProductsProvider(selectedPageId!))
+        : null;
+
     return Column(
       children: [
         SizedBox(
@@ -390,16 +485,33 @@ class _CatalogPane extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(6, 4, 6, 0),
             child: Row(
               children: [
-                categoriesAsync.when(
-                  data: (categories) => _CategoryDropdown(
-                    categories: categories,
-                    selectedId: categoryFilter,
-                    onChanged: onCategoryChanged,
+                if (!_usePageMode)
+                  categoriesAsync.when(
+                    data: (categories) => _CategoryDropdown(
+                      categories: categories,
+                      selectedId: categoryFilter,
+                      onChanged: onCategoryChanged,
+                    ),
+                    loading: () => const SizedBox(width: 140, height: 36),
+                    error: (_, __) => const SizedBox.shrink(),
+                  )
+                else
+                  Container(
+                    constraints: const BoxConstraints(maxWidth: 180),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: EposBrand.background,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: EposBrand.divider),
+                    ),
+                    child: Text(
+                      posPages.firstWhere((p) => p.localId == selectedPageId, orElse: () => posPages.first).name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+                    ),
                   ),
-                  loading: () => const SizedBox(width: 140, height: 36),
-                  error: (_, __) => const SizedBox.shrink(),
-                ),
-                const SizedBox(width: 6),
+                if (!_usePageMode || searchQuery.isNotEmpty) const SizedBox(width: 6),
                 Expanded(
                   child: TextField(
                     controller: searchController,
@@ -441,25 +553,80 @@ class _CatalogPane extends StatelessWidget {
           ),
         ),
         Expanded(
-          child: productsAsync.when(
-            data: (products) {
-              var list = products.where((Product p) => p.isActive).toList();
-              if (categoryFilter != null) {
-                list = list.where((Product p) => p.categoryId == categoryFilter).toList();
-              }
-              return PosProductGrid(
-                products: list,
-                symbol: symbol,
-                trackInventory: trackInventory,
-                crossAxisCount: crossAxisCount,
-                onProductTap: onProductTap,
-              );
-            },
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) => Center(child: Text('Error: $e')),
-          ),
+          child: _buildGrid(ref, pageProductsAsync),
         ),
+        if (_usePageMode && posPages.length >= 2)
+          Container(
+            height: 36,
+            decoration: BoxDecoration(
+              color: EposBrand.background,
+              border: Border(top: BorderSide(color: EposBrand.divider)),
+            ),
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+              itemCount: posPages.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 4),
+              itemBuilder: (_, i) {
+                final page = posPages[i];
+                final selected = page.localId == selectedPageId;
+                return Material(
+                  color: selected ? EposBrand.orange : EposBrand.surface,
+                  borderRadius: BorderRadius.circular(6),
+                  child: InkWell(
+                    onTap: () => onPageSelected?.call(page.localId),
+                    borderRadius: BorderRadius.circular(6),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                      child: Text(
+                        page.name.toUpperCase(),
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: selected ? Colors.white : EposBrand.navy,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
       ],
+    );
+  }
+
+  Widget _buildGrid(WidgetRef ref, AsyncValue<List<Product>>? pageProductsAsync) {
+    if (_usePageMode && pageProductsAsync != null) {
+      return pageProductsAsync.when(
+        data: (list) => PosProductGrid(
+          products: list,
+          symbol: symbol,
+          trackInventory: trackInventory,
+          crossAxisCount: crossAxisCount,
+          onProductTap: onProductTap,
+        ),
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, _) => Center(child: Text('Error: $e')),
+      );
+    }
+
+    return productsAsync.when(
+      data: (products) {
+        var list = products.where((Product p) => p.isActive).toList();
+        if (categoryFilter != null) {
+          list = list.where((Product p) => p.categoryId == categoryFilter).toList();
+        }
+        return PosProductGrid(
+          products: list,
+          symbol: symbol,
+          trackInventory: trackInventory,
+          crossAxisCount: crossAxisCount,
+          onProductTap: onProductTap,
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => Center(child: Text('Error: $e')),
     );
   }
 }

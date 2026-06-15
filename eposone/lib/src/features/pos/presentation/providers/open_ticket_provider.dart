@@ -8,6 +8,7 @@ import 'package:eposone/src/features/pos/domain/entities/order_type.dart';
 import 'package:eposone/src/features/pos/domain/entities/predefined_ticket.dart';
 import 'package:eposone/src/features/pos/presentation/providers/cart_provider.dart';
 import 'package:eposone/src/features/products/data/repositories/product_repository.dart';
+import 'package:eposone/src/features/products/domain/modifier_codec.dart';
 
 final openTicketsListProvider = FutureProvider<List<OpenTicket>>((ref) async {
   final repo = ref.watch(openTicketRepositoryProvider);
@@ -100,8 +101,8 @@ class OpenTicketActions {
           id: line.localId,
           product: product,
           quantity: line.quantity,
-          customPrice: line.unitPrice != product.price ? line.unitPrice : null,
           discount: line.discount,
+          modifiers: ModifierCodec.decode(line.modifiersJson),
         ),
       );
     }

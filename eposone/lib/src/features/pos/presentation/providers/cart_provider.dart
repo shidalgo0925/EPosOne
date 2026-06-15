@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:eposone/src/features/pos/domain/entities/order_type.dart';
 import 'package:eposone/src/features/products/domain/entities/product.dart';
+import 'package:eposone/src/features/products/domain/entities/selected_modifier.dart';
+import 'package:eposone/src/features/products/domain/modifier_codec.dart';
 
 /// Item en el carrito POS
 class CartItem {
@@ -9,6 +11,7 @@ class CartItem {
   double quantity;
   double? customPrice;
   double discount;
+  final List<SelectedModifier> modifiers;
 
   CartItem({
     required this.id,
@@ -16,11 +19,21 @@ class CartItem {
     this.quantity = 1,
     this.customPrice,
     this.discount = 0,
+    this.modifiers = const [],
   });
 
-  double get unitPrice => customPrice ?? product.price;
+  double get modifiersTotal => modifiers.fold(0.0, (sum, m) => sum + m.priceDelta);
+  double get unitPrice => customPrice ?? (product.price + modifiersTotal);
   double get subtotal => unitPrice * quantity;
   double get total => subtotal - discount;
+
+  String get displayName {
+    final label = ModifierCodec.modifiersLabel(modifiers);
+    if (label.isEmpty) return product.name;
+    return '${product.name} ($label)';
+  }
+
+  String get modifiersJson => ModifierCodec.encode(modifiers);
 
   CartItem copyWith({
     String? id,
@@ -28,6 +41,7 @@ class CartItem {
     double? quantity,
     double? customPrice,
     double? discount,
+    List<SelectedModifier>? modifiers,
   }) =>
       CartItem(
         id: id ?? this.id,
@@ -35,7 +49,16 @@ class CartItem {
         quantity: quantity ?? this.quantity,
         customPrice: customPrice ?? this.customPrice,
         discount: discount ?? this.discount,
+        modifiers: modifiers ?? this.modifiers,
       );
+
+  static bool sameConfiguration(CartItem a, CartItem b) {
+    if (a.product.localId != b.product.localId) return false;
+    if (a.modifiers.length != b.modifiers.length) return false;
+    final aIds = a.modifiers.map((m) => m.modifierId).toSet();
+    final bIds = b.modifiers.map((m) => m.modifierId).toSet();
+    return aIds.length == bIds.length && aIds.containsAll(bIds);
+  }
 }
 
 /// Estado del carrito
@@ -84,8 +107,21 @@ class CartState {
 class CartNotifier extends StateNotifier<CartState> {
   CartNotifier() : super(const CartState());
 
-  void addProduct(Product product, {double quantity = 1, double? customPrice}) {
-    final existingIndex = state.items.indexWhere((i) => i.product.localId == product.localId);
+  void addProduct(
+    Product product, {
+    double quantity = 1,
+    double? customPrice,
+    List<SelectedModifier> modifiers = const [],
+  }) {
+    final candidate = CartItem(
+      id: '',
+      product: product,
+      quantity: quantity,
+      customPrice: customPrice,
+      modifiers: modifiers,
+    );
+    final existingIndex = state.items.indexWhere((i) => CartItem.sameConfiguration(i, candidate));
+
     if (existingIndex >= 0) {
       final existing = state.items[existingIndex];
       final updated = existing.copyWith(quantity: existing.quantity + quantity);
@@ -100,6 +136,7 @@ class CartNotifier extends StateNotifier<CartState> {
           product: product,
           quantity: quantity,
           customPrice: customPrice,
+          modifiers: modifiers,
         ),
       ]);
     }
@@ -131,7 +168,6 @@ class CartNotifier extends StateNotifier<CartState> {
     state = state.copyWith(items: state.items.where((i) => i.id != itemId).toList());
   }
 
-  /// Reduce cantidad de una línea; elimina si llega a cero.
   void removeQuantity(String itemId, double quantity) {
     if (quantity <= 0) return;
     final index = state.items.indexWhere((i) => i.id == itemId);
@@ -147,7 +183,6 @@ class CartNotifier extends StateNotifier<CartState> {
     }
   }
 
-  /// Extrae líneas del carrito y las devuelve (para cobro parcial).
   List<CartItem> takeItems(Iterable<String> itemIds) {
     final idSet = itemIds.toSet();
     final taken = state.items.where((i) => idSet.contains(i.id)).toList();

@@ -36,6 +36,7 @@ class ReceiptTextBuilder {
       _row('Subtotal', '$symbol${sale.subtotal.toStringAsFixed(2)}'),
       if (sale.discount > 0) _row('Descuento', '-$symbol${sale.discount.toStringAsFixed(2)}'),
       if (sale.taxAmount > 0) _row(config?.taxName ?? 'ITBMS', '$symbol${sale.taxAmount.toStringAsFixed(2)}'),
+      if (sale.tipAmount > 0) _row('Propina', '$symbol${sale.tipAmount.toStringAsFixed(2)}'),
       _row('TOTAL', '$symbol${sale.total.toStringAsFixed(2)}'),
       _row('Pago', paymentMethodLabel(sale.paymentMethod)),
       if (sale.change > 0) _row('Vuelto', '$symbol${sale.change.toStringAsFixed(2)}'),

@@ -8,6 +8,8 @@ import 'package:eposone/src/core/theme/eposone_theme.dart';
 import 'package:eposone/src/features/products/domain/entities/product.dart';
 import 'package:eposone/src/features/products/domain/entities/category.dart';
 import 'package:eposone/src/features/products/presentation/providers/product_provider.dart';
+import 'package:eposone/src/features/products/presentation/providers/modifier_provider.dart';
+import 'package:eposone/src/features/products/data/repositories/modifier_repository.dart';
 
 class ProductFormScreen extends ConsumerStatefulWidget {
   final String? productId;
@@ -35,6 +37,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
 
   bool _isLoading = false;
   bool _isEdit = false;
+  final Set<String> _selectedModifierGroupIds = {};
 
   @override
   void initState() {
@@ -61,6 +64,10 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
       _imagePath = product.imagePath;
       _isActive = product.isActive;
       _allowDecimalQty = product.allowDecimalQty;
+      final linked = await ref.read(modifierRepositoryProvider).getLinkedGroupIds(product.localId);
+      _selectedModifierGroupIds
+        ..clear()
+        ..addAll(linked);
     }
     setState(() => _isLoading = false);
   }
@@ -214,6 +221,9 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                       loading: () => const LinearProgressIndicator(),
                       error: (_, __) => const Text('Error cargando categorías'),
                     ),
+                    const SizedBox(height: 16),
+
+                    _buildModifierGroupsSection(),
                     const SizedBox(height: 16),
 
                     // Switches
@@ -406,6 +416,65 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
     );
   }
 
+  Widget _buildModifierGroupsSection() {
+    final groupsAsync = ref.watch(modifierGroupsListProvider);
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Expanded(
+                  child: Text('Modificadores', style: TextStyle(fontWeight: FontWeight.w600)),
+                ),
+                TextButton(
+                  onPressed: () => context.push('/settings/modifiers'),
+                  child: const Text('Administrar'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'Grupos que aparecen al agregar este producto en el POS',
+              style: TextStyle(fontSize: 12, color: EposBrand.textSecondary),
+            ),
+            const SizedBox(height: 8),
+            groupsAsync.when(
+              data: (groups) {
+                if (groups.isEmpty) {
+                  return const Text('No hay grupos configurados', style: TextStyle(color: EposBrand.textSecondary));
+                }
+                return Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: groups.map((g) {
+                    final selected = _selectedModifierGroupIds.contains(g.localId);
+                    return FilterChip(
+                      label: Text(g.name),
+                      selected: selected,
+                      onSelected: (v) => setState(() {
+                        if (v) {
+                          _selectedModifierGroupIds.add(g.localId);
+                        } else {
+                          _selectedModifierGroupIds.remove(g.localId);
+                        }
+                      }),
+                    );
+                  }).toList(),
+                );
+              },
+              loading: () => const LinearProgressIndicator(),
+              error: (_, __) => const Text('Error cargando grupos'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -458,7 +527,9 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
       }
 
       await ref.read(productNotifierProvider.notifier).saveProduct(product);
+      await ref.read(modifierRepositoryProvider).setProductGroups(product.localId, _selectedModifierGroupIds.toList());
       ref.invalidate(productsListProvider);
+      ref.invalidate(modifierGroupsListProvider);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

@@ -9,6 +9,7 @@ class ShiftSummary {
   final double totalDiscount;
   final double totalTax;
   final double totalRefunds;
+  final double totalTips;
   final Map<PaymentMethod, double> byPaymentMethod;
   final double cashFromSales;
   final double cashMovementIn;
@@ -23,6 +24,7 @@ class ShiftSummary {
     required this.totalDiscount,
     required this.totalTax,
     required this.totalRefunds,
+    required this.totalTips,
     required this.byPaymentMethod,
     required this.cashFromSales,
     required this.cashMovementIn,
@@ -47,11 +49,13 @@ ShiftSummary computeShiftSummary({
   var discount = 0.0;
   var tax = 0.0;
   var cashSales = 0.0;
+  var tips = 0.0;
 
   for (final sale in completedSales) {
     gross += sale.total;
     discount += sale.discount;
     tax += sale.taxAmount;
+    tips += sale.tipAmount;
     byPayment[sale.paymentMethod] = (byPayment[sale.paymentMethod] ?? 0) + sale.total;
     if (sale.paymentMethod == PaymentMethod.cash) {
       cashSales += sale.total;
@@ -86,6 +90,7 @@ ShiftSummary computeShiftSummary({
     totalDiscount: discount,
     totalTax: tax,
     totalRefunds: refundTotal,
+    totalTips: tips,
     byPaymentMethod: byPayment,
     cashFromSales: cashSales - cashRefunds,
     cashMovementIn: moveIn,

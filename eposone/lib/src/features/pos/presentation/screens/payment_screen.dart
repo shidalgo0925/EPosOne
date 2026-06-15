@@ -19,6 +19,8 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
   final _amountController = TextEditingController();
   PaymentMethod _method = PaymentMethod.cash;
   bool _processing = false;
+  double _tipAmount = 0;
+  double? _tipPercent;
 
   @override
   void dispose() {
@@ -78,7 +80,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
 
   Future<void> _confirm() async {
     final ctx = _paymentContext();
-    final total = ctx.totals.total;
+    final total = ctx.totals.total + _tipAmount;
     final split = ref.read(splitBillProvider);
 
     if (_method == PaymentMethod.cash) {
@@ -90,10 +92,12 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
         return;
       }
       ref.read(checkoutProvider.notifier)
+        ..setTipAmount(_tipAmount)
         ..setPaymentMethod(_method)
         ..setAmountPaid(paid);
     } else {
       ref.read(checkoutProvider.notifier)
+        ..setTipAmount(_tipAmount)
         ..setPaymentMethod(_method)
         ..setAmountPaid(total);
     }
@@ -153,6 +157,52 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
     }
   }
 
+  void _setTipPercent(double percent, double baseTotal) {
+    setState(() {
+      _tipPercent = percent;
+      _tipAmount = double.parse((baseTotal * percent / 100).toStringAsFixed(2));
+    });
+  }
+
+  void _clearTip() {
+    setState(() {
+      _tipAmount = 0;
+      _tipPercent = null;
+    });
+  }
+
+  Future<void> _customTip(double baseTotal) async {
+    final ctrl = TextEditingController(text: _tipAmount > 0 ? _tipAmount.toStringAsFixed(2) : '');
+    final value = await showDialog<double>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Propina personalizada'),
+        content: TextField(
+          controller: ctrl,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          decoration: const InputDecoration(labelText: 'Monto', border: OutlineInputBorder()),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+          FilledButton(
+            onPressed: () {
+              final v = double.tryParse(ctrl.text.replaceAll(',', ''));
+              if (v == null || v < 0) return;
+              Navigator.pop(ctx, v);
+            },
+            child: const Text('Aplicar'),
+          ),
+        ],
+      ),
+    );
+    if (value == null) return;
+    setState(() {
+      _tipPercent = null;
+      _tipAmount = value;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final cart = ref.watch(cartProvider);
@@ -198,7 +248,8 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
     }
 
     final paid = double.tryParse(_amountController.text) ?? 0;
-    final change = _method == PaymentMethod.cash ? (paid - totals.total).clamp(0, double.infinity) : 0.0;
+    final grandTotal = totals.total + _tipAmount;
+    final change = _method == PaymentMethod.cash ? (paid - grandTotal).clamp(0, double.infinity) : 0.0;
 
     return Scaffold(
       appBar: AppBar(
@@ -232,12 +283,17 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                   style: const TextStyle(color: Colors.grey),
                 ),
                 Text(
-                  '$symbol${totals.total.toStringAsFixed(2)}',
+                  '$symbol${grandTotal.toStringAsFixed(2)}',
                   style: Theme.of(context).textTheme.displaySmall?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: Theme.of(context).colorScheme.primary,
                       ),
                 ),
+                if (_tipAmount > 0)
+                  Text(
+                    'Incluye propina: $symbol${_tipAmount.toStringAsFixed(2)}',
+                    style: const TextStyle(color: Colors.grey, fontSize: 12),
+                  ),
                 if (totals.taxAmount > 0)
                   Text(
                     'Incluye ${config?.taxName ?? 'ITBMS'}: $symbol${totals.taxAmount.toStringAsFixed(2)}',
@@ -246,7 +302,31 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
+          Text('Propina (opcional)', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final p in [10.0, 15.0, 20.0])
+                ChoiceChip(
+                  label: Text('${p.toStringAsFixed(0)}%'),
+                  selected: _tipPercent == p,
+                  onSelected: (_) => _setTipPercent(p, totals.total),
+                ),
+              ActionChip(
+                label: const Text('Otro monto'),
+                onPressed: () => _customTip(totals.total),
+              ),
+              if (_tipAmount > 0)
+                ActionChip(
+                  label: const Text('Sin propina'),
+                  onPressed: _clearTip,
+                ),
+            ],
+          ),
+          const SizedBox(height: 20),
           Text('Método de pago', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),
           Wrap(
@@ -289,7 +369,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                 ActionChip(
                   avatar: Icon(Icons.payments_outlined, size: 18, color: Theme.of(context).colorScheme.primary),
                   label: const Text('Exacto'),
-                  onPressed: () => _setExact(totals.total),
+                  onPressed: () => _setExact(grandTotal),
                 ),
               ],
             ),

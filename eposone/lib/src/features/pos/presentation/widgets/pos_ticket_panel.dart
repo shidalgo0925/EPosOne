@@ -384,8 +384,8 @@ class _TicketLine extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  item.product.name,
-                  maxLines: expanded ? 1 : 2,
+                  item.displayName,
+                  maxLines: expanded ? 2 : 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(fontWeight: FontWeight.w600, fontSize: expanded ? 12 : 13),
                 ),

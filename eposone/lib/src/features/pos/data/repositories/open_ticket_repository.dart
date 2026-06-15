@@ -103,10 +103,11 @@ class OpenTicketRepository {
           (item) => OpenTicketLine.create(
             openTicketId: ticket.localId,
             productId: item.product.localId,
-            productName: item.product.name,
+            productName: item.displayName,
             quantity: item.quantity,
             unitPrice: item.unitPrice,
             discount: item.discount,
+            modifiersJson: item.modifiersJson.isEmpty ? null : item.modifiersJson,
           ),
         )
         .toList();
@@ -236,7 +237,10 @@ class OpenTicketRepository {
     final updatedTo = [...toLines];
     for (final line in moving) {
       final matchIdx = updatedTo.indexWhere(
-        (t) => t.productId == line.productId && t.unitPrice == line.unitPrice && t.discount == line.discount,
+        (t) => t.productId == line.productId &&
+            t.unitPrice == line.unitPrice &&
+            t.discount == line.discount &&
+            t.modifiersJson == line.modifiersJson,
       );
       if (matchIdx >= 0) {
         updatedTo[matchIdx] = updatedTo[matchIdx].copyWith(
@@ -251,6 +255,7 @@ class OpenTicketRepository {
             quantity: line.quantity,
             unitPrice: line.unitPrice,
             discount: line.discount,
+            modifiersJson: line.modifiersJson,
           ),
         );
       }

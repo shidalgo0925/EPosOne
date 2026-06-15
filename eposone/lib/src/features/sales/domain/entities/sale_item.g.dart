@@ -52,54 +52,59 @@ const SaleItemSchema = CollectionSchema(
       name: r'localId',
       type: IsarType.string,
     ),
-    r'productId': PropertySchema(
+    r'modifiersJson': PropertySchema(
       id: 7,
+      name: r'modifiersJson',
+      type: IsarType.string,
+    ),
+    r'productId': PropertySchema(
+      id: 8,
       name: r'productId',
       type: IsarType.string,
     ),
     r'productName': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'productName',
       type: IsarType.string,
     ),
     r'quantity': PropertySchema(
-      id: 9,
+      id: 10,
       name: r'quantity',
       type: IsarType.double,
     ),
     r'saleId': PropertySchema(
-      id: 10,
+      id: 11,
       name: r'saleId',
       type: IsarType.string,
     ),
     r'serverId': PropertySchema(
-      id: 11,
+      id: 12,
       name: r'serverId',
       type: IsarType.string,
     ),
     r'syncStatus': PropertySchema(
-      id: 12,
+      id: 13,
       name: r'syncStatus',
       type: IsarType.byte,
       enumMap: _SaleItemsyncStatusEnumValueMap,
     ),
     r'taxRate': PropertySchema(
-      id: 13,
+      id: 14,
       name: r'taxRate',
       type: IsarType.double,
     ),
     r'total': PropertySchema(
-      id: 14,
+      id: 15,
       name: r'total',
       type: IsarType.double,
     ),
     r'unitPrice': PropertySchema(
-      id: 15,
+      id: 16,
       name: r'unitPrice',
       type: IsarType.double,
     ),
     r'updatedAt': PropertySchema(
-      id: 16,
+      id: 17,
       name: r'updatedAt',
       type: IsarType.dateTime,
     )
@@ -125,6 +130,12 @@ int _saleItemEstimateSize(
 ) {
   var bytesCount = offsets.last;
   bytesCount += 3 + object.localId.length * 3;
+  {
+    final value = object.modifiersJson;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   bytesCount += 3 + object.productId.length * 3;
   bytesCount += 3 + object.productName.length * 3;
   bytesCount += 3 + object.saleId.length * 3;
@@ -150,16 +161,17 @@ void _saleItemSerialize(
   writer.writeBool(offsets[4], object.isPendingSync);
   writer.writeBool(offsets[5], object.isSynced);
   writer.writeString(offsets[6], object.localId);
-  writer.writeString(offsets[7], object.productId);
-  writer.writeString(offsets[8], object.productName);
-  writer.writeDouble(offsets[9], object.quantity);
-  writer.writeString(offsets[10], object.saleId);
-  writer.writeString(offsets[11], object.serverId);
-  writer.writeByte(offsets[12], object.syncStatus.index);
-  writer.writeDouble(offsets[13], object.taxRate);
-  writer.writeDouble(offsets[14], object.total);
-  writer.writeDouble(offsets[15], object.unitPrice);
-  writer.writeDateTime(offsets[16], object.updatedAt);
+  writer.writeString(offsets[7], object.modifiersJson);
+  writer.writeString(offsets[8], object.productId);
+  writer.writeString(offsets[9], object.productName);
+  writer.writeDouble(offsets[10], object.quantity);
+  writer.writeString(offsets[11], object.saleId);
+  writer.writeString(offsets[12], object.serverId);
+  writer.writeByte(offsets[13], object.syncStatus.index);
+  writer.writeDouble(offsets[14], object.taxRate);
+  writer.writeDouble(offsets[15], object.total);
+  writer.writeDouble(offsets[16], object.unitPrice);
+  writer.writeDateTime(offsets[17], object.updatedAt);
 }
 
 SaleItem _saleItemDeserialize(
@@ -173,18 +185,19 @@ SaleItem _saleItemDeserialize(
     deletedAt: reader.readDateTimeOrNull(offsets[1]),
     discount: reader.readDoubleOrNull(offsets[2]) ?? 0,
     localId: reader.readString(offsets[6]),
-    productId: reader.readString(offsets[7]),
-    productName: reader.readString(offsets[8]),
-    quantity: reader.readDouble(offsets[9]),
-    saleId: reader.readString(offsets[10]),
-    serverId: reader.readStringOrNull(offsets[11]),
+    modifiersJson: reader.readStringOrNull(offsets[7]),
+    productId: reader.readString(offsets[8]),
+    productName: reader.readString(offsets[9]),
+    quantity: reader.readDouble(offsets[10]),
+    saleId: reader.readString(offsets[11]),
+    serverId: reader.readStringOrNull(offsets[12]),
     syncStatus:
-        _SaleItemsyncStatusValueEnumMap[reader.readByteOrNull(offsets[12])] ??
+        _SaleItemsyncStatusValueEnumMap[reader.readByteOrNull(offsets[13])] ??
             SyncStatus.pending,
-    taxRate: reader.readDoubleOrNull(offsets[13]) ?? 0,
-    total: reader.readDouble(offsets[14]),
-    unitPrice: reader.readDouble(offsets[15]),
-    updatedAt: reader.readDateTime(offsets[16]),
+    taxRate: reader.readDoubleOrNull(offsets[14]) ?? 0,
+    total: reader.readDouble(offsets[15]),
+    unitPrice: reader.readDouble(offsets[16]),
+    updatedAt: reader.readDateTime(offsets[17]),
   );
   return object;
 }
@@ -211,25 +224,27 @@ P _saleItemDeserializeProp<P>(
     case 6:
       return (reader.readString(offset)) as P;
     case 7:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 8:
       return (reader.readString(offset)) as P;
     case 9:
-      return (reader.readDouble(offset)) as P;
-    case 10:
       return (reader.readString(offset)) as P;
+    case 10:
+      return (reader.readDouble(offset)) as P;
     case 11:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 12:
+      return (reader.readStringOrNull(offset)) as P;
+    case 13:
       return (_SaleItemsyncStatusValueEnumMap[reader.readByteOrNull(offset)] ??
           SyncStatus.pending) as P;
-    case 13:
-      return (reader.readDoubleOrNull(offset) ?? 0) as P;
     case 14:
-      return (reader.readDouble(offset)) as P;
+      return (reader.readDoubleOrNull(offset) ?? 0) as P;
     case 15:
       return (reader.readDouble(offset)) as P;
     case 16:
+      return (reader.readDouble(offset)) as P;
+    case 17:
       return (reader.readDateTime(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -730,6 +745,158 @@ extension SaleItemQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.greaterThan(
         property: r'localId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<SaleItem, SaleItem, QAfterFilterCondition>
+      modifiersJsonIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'modifiersJson',
+      ));
+    });
+  }
+
+  QueryBuilder<SaleItem, SaleItem, QAfterFilterCondition>
+      modifiersJsonIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'modifiersJson',
+      ));
+    });
+  }
+
+  QueryBuilder<SaleItem, SaleItem, QAfterFilterCondition> modifiersJsonEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'modifiersJson',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<SaleItem, SaleItem, QAfterFilterCondition>
+      modifiersJsonGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'modifiersJson',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<SaleItem, SaleItem, QAfterFilterCondition> modifiersJsonLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'modifiersJson',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<SaleItem, SaleItem, QAfterFilterCondition> modifiersJsonBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'modifiersJson',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<SaleItem, SaleItem, QAfterFilterCondition>
+      modifiersJsonStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'modifiersJson',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<SaleItem, SaleItem, QAfterFilterCondition> modifiersJsonEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'modifiersJson',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<SaleItem, SaleItem, QAfterFilterCondition> modifiersJsonContains(
+      String value,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'modifiersJson',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<SaleItem, SaleItem, QAfterFilterCondition> modifiersJsonMatches(
+      String pattern,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'modifiersJson',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<SaleItem, SaleItem, QAfterFilterCondition>
+      modifiersJsonIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'modifiersJson',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<SaleItem, SaleItem, QAfterFilterCondition>
+      modifiersJsonIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'modifiersJson',
         value: '',
       ));
     });
@@ -1720,6 +1887,18 @@ extension SaleItemQuerySortBy on QueryBuilder<SaleItem, SaleItem, QSortBy> {
     });
   }
 
+  QueryBuilder<SaleItem, SaleItem, QAfterSortBy> sortByModifiersJson() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'modifiersJson', Sort.asc);
+    });
+  }
+
+  QueryBuilder<SaleItem, SaleItem, QAfterSortBy> sortByModifiersJsonDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'modifiersJson', Sort.desc);
+    });
+  }
+
   QueryBuilder<SaleItem, SaleItem, QAfterSortBy> sortByProductId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'productId', Sort.asc);
@@ -1939,6 +2118,18 @@ extension SaleItemQuerySortThenBy
     });
   }
 
+  QueryBuilder<SaleItem, SaleItem, QAfterSortBy> thenByModifiersJson() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'modifiersJson', Sort.asc);
+    });
+  }
+
+  QueryBuilder<SaleItem, SaleItem, QAfterSortBy> thenByModifiersJsonDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'modifiersJson', Sort.desc);
+    });
+  }
+
   QueryBuilder<SaleItem, SaleItem, QAfterSortBy> thenByProductId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'productId', Sort.asc);
@@ -2105,6 +2296,14 @@ extension SaleItemQueryWhereDistinct
     });
   }
 
+  QueryBuilder<SaleItem, SaleItem, QDistinct> distinctByModifiersJson(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'modifiersJson',
+          caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<SaleItem, SaleItem, QDistinct> distinctByProductId(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -2217,6 +2416,12 @@ extension SaleItemQueryProperty
   QueryBuilder<SaleItem, String, QQueryOperations> localIdProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'localId');
+    });
+  }
+
+  QueryBuilder<SaleItem, String?, QQueryOperations> modifiersJsonProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'modifiersJson');
     });
   }
 

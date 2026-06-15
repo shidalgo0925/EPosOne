@@ -27,6 +27,9 @@ import 'package:eposone/src/features/sales/presentation/screens/sales_history_sc
 import 'package:eposone/src/features/pos/presentation/screens/pick_ticket_screen.dart';
 import 'package:eposone/src/features/pos/presentation/screens/split_open_ticket_screen.dart';
 import 'package:eposone/src/features/settings/presentation/screens/open_tickets_settings_screen.dart';
+import 'package:eposone/src/features/inventory/presentation/screens/inventory_screen.dart';
+import 'package:eposone/src/features/products/presentation/screens/modifier_groups_screen.dart';
+import 'package:eposone/src/features/settings/presentation/screens/pos_pages_settings_screen.dart';
 import 'package:eposone/src/features/settings/presentation/screens/printer_settings_screen.dart';
 import 'package:eposone/src/features/settings/presentation/screens/settings_screen.dart';
 
@@ -94,6 +97,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(path: '/admin', builder: (_, __) => const HomeScreen()),
       GoRoute(path: '/products', builder: (_, __) => const ProductListScreen()),
+      GoRoute(path: '/inventory', builder: (_, __) => const InventoryScreen()),
       GoRoute(path: '/products/new', builder: (_, __) => const ProductFormScreen()),
       GoRoute(
         path: '/products/:id/edit',
@@ -137,6 +141,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/settings', builder: (_, __) => const SettingsScreen()),
       GoRoute(path: '/settings/open-tickets', builder: (_, __) => const OpenTicketsSettingsScreen()),
       GoRoute(path: '/settings/printer', builder: (_, __) => const PrinterSettingsScreen()),
+      GoRoute(path: '/settings/modifiers', builder: (_, __) => const ModifierGroupsScreen()),
+      GoRoute(path: '/settings/modifiers/new', builder: (_, __) => const ModifierGroupFormScreen()),
+      GoRoute(
+        path: '/settings/modifiers/:id/edit',
+        builder: (_, state) => ModifierGroupFormScreen(groupId: state.pathParameters['id']),
+      ),
+      GoRoute(path: '/settings/pos-pages', builder: (_, __) => const PosPagesSettingsScreen()),
+      GoRoute(path: '/settings/pos-pages/new', builder: (_, __) => const PosPageFormScreen()),
+      GoRoute(
+        path: '/settings/pos-pages/:id/edit',
+        builder: (_, state) => PosPageFormScreen(pageId: state.pathParameters['id']),
+      ),
     ],
   );
 });

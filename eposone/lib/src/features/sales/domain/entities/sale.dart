@@ -21,6 +21,7 @@ class Sale extends SyncEntity {
   final double total;
   final double amountPaid;
   final double change;
+  final double tipAmount;
   @enumerated
   final PaymentMethod paymentMethod;
   @enumerated
@@ -49,6 +50,7 @@ class Sale extends SyncEntity {
     required this.total,
     required this.amountPaid,
     required this.change,
+    this.tipAmount = 0,
     required this.paymentMethod,
     this.status = SaleStatus.completed,
     this.notes,
@@ -84,6 +86,7 @@ class Sale extends SyncEntity {
     double? total,
     double? amountPaid,
     double? change,
+    double? tipAmount,
     PaymentMethod? paymentMethod,
     SaleStatus? status,
     String? notes,
@@ -109,6 +112,7 @@ class Sale extends SyncEntity {
         total: total ?? this.total,
         amountPaid: amountPaid ?? this.amountPaid,
         change: change ?? this.change,
+        tipAmount: tipAmount ?? this.tipAmount,
         paymentMethod: paymentMethod ?? this.paymentMethod,
         status: status ?? this.status,
         notes: notes ?? this.notes,
@@ -125,6 +129,7 @@ class Sale extends SyncEntity {
     required double total,
     required double amountPaid,
     required double change,
+    double tipAmount = 0,
     required PaymentMethod paymentMethod,
     String? receiptNumber,
     String? customerId,
@@ -147,6 +152,7 @@ class Sale extends SyncEntity {
         total: total,
         amountPaid: amountPaid,
         change: change,
+        tipAmount: tipAmount,
         paymentMethod: paymentMethod,
         notes: notes,
         cashierName: cashierName,

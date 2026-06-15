@@ -141,13 +141,18 @@ const SaleSchema = CollectionSchema(
       name: r'taxAmount',
       type: IsarType.double,
     ),
-    r'total': PropertySchema(
+    r'tipAmount': PropertySchema(
       id: 24,
+      name: r'tipAmount',
+      type: IsarType.double,
+    ),
+    r'total': PropertySchema(
+      id: 25,
       name: r'total',
       type: IsarType.double,
     ),
     r'updatedAt': PropertySchema(
-      id: 25,
+      id: 26,
       name: r'updatedAt',
       type: IsarType.dateTime,
     )
@@ -254,8 +259,9 @@ void _saleSerialize(
   writer.writeDouble(offsets[21], object.subtotal);
   writer.writeByte(offsets[22], object.syncStatus.index);
   writer.writeDouble(offsets[23], object.taxAmount);
-  writer.writeDouble(offsets[24], object.total);
-  writer.writeDateTime(offsets[25], object.updatedAt);
+  writer.writeDouble(offsets[24], object.tipAmount);
+  writer.writeDouble(offsets[25], object.total);
+  writer.writeDateTime(offsets[26], object.updatedAt);
 }
 
 Sale _saleDeserialize(
@@ -292,8 +298,9 @@ Sale _saleDeserialize(
         _SalesyncStatusValueEnumMap[reader.readByteOrNull(offsets[22])] ??
             SyncStatus.pending,
     taxAmount: reader.readDouble(offsets[23]),
-    total: reader.readDouble(offsets[24]),
-    updatedAt: reader.readDateTime(offsets[25]),
+    tipAmount: reader.readDoubleOrNull(offsets[24]) ?? 0,
+    total: reader.readDouble(offsets[25]),
+    updatedAt: reader.readDateTime(offsets[26]),
   );
   return object;
 }
@@ -358,8 +365,10 @@ P _saleDeserializeProp<P>(
     case 23:
       return (reader.readDouble(offset)) as P;
     case 24:
-      return (reader.readDouble(offset)) as P;
+      return (reader.readDoubleOrNull(offset) ?? 0) as P;
     case 25:
+      return (reader.readDouble(offset)) as P;
+    case 26:
       return (reader.readDateTime(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -2571,6 +2580,68 @@ extension SaleQueryFilter on QueryBuilder<Sale, Sale, QFilterCondition> {
     });
   }
 
+  QueryBuilder<Sale, Sale, QAfterFilterCondition> tipAmountEqualTo(
+    double value, {
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'tipAmount',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<Sale, Sale, QAfterFilterCondition> tipAmountGreaterThan(
+    double value, {
+    bool include = false,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'tipAmount',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<Sale, Sale, QAfterFilterCondition> tipAmountLessThan(
+    double value, {
+    bool include = false,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'tipAmount',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<Sale, Sale, QAfterFilterCondition> tipAmountBetween(
+    double lower,
+    double upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'tipAmount',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
   QueryBuilder<Sale, Sale, QAfterFilterCondition> totalEqualTo(
     double value, {
     double epsilon = Query.epsilon,
@@ -2980,6 +3051,18 @@ extension SaleQuerySortBy on QueryBuilder<Sale, Sale, QSortBy> {
     });
   }
 
+  QueryBuilder<Sale, Sale, QAfterSortBy> sortByTipAmount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'tipAmount', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Sale, Sale, QAfterSortBy> sortByTipAmountDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'tipAmount', Sort.desc);
+    });
+  }
+
   QueryBuilder<Sale, Sale, QAfterSortBy> sortByTotal() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'total', Sort.asc);
@@ -3306,6 +3389,18 @@ extension SaleQuerySortThenBy on QueryBuilder<Sale, Sale, QSortThenBy> {
     });
   }
 
+  QueryBuilder<Sale, Sale, QAfterSortBy> thenByTipAmount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'tipAmount', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Sale, Sale, QAfterSortBy> thenByTipAmountDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'tipAmount', Sort.desc);
+    });
+  }
+
   QueryBuilder<Sale, Sale, QAfterSortBy> thenByTotal() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'total', Sort.asc);
@@ -3488,6 +3583,12 @@ extension SaleQueryWhereDistinct on QueryBuilder<Sale, Sale, QDistinct> {
     });
   }
 
+  QueryBuilder<Sale, Sale, QDistinct> distinctByTipAmount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'tipAmount');
+    });
+  }
+
   QueryBuilder<Sale, Sale, QDistinct> distinctByTotal() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'total');
@@ -3649,6 +3750,12 @@ extension SaleQueryProperty on QueryBuilder<Sale, Sale, QQueryProperty> {
   QueryBuilder<Sale, double, QQueryOperations> taxAmountProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'taxAmount');
+    });
+  }
+
+  QueryBuilder<Sale, double, QQueryOperations> tipAmountProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'tipAmount');
     });
   }
 

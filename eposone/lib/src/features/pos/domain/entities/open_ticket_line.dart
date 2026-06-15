@@ -13,6 +13,8 @@ class OpenTicketLine extends SyncEntity {
   final double quantity;
   final double unitPrice;
   final double discount;
+  /// JSON serializado de [SelectedModifier].
+  final String? modifiersJson;
 
   const OpenTicketLine({
     required super.localId,
@@ -27,6 +29,7 @@ class OpenTicketLine extends SyncEntity {
     required this.quantity,
     required this.unitPrice,
     this.discount = 0,
+    this.modifiersJson,
   });
 
   double get lineTotal => (quantity * unitPrice) - discount;
@@ -56,6 +59,8 @@ class OpenTicketLine extends SyncEntity {
     double? quantity,
     double? unitPrice,
     double? discount,
+    String? modifiersJson,
+    bool clearModifiersJson = false,
   }) =>
       OpenTicketLine(
         localId: localId ?? this.localId,
@@ -70,6 +75,7 @@ class OpenTicketLine extends SyncEntity {
         quantity: quantity ?? this.quantity,
         unitPrice: unitPrice ?? this.unitPrice,
         discount: discount ?? this.discount,
+        modifiersJson: clearModifiersJson ? null : (modifiersJson ?? this.modifiersJson),
       );
 
   factory OpenTicketLine.create({
@@ -79,6 +85,7 @@ class OpenTicketLine extends SyncEntity {
     required double quantity,
     required double unitPrice,
     double discount = 0,
+    String? modifiersJson,
   }) {
     final now = DateTime.now();
     return OpenTicketLine(
@@ -89,6 +96,7 @@ class OpenTicketLine extends SyncEntity {
       quantity: quantity,
       unitPrice: unitPrice,
       discount: discount,
+      modifiersJson: modifiersJson,
       createdAt: now,
       updatedAt: now,
     );

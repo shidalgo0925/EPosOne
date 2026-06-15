@@ -5,6 +5,9 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:eposone/src/core/database/seed_data.dart';
 import 'package:eposone/src/features/products/domain/entities/category.dart';
 import 'package:eposone/src/features/products/domain/entities/product.dart';
+import 'package:eposone/src/features/products/domain/entities/modifier_group.dart';
+import 'package:eposone/src/features/products/domain/entities/modifier.dart';
+import 'package:eposone/src/features/products/domain/entities/product_modifier_link.dart';
 import 'package:eposone/src/features/customers/domain/entities/customer.dart';
 import 'package:eposone/src/features/sales/domain/entities/sale.dart';
 import 'package:eposone/src/features/sales/domain/entities/sale_item.dart';
@@ -15,6 +18,9 @@ import 'package:eposone/src/features/auth/domain/entities/cashier.dart';
 import 'package:eposone/src/features/pos/domain/entities/open_ticket.dart';
 import 'package:eposone/src/features/pos/domain/entities/predefined_ticket.dart';
 import 'package:eposone/src/features/pos/domain/entities/open_ticket_line.dart';
+import 'package:eposone/src/features/pos/domain/entities/pos_page.dart';
+import 'package:eposone/src/features/pos/domain/entities/pos_page_item.dart';
+import 'package:eposone/src/features/inventory/domain/entities/stock_adjustment.dart';
 
 part 'database_provider.g.dart';
 
@@ -41,6 +47,12 @@ class Database extends _$Database {
         OpenTicketSchema,
         OpenTicketLineSchema,
         PredefinedTicketSchema,
+        ModifierGroupSchema,
+        ModifierSchema,
+        ProductModifierLinkSchema,
+        PosPageSchema,
+        PosPageItemSchema,
+        StockAdjustmentSchema,
       ],
       directory: dir.path,
       inspector: true,

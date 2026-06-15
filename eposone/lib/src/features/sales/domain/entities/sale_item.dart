@@ -15,6 +15,7 @@ class SaleItem extends SyncEntity {
   final double discount;
   final double taxRate;
   final double total;
+  final String? modifiersJson;
 
   const SaleItem({
     required super.localId,
@@ -31,6 +32,7 @@ class SaleItem extends SyncEntity {
     this.discount = 0,
     this.taxRate = 0,
     required this.total,
+    this.modifiersJson,
   });
 
   @override
@@ -57,6 +59,8 @@ class SaleItem extends SyncEntity {
     double? discount,
     double? taxRate,
     double? total,
+    String? modifiersJson,
+    bool clearModifiersJson = false,
   }) =>
       SaleItem(
         localId: localId ?? this.localId,
@@ -73,6 +77,7 @@ class SaleItem extends SyncEntity {
         discount: discount ?? this.discount,
         taxRate: taxRate ?? this.taxRate,
         total: total ?? this.total,
+        modifiersJson: clearModifiersJson ? null : (modifiersJson ?? this.modifiersJson),
       );
 
   factory SaleItem.create({
@@ -83,6 +88,7 @@ class SaleItem extends SyncEntity {
     required double unitPrice,
     double discount = 0,
     double taxRate = 0,
+    String? modifiersJson,
   }) =>
       SaleItem(
         localId: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -94,6 +100,7 @@ class SaleItem extends SyncEntity {
         discount: discount,
         taxRate: taxRate,
         total: (quantity * unitPrice) - discount,
+        modifiersJson: modifiersJson,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );

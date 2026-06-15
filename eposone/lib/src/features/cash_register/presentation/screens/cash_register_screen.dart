@@ -175,6 +175,8 @@ class _ShiftHub extends ConsumerWidget {
             _SummaryTile(label: 'Ventas netas', value: '$symbol${summary.netSales.toStringAsFixed(2)}', bold: true),
             _SummaryTile(label: 'Descuentos', value: '$symbol${summary.totalDiscount.toStringAsFixed(2)}'),
             _SummaryTile(label: 'ITBMS', value: '$symbol${summary.totalTax.toStringAsFixed(2)}'),
+            if (summary.totalTips > 0)
+              _SummaryTile(label: 'Propinas', value: '$symbol${summary.totalTips.toStringAsFixed(2)}'),
             _SummaryTile(label: 'Transacciones', value: '${summary.saleCount} ventas · ${summary.refundCount} reembolsos'),
             const Divider(height: 24),
             const Text('Por método de pago', style: TextStyle(fontWeight: FontWeight.w600, color: EposBrand.navy)),

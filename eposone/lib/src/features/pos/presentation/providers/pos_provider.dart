@@ -17,22 +17,26 @@ class CheckoutState {
   final PaymentMethod paymentMethod;
   final double amountPaid;
   final String? customerId;
+  final double tipAmount;
 
   const CheckoutState({
     this.paymentMethod = PaymentMethod.cash,
     this.amountPaid = 0,
     this.customerId,
+    this.tipAmount = 0,
   });
 
   CheckoutState copyWith({
     PaymentMethod? paymentMethod,
     double? amountPaid,
     String? customerId,
+    double? tipAmount,
   }) =>
       CheckoutState(
         paymentMethod: paymentMethod ?? this.paymentMethod,
         amountPaid: amountPaid ?? this.amountPaid,
         customerId: customerId ?? this.customerId,
+        tipAmount: tipAmount ?? this.tipAmount,
       );
 }
 
@@ -42,6 +46,7 @@ class CheckoutNotifier extends StateNotifier<CheckoutState> {
   void setPaymentMethod(PaymentMethod method) => state = state.copyWith(paymentMethod: method);
   void setAmountPaid(double amount) => state = state.copyWith(amountPaid: amount);
   void setCustomer(String? customerId) => state = state.copyWith(customerId: customerId);
+  void setTipAmount(double amount) => state = state.copyWith(tipAmount: amount.clamp(0, double.infinity));
   void reset() => state = const CheckoutState();
 }
 
@@ -114,14 +119,17 @@ final completeSaleProvider = Provider<Future<Sale?> Function({List<CartItem>? it
       taxIncluded: config.taxIncluded,
     );
 
+    final tip = checkout.tipAmount;
+    final saleTotal = totals.total + tip;
+
     final amountPaid = checkout.paymentMethod == PaymentMethod.cash
-        ? (checkout.amountPaid > 0 ? checkout.amountPaid : totals.total)
-        : totals.total;
+        ? (checkout.amountPaid > 0 ? checkout.amountPaid : saleTotal)
+        : saleTotal;
     final change = checkout.paymentMethod == PaymentMethod.cash
-        ? (amountPaid - totals.total).clamp(0, double.infinity)
+        ? (amountPaid - saleTotal).clamp(0, double.infinity)
         : 0.0;
 
-    if (checkout.paymentMethod == PaymentMethod.cash && amountPaid < totals.total) {
+    if (checkout.paymentMethod == PaymentMethod.cash && amountPaid < saleTotal) {
       throw StateError('Monto recibido insuficiente');
     }
 
@@ -142,9 +150,10 @@ final completeSaleProvider = Provider<Future<Sale?> Function({List<CartItem>? it
     final sale = Sale.create(
       subtotal: totals.subtotal,
       taxAmount: totals.taxAmount,
-      total: totals.total,
+      total: saleTotal,
       amountPaid: amountPaid,
       change: change.toDouble(),
+      tipAmount: tip,
       paymentMethod: checkout.paymentMethod,
       customerId: checkout.customerId ?? cart.customerId,
       discount: totals.discount,
@@ -162,11 +171,12 @@ final completeSaleProvider = Provider<Future<Sale?> Function({List<CartItem>? it
           (item) => SaleItem.create(
             saleId: sale.localId,
             productId: item.product.localId,
-            productName: item.product.name,
+            productName: item.displayName,
             quantity: item.quantity,
             unitPrice: item.unitPrice,
             discount: item.discount,
             taxRate: config.taxRate,
+            modifiersJson: item.modifiersJson.isEmpty ? null : item.modifiersJson,
           ),
         )
         .toList();

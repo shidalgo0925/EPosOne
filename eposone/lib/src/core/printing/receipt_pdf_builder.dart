@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -19,12 +20,21 @@ class ReceiptPdfBuilder {
     final dateFmt = DateFormat('dd/MM/yyyy HH:mm');
     final doc = pw.Document();
     final pageFormat = PdfPageFormat.roll80;
+    pw.ImageProvider? logo;
+    try {
+      final data = await rootBundle.load('assets/images/app_logo.png');
+      logo = pw.MemoryImage(data.buffer.asUint8List());
+    } catch (_) {}
 
     doc.addPage(
       pw.MultiPage(
         pageFormat: pageFormat,
         margin: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 12),
         build: (context) => [
+          if (logo != null) ...[
+            pw.Center(child: pw.Image(logo, height: 36)),
+            pw.SizedBox(height: 6),
+          ],
           pw.Center(child: pw.Text(config?.businessName ?? 'EPOSOne', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold))),
           if (config?.address != null) pw.Center(child: pw.Text(config!.address!, style: const pw.TextStyle(fontSize: 9))),
           if (config?.ruc != null) pw.Center(child: pw.Text('RUC: ${config!.ruc}', style: const pw.TextStyle(fontSize: 9))),
@@ -53,6 +63,7 @@ class ReceiptPdfBuilder {
           _pdfRow('Subtotal', '$symbol${sale.subtotal.toStringAsFixed(2)}'),
           if (sale.discount > 0) _pdfRow('Descuento', '-$symbol${sale.discount.toStringAsFixed(2)}'),
           if (sale.taxAmount > 0) _pdfRow(config?.taxName ?? 'ITBMS', '$symbol${sale.taxAmount.toStringAsFixed(2)}'),
+          if (sale.tipAmount > 0) _pdfRow('Propina', '$symbol${sale.tipAmount.toStringAsFixed(2)}'),
           _pdfRow('TOTAL', '$symbol${sale.total.toStringAsFixed(2)}', bold: true),
           _pdfRow('Método', paymentMethodLabel(sale.paymentMethod)),
           if (sale.change > 0) _pdfRow('Vuelto', '$symbol${sale.change.toStringAsFixed(2)}'),

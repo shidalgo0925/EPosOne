@@ -113,6 +113,7 @@ class ReceiptScreen extends ConsumerWidget {
                             _row('Subtotal', sale.subtotal, symbol),
                             if (sale.discount > 0) _row('Descuento', -sale.discount, symbol),
                             if (sale.taxAmount > 0) _row(config?.taxName ?? 'ITBMS', sale.taxAmount, symbol),
+                            if (sale.tipAmount > 0) _row('Propina', sale.tipAmount, symbol),
                             _row('TOTAL', sale.total, symbol, bold: true),
                             const SizedBox(height: 8),
                             _row('Pago', sale.amountPaid, symbol),

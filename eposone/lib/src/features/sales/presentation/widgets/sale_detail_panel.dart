@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:eposone/src/core/providers/business_config_provider.dart';
+import 'package:eposone/src/core/printing/receipt_document_service.dart';
 import 'package:eposone/src/features/pos/domain/entities/order_type.dart';
 import 'package:eposone/src/features/pos/presentation/providers/pos_provider.dart';
 import 'package:eposone/src/features/sales/domain/entities/sale.dart';
@@ -93,6 +94,7 @@ class SaleDetailPanel extends ConsumerWidget {
               if (sale.discount > 0)
                 _TotalRow(label: 'Descuento', value: -sale.discount, symbol: symbol, isDiscount: true),
               if (sale.taxAmount > 0) _TotalRow(label: 'Impuestos', value: sale.taxAmount, symbol: symbol),
+              if (sale.tipAmount > 0) _TotalRow(label: 'Propina', value: sale.tipAmount, symbol: symbol),
               _TotalRow(label: 'TOTAL', value: sale.total, symbol: symbol, isTotal: true),
               const SizedBox(height: 16),
               if (sale.amountPaid > 0) ...[
@@ -149,14 +151,56 @@ class SaleDetailActionsMenu extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return PopupMenuButton<String>(
-      onSelected: (value) {
+      onSelected: (value) async {
         if (value == 'refund') {
           _confirmRefund(context, ref, sale);
         } else if (value == 'cancel') {
           _confirmCancel(context, ref, sale);
+        } else if (value == 'print' || value == 'share') {
+          final detail = await ref.read(saleDetailProvider(saleId).future);
+          final items = detail['items'] as List<SaleItem>? ?? [];
+          final config = ref.read(businessConfigProvider);
+          final symbol = config?.currencySymbol ?? 'B/.';
+          if (!context.mounted) return;
+          if (value == 'print') {
+            await ReceiptDocumentService.printSale(
+              context: context,
+              config: config,
+              sale: sale,
+              items: items,
+              symbol: symbol,
+            );
+          } else {
+            await ReceiptDocumentService.shareSalePdf(
+              sale: sale,
+              config: config,
+              items: items,
+              symbol: symbol,
+            );
+          }
         }
       },
       itemBuilder: (context) => const [
+        PopupMenuItem(
+          value: 'print',
+          child: Row(
+            children: [
+              Icon(Icons.print_outlined),
+              SizedBox(width: 8),
+              Text('Imprimir recibo'),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: 'share',
+          child: Row(
+            children: [
+              Icon(Icons.share_outlined),
+              SizedBox(width: 8),
+              Text('Compartir PDF'),
+            ],
+          ),
+        ),
         PopupMenuItem(
           value: 'refund',
           child: Row(

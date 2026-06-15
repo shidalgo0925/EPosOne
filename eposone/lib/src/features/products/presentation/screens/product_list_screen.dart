@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
+import 'package:eposone/src/core/providers/business_config_provider.dart';
+import 'package:eposone/src/core/theme/eposone_theme.dart';
+import 'package:eposone/src/features/inventory/presentation/widgets/stock_adjust_sheet.dart';
 import 'package:eposone/src/features/products/domain/entities/product.dart';
 import 'package:eposone/src/features/products/presentation/providers/product_provider.dart';
 
@@ -41,6 +44,8 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
       );
     });
 
+    final trackInventory = ref.watch(businessConfigProvider)?.trackInventory ?? false;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Productos'),
@@ -75,6 +80,12 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
           ),
         ),
         actions: [
+          if (trackInventory)
+            IconButton(
+              icon: const Icon(Icons.warehouse_outlined),
+              tooltip: 'Inventario',
+              onPressed: () => context.push('/inventory'),
+            ),
           PopupMenuButton<bool>(
             icon: const Icon(Icons.filter_list),
             onSelected: (value) => setState(() => _showInactive = value),
@@ -111,6 +122,7 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                 onTap: () => _editProduct(context, product),
                 onToggleActive: () => ref.read(productNotifierProvider.notifier).toggleActive(product),
                 onDelete: () => _confirmDelete(context, product),
+                onAdjust: trackInventory ? () => showStockAdjustSheet(context, ref, product) : null,
               );
             },
           );
@@ -160,12 +172,14 @@ class _ProductCard extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onToggleActive;
   final VoidCallback onDelete;
+  final VoidCallback? onAdjust;
 
   const _ProductCard({
     required this.product,
     required this.onTap,
     required this.onToggleActive,
     required this.onDelete,
+    this.onAdjust,
   });
 
   @override
@@ -175,6 +189,20 @@ class _ProductCard extends StatelessWidget {
     final isOutOfStock = product.stock <= 0;
 
     return Slidable(
+      startActionPane: onAdjust != null
+          ? ActionPane(
+              motion: const ScrollMotion(),
+              children: [
+                SlidableAction(
+                  onPressed: (_) => onAdjust!(),
+                  backgroundColor: EposBrand.navy,
+                  foregroundColor: Colors.white,
+                  icon: Icons.tune,
+                  label: 'Stock',
+                ),
+              ],
+            )
+          : null,
       endActionPane: ActionPane(
         motion: const ScrollMotion(),
         extentRatio: 0.5,
