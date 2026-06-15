@@ -38,6 +38,13 @@ class SettingsScreen extends StatelessWidget {
             trailing: const Icon(Icons.chevron_right),
             onTap: () => context.push('/settings/open-tickets'),
           ),
+          ListTile(
+            leading: const Icon(Icons.verified_outlined),
+            title: const Text('Facturación electrónica'),
+            subtitle: const Text('FE DGI Panamá, PAC, correlativos'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/settings/fiscal'),
+          ),
         ],
       ),
     );

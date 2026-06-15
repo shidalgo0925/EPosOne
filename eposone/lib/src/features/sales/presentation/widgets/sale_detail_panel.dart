@@ -9,6 +9,9 @@ import 'package:eposone/src/features/pos/presentation/providers/pos_provider.dar
 import 'package:eposone/src/features/sales/domain/entities/sale.dart';
 import 'package:eposone/src/features/sales/domain/entities/sale_item.dart';
 import 'package:eposone/src/features/sales/presentation/providers/sales_provider.dart';
+import 'package:eposone/src/features/fiscal/data/repositories/fiscal_repository.dart';
+import 'package:eposone/src/features/fiscal/presentation/providers/fiscal_provider.dart';
+import 'package:eposone/src/features/fiscal/presentation/widgets/fiscal_document_section.dart';
 
 /// Detalle de venta reutilizable — pantalla completa o panel embebido (tablet).
 class SaleDetailPanel extends ConsumerWidget {
@@ -102,6 +105,8 @@ class SaleDetailPanel extends ConsumerWidget {
                 if (sale.change > 0)
                   _TotalRow(label: 'Vuelto', value: sale.change, symbol: symbol, isDiscount: true),
               ],
+              const SizedBox(height: 16),
+              FiscalDocumentSection(saleId: saleId),
             ],
           ),
         );
@@ -226,14 +231,17 @@ class SaleDetailActionsMenu extends ConsumerWidget {
   }
 
   void _confirmRefund(BuildContext context, WidgetRef ref, Sale sale) {
-    final trackInventory = ref.read(businessConfigProvider)?.trackInventory ?? true;
+    final config = ref.read(businessConfigProvider);
+    final trackInventory = config?.trackInventory ?? true;
+    final fiscalNote = config?.fiscalInvoicingEnabled == true ? '\nSe emitirá nota de crédito fiscal.' : '';
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Reembolsar venta'),
         content: Text(
           '¿Reembolsar la venta ${sale.receiptNumber ?? sale.localId}?'
-          '${trackInventory ? '\nEl stock de los productos será restaurado.' : ''}',
+          '${trackInventory ? '\nEl stock de los productos será restaurado.' : ''}'
+          '$fiscalNote',
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancelar')),
@@ -244,6 +252,16 @@ class SaleDetailActionsMenu extends ConsumerWidget {
                     sale.localId,
                     trackInventory: trackInventory,
                   );
+              if (config?.isFiscalReady == true) {
+                try {
+                  await ref.read(fiscalRepositoryProvider).emitCreditNoteForRefund(
+                        saleId: sale.localId,
+                        config: config!,
+                      );
+                  ref.invalidate(fiscalCreditNoteForSaleProvider(sale.localId));
+                  ref.invalidate(fiscalDocumentsProvider);
+                } catch (_) {}
+              }
               ref.invalidate(saleDetailProvider(saleId));
               ref.invalidate(salesHistoryProvider);
               if (context.mounted) {

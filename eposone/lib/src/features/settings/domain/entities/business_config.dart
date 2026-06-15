@@ -1,6 +1,7 @@
 import 'package:isar/isar.dart';
 import 'package:eposone/src/core/entities/sync_entity.dart';
 import 'package:eposone/src/features/pos/domain/entities/order_type.dart';
+import 'package:eposone/src/features/fiscal/domain/entities/pac_provider_type.dart';
 
 part 'business_config.g.dart';
 
@@ -30,6 +31,14 @@ class BusinessConfig extends SyncEntity {
   final bool usePredefinedTickets;
   @enumerated
   final OrderType defaultOrderType;
+  final bool fiscalInvoicingEnabled;
+  @enumerated
+  final PacProviderType pacProvider;
+  final String? pacApiUrl;
+  final String? pacApiToken;
+  final String? fiscalBranchCode;
+  final String? fiscalPointOfSale;
+  final int fiscalNextNumber;
 
   const BusinessConfig({
     required super.localId,
@@ -59,9 +68,31 @@ class BusinessConfig extends SyncEntity {
     this.openTicketsEnabled = true,
     this.usePredefinedTickets = false,
     this.defaultOrderType = OrderType.generic,
+    this.fiscalInvoicingEnabled = false,
+    this.pacProvider = PacProviderType.none,
+    this.pacApiUrl,
+    this.pacApiToken,
+    this.fiscalBranchCode,
+    this.fiscalPointOfSale,
+    this.fiscalNextNumber = 1,
   });
 
   String get nextReceiptNumber => '$receiptPrefix-${receiptNextNumber.toString().padLeft(6, '0')}';
+
+  String get nextFiscalNumber {
+    final branch = (fiscalBranchCode ?? '000').padLeft(3, '0');
+    final point = (fiscalPointOfSale ?? '000').padLeft(3, '0');
+    final seq = fiscalNextNumber.toString().padLeft(10, '0');
+    return '$branch-$point-$seq';
+  }
+
+  bool get isFiscalReady =>
+      fiscalInvoicingEnabled &&
+      pacProvider != PacProviderType.none &&
+      ruc != null &&
+      ruc!.trim().isNotEmpty &&
+      fiscalBranchCode != null &&
+      fiscalPointOfSale != null;
 
   @override
   BusinessConfig markAsModified() => copyWith(syncStatus: SyncStatus.modified, updatedAt: DateTime.now());
@@ -100,6 +131,13 @@ class BusinessConfig extends SyncEntity {
     bool? openTicketsEnabled,
     bool? usePredefinedTickets,
     OrderType? defaultOrderType,
+    bool? fiscalInvoicingEnabled,
+    PacProviderType? pacProvider,
+    String? pacApiUrl,
+    String? pacApiToken,
+    String? fiscalBranchCode,
+    String? fiscalPointOfSale,
+    int? fiscalNextNumber,
   }) =>
       BusinessConfig(
         localId: localId ?? this.localId,
@@ -129,6 +167,13 @@ class BusinessConfig extends SyncEntity {
         openTicketsEnabled: openTicketsEnabled ?? this.openTicketsEnabled,
         usePredefinedTickets: usePredefinedTickets ?? this.usePredefinedTickets,
         defaultOrderType: defaultOrderType ?? this.defaultOrderType,
+        fiscalInvoicingEnabled: fiscalInvoicingEnabled ?? this.fiscalInvoicingEnabled,
+        pacProvider: pacProvider ?? this.pacProvider,
+        pacApiUrl: pacApiUrl ?? this.pacApiUrl,
+        pacApiToken: pacApiToken ?? this.pacApiToken,
+        fiscalBranchCode: fiscalBranchCode ?? this.fiscalBranchCode,
+        fiscalPointOfSale: fiscalPointOfSale ?? this.fiscalPointOfSale,
+        fiscalNextNumber: fiscalNextNumber ?? this.fiscalNextNumber,
       );
 
   factory BusinessConfig.defaultConfig() => BusinessConfig(
@@ -141,4 +186,6 @@ class BusinessConfig extends SyncEntity {
       );
 
   BusinessConfig incrementReceiptNumber() => copyWith(receiptNextNumber: receiptNextNumber + 1);
+
+  BusinessConfig incrementFiscalNumber() => copyWith(fiscalNextNumber: fiscalNextNumber + 1);
 }

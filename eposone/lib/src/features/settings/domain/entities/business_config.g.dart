@@ -63,114 +63,160 @@ const BusinessConfigSchema = CollectionSchema(
       name: r'email',
       type: IsarType.string,
     ),
-    r'isDeleted': PropertySchema(
+    r'fiscalBranchCode': PropertySchema(
       id: 9,
+      name: r'fiscalBranchCode',
+      type: IsarType.string,
+    ),
+    r'fiscalInvoicingEnabled': PropertySchema(
+      id: 10,
+      name: r'fiscalInvoicingEnabled',
+      type: IsarType.bool,
+    ),
+    r'fiscalNextNumber': PropertySchema(
+      id: 11,
+      name: r'fiscalNextNumber',
+      type: IsarType.long,
+    ),
+    r'fiscalPointOfSale': PropertySchema(
+      id: 12,
+      name: r'fiscalPointOfSale',
+      type: IsarType.string,
+    ),
+    r'isDeleted': PropertySchema(
+      id: 13,
       name: r'isDeleted',
       type: IsarType.bool,
     ),
+    r'isFiscalReady': PropertySchema(
+      id: 14,
+      name: r'isFiscalReady',
+      type: IsarType.bool,
+    ),
     r'isPendingSync': PropertySchema(
-      id: 10,
+      id: 15,
       name: r'isPendingSync',
       type: IsarType.bool,
     ),
     r'isSetupComplete': PropertySchema(
-      id: 11,
+      id: 16,
       name: r'isSetupComplete',
       type: IsarType.bool,
     ),
     r'isSynced': PropertySchema(
-      id: 12,
+      id: 17,
       name: r'isSynced',
       type: IsarType.bool,
     ),
     r'localId': PropertySchema(
-      id: 13,
+      id: 18,
       name: r'localId',
       type: IsarType.string,
     ),
     r'logoPath': PropertySchema(
-      id: 14,
+      id: 19,
       name: r'logoPath',
       type: IsarType.string,
     ),
+    r'nextFiscalNumber': PropertySchema(
+      id: 20,
+      name: r'nextFiscalNumber',
+      type: IsarType.string,
+    ),
     r'nextReceiptNumber': PropertySchema(
-      id: 15,
+      id: 21,
       name: r'nextReceiptNumber',
       type: IsarType.string,
     ),
     r'openTicketsEnabled': PropertySchema(
-      id: 16,
+      id: 22,
       name: r'openTicketsEnabled',
       type: IsarType.bool,
     ),
+    r'pacApiToken': PropertySchema(
+      id: 23,
+      name: r'pacApiToken',
+      type: IsarType.string,
+    ),
+    r'pacApiUrl': PropertySchema(
+      id: 24,
+      name: r'pacApiUrl',
+      type: IsarType.string,
+    ),
+    r'pacProvider': PropertySchema(
+      id: 25,
+      name: r'pacProvider',
+      type: IsarType.byte,
+      enumMap: _BusinessConfigpacProviderEnumValueMap,
+    ),
     r'phone': PropertySchema(
-      id: 17,
+      id: 26,
       name: r'phone',
       type: IsarType.string,
     ),
     r'receiptFooter': PropertySchema(
-      id: 18,
+      id: 27,
       name: r'receiptFooter',
       type: IsarType.string,
     ),
     r'receiptHeader': PropertySchema(
-      id: 19,
+      id: 28,
       name: r'receiptHeader',
       type: IsarType.string,
     ),
     r'receiptNextNumber': PropertySchema(
-      id: 20,
+      id: 29,
       name: r'receiptNextNumber',
       type: IsarType.long,
     ),
     r'receiptPrefix': PropertySchema(
-      id: 21,
+      id: 30,
       name: r'receiptPrefix',
       type: IsarType.string,
     ),
     r'ruc': PropertySchema(
-      id: 22,
+      id: 31,
       name: r'ruc',
       type: IsarType.string,
     ),
     r'serverId': PropertySchema(
-      id: 23,
+      id: 32,
       name: r'serverId',
       type: IsarType.string,
     ),
     r'syncStatus': PropertySchema(
-      id: 24,
+      id: 33,
       name: r'syncStatus',
       type: IsarType.byte,
       enumMap: _BusinessConfigsyncStatusEnumValueMap,
     ),
     r'taxIncluded': PropertySchema(
-      id: 25,
+      id: 34,
       name: r'taxIncluded',
       type: IsarType.bool,
     ),
     r'taxName': PropertySchema(
-      id: 26,
+      id: 35,
       name: r'taxName',
       type: IsarType.string,
     ),
     r'taxRate': PropertySchema(
-      id: 27,
+      id: 36,
       name: r'taxRate',
       type: IsarType.double,
     ),
     r'trackInventory': PropertySchema(
-      id: 28,
+      id: 37,
       name: r'trackInventory',
       type: IsarType.bool,
     ),
     r'updatedAt': PropertySchema(
-      id: 29,
+      id: 38,
       name: r'updatedAt',
       type: IsarType.dateTime,
     ),
     r'usePredefinedTickets': PropertySchema(
-      id: 30,
+      id: 39,
       name: r'usePredefinedTickets',
       type: IsarType.bool,
     )
@@ -215,6 +261,18 @@ int _businessConfigEstimateSize(
       bytesCount += 3 + value.length * 3;
     }
   }
+  {
+    final value = object.fiscalBranchCode;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.fiscalPointOfSale;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   bytesCount += 3 + object.localId.length * 3;
   {
     final value = object.logoPath;
@@ -222,7 +280,20 @@ int _businessConfigEstimateSize(
       bytesCount += 3 + value.length * 3;
     }
   }
+  bytesCount += 3 + object.nextFiscalNumber.length * 3;
   bytesCount += 3 + object.nextReceiptNumber.length * 3;
+  {
+    final value = object.pacApiToken;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.pacApiUrl;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   {
     final value = object.phone;
     if (value != null) {
@@ -273,28 +344,37 @@ void _businessConfigSerialize(
   writer.writeByte(offsets[6], object.defaultOrderType.index);
   writer.writeDateTime(offsets[7], object.deletedAt);
   writer.writeString(offsets[8], object.email);
-  writer.writeBool(offsets[9], object.isDeleted);
-  writer.writeBool(offsets[10], object.isPendingSync);
-  writer.writeBool(offsets[11], object.isSetupComplete);
-  writer.writeBool(offsets[12], object.isSynced);
-  writer.writeString(offsets[13], object.localId);
-  writer.writeString(offsets[14], object.logoPath);
-  writer.writeString(offsets[15], object.nextReceiptNumber);
-  writer.writeBool(offsets[16], object.openTicketsEnabled);
-  writer.writeString(offsets[17], object.phone);
-  writer.writeString(offsets[18], object.receiptFooter);
-  writer.writeString(offsets[19], object.receiptHeader);
-  writer.writeLong(offsets[20], object.receiptNextNumber);
-  writer.writeString(offsets[21], object.receiptPrefix);
-  writer.writeString(offsets[22], object.ruc);
-  writer.writeString(offsets[23], object.serverId);
-  writer.writeByte(offsets[24], object.syncStatus.index);
-  writer.writeBool(offsets[25], object.taxIncluded);
-  writer.writeString(offsets[26], object.taxName);
-  writer.writeDouble(offsets[27], object.taxRate);
-  writer.writeBool(offsets[28], object.trackInventory);
-  writer.writeDateTime(offsets[29], object.updatedAt);
-  writer.writeBool(offsets[30], object.usePredefinedTickets);
+  writer.writeString(offsets[9], object.fiscalBranchCode);
+  writer.writeBool(offsets[10], object.fiscalInvoicingEnabled);
+  writer.writeLong(offsets[11], object.fiscalNextNumber);
+  writer.writeString(offsets[12], object.fiscalPointOfSale);
+  writer.writeBool(offsets[13], object.isDeleted);
+  writer.writeBool(offsets[14], object.isFiscalReady);
+  writer.writeBool(offsets[15], object.isPendingSync);
+  writer.writeBool(offsets[16], object.isSetupComplete);
+  writer.writeBool(offsets[17], object.isSynced);
+  writer.writeString(offsets[18], object.localId);
+  writer.writeString(offsets[19], object.logoPath);
+  writer.writeString(offsets[20], object.nextFiscalNumber);
+  writer.writeString(offsets[21], object.nextReceiptNumber);
+  writer.writeBool(offsets[22], object.openTicketsEnabled);
+  writer.writeString(offsets[23], object.pacApiToken);
+  writer.writeString(offsets[24], object.pacApiUrl);
+  writer.writeByte(offsets[25], object.pacProvider.index);
+  writer.writeString(offsets[26], object.phone);
+  writer.writeString(offsets[27], object.receiptFooter);
+  writer.writeString(offsets[28], object.receiptHeader);
+  writer.writeLong(offsets[29], object.receiptNextNumber);
+  writer.writeString(offsets[30], object.receiptPrefix);
+  writer.writeString(offsets[31], object.ruc);
+  writer.writeString(offsets[32], object.serverId);
+  writer.writeByte(offsets[33], object.syncStatus.index);
+  writer.writeBool(offsets[34], object.taxIncluded);
+  writer.writeString(offsets[35], object.taxName);
+  writer.writeDouble(offsets[36], object.taxRate);
+  writer.writeBool(offsets[37], object.trackInventory);
+  writer.writeDateTime(offsets[38], object.updatedAt);
+  writer.writeBool(offsets[39], object.usePredefinedTickets);
 }
 
 BusinessConfig _businessConfigDeserialize(
@@ -315,27 +395,36 @@ BusinessConfig _businessConfigDeserialize(
         OrderType.generic,
     deletedAt: reader.readDateTimeOrNull(offsets[7]),
     email: reader.readStringOrNull(offsets[8]),
-    isSetupComplete: reader.readBoolOrNull(offsets[11]) ?? false,
-    localId: reader.readString(offsets[13]),
-    logoPath: reader.readStringOrNull(offsets[14]),
-    openTicketsEnabled: reader.readBoolOrNull(offsets[16]) ?? true,
-    phone: reader.readStringOrNull(offsets[17]),
-    receiptFooter: reader.readStringOrNull(offsets[18]) ?? 'Vuelva pronto',
+    fiscalBranchCode: reader.readStringOrNull(offsets[9]),
+    fiscalInvoicingEnabled: reader.readBoolOrNull(offsets[10]) ?? false,
+    fiscalNextNumber: reader.readLongOrNull(offsets[11]) ?? 1,
+    fiscalPointOfSale: reader.readStringOrNull(offsets[12]),
+    isSetupComplete: reader.readBoolOrNull(offsets[16]) ?? false,
+    localId: reader.readString(offsets[18]),
+    logoPath: reader.readStringOrNull(offsets[19]),
+    openTicketsEnabled: reader.readBoolOrNull(offsets[22]) ?? true,
+    pacApiToken: reader.readStringOrNull(offsets[23]),
+    pacApiUrl: reader.readStringOrNull(offsets[24]),
+    pacProvider: _BusinessConfigpacProviderValueEnumMap[
+            reader.readByteOrNull(offsets[25])] ??
+        PacProviderType.none,
+    phone: reader.readStringOrNull(offsets[26]),
+    receiptFooter: reader.readStringOrNull(offsets[27]) ?? 'Vuelva pronto',
     receiptHeader:
-        reader.readStringOrNull(offsets[19]) ?? 'Gracias por su compra',
-    receiptNextNumber: reader.readLongOrNull(offsets[20]) ?? 1,
-    receiptPrefix: reader.readStringOrNull(offsets[21]),
-    ruc: reader.readStringOrNull(offsets[22]),
-    serverId: reader.readStringOrNull(offsets[23]),
+        reader.readStringOrNull(offsets[28]) ?? 'Gracias por su compra',
+    receiptNextNumber: reader.readLongOrNull(offsets[29]) ?? 1,
+    receiptPrefix: reader.readStringOrNull(offsets[30]),
+    ruc: reader.readStringOrNull(offsets[31]),
+    serverId: reader.readStringOrNull(offsets[32]),
     syncStatus: _BusinessConfigsyncStatusValueEnumMap[
-            reader.readByteOrNull(offsets[24])] ??
+            reader.readByteOrNull(offsets[33])] ??
         SyncStatus.pending,
-    taxIncluded: reader.readBoolOrNull(offsets[25]) ?? false,
-    taxName: reader.readStringOrNull(offsets[26]),
-    taxRate: reader.readDoubleOrNull(offsets[27]) ?? 0,
-    trackInventory: reader.readBoolOrNull(offsets[28]) ?? true,
-    updatedAt: reader.readDateTime(offsets[29]),
-    usePredefinedTickets: reader.readBoolOrNull(offsets[30]) ?? false,
+    taxIncluded: reader.readBoolOrNull(offsets[34]) ?? false,
+    taxName: reader.readStringOrNull(offsets[35]),
+    taxRate: reader.readDoubleOrNull(offsets[36]) ?? 0,
+    trackInventory: reader.readBoolOrNull(offsets[37]) ?? true,
+    updatedAt: reader.readDateTime(offsets[38]),
+    usePredefinedTickets: reader.readBoolOrNull(offsets[39]) ?? false,
   );
   return object;
 }
@@ -368,50 +457,70 @@ P _businessConfigDeserializeProp<P>(
     case 8:
       return (reader.readStringOrNull(offset)) as P;
     case 9:
-      return (reader.readBool(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 10:
-      return (reader.readBool(offset)) as P;
-    case 11:
       return (reader.readBoolOrNull(offset) ?? false) as P;
-    case 12:
-      return (reader.readBool(offset)) as P;
-    case 13:
-      return (reader.readString(offset)) as P;
-    case 14:
-      return (reader.readStringOrNull(offset)) as P;
-    case 15:
-      return (reader.readString(offset)) as P;
-    case 16:
-      return (reader.readBoolOrNull(offset) ?? true) as P;
-    case 17:
-      return (reader.readStringOrNull(offset)) as P;
-    case 18:
-      return (reader.readStringOrNull(offset) ?? 'Vuelva pronto') as P;
-    case 19:
-      return (reader.readStringOrNull(offset) ?? 'Gracias por su compra') as P;
-    case 20:
+    case 11:
       return (reader.readLongOrNull(offset) ?? 1) as P;
+    case 12:
+      return (reader.readStringOrNull(offset)) as P;
+    case 13:
+      return (reader.readBool(offset)) as P;
+    case 14:
+      return (reader.readBool(offset)) as P;
+    case 15:
+      return (reader.readBool(offset)) as P;
+    case 16:
+      return (reader.readBoolOrNull(offset) ?? false) as P;
+    case 17:
+      return (reader.readBool(offset)) as P;
+    case 18:
+      return (reader.readString(offset)) as P;
+    case 19:
+      return (reader.readStringOrNull(offset)) as P;
+    case 20:
+      return (reader.readString(offset)) as P;
     case 21:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 22:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readBoolOrNull(offset) ?? true) as P;
     case 23:
       return (reader.readStringOrNull(offset)) as P;
     case 24:
-      return (_BusinessConfigsyncStatusValueEnumMap[
-              reader.readByteOrNull(offset)] ??
-          SyncStatus.pending) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 25:
-      return (reader.readBoolOrNull(offset) ?? false) as P;
+      return (_BusinessConfigpacProviderValueEnumMap[
+              reader.readByteOrNull(offset)] ??
+          PacProviderType.none) as P;
     case 26:
       return (reader.readStringOrNull(offset)) as P;
     case 27:
-      return (reader.readDoubleOrNull(offset) ?? 0) as P;
+      return (reader.readStringOrNull(offset) ?? 'Vuelva pronto') as P;
     case 28:
-      return (reader.readBoolOrNull(offset) ?? true) as P;
+      return (reader.readStringOrNull(offset) ?? 'Gracias por su compra') as P;
     case 29:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readLongOrNull(offset) ?? 1) as P;
     case 30:
+      return (reader.readStringOrNull(offset)) as P;
+    case 31:
+      return (reader.readStringOrNull(offset)) as P;
+    case 32:
+      return (reader.readStringOrNull(offset)) as P;
+    case 33:
+      return (_BusinessConfigsyncStatusValueEnumMap[
+              reader.readByteOrNull(offset)] ??
+          SyncStatus.pending) as P;
+    case 34:
+      return (reader.readBoolOrNull(offset) ?? false) as P;
+    case 35:
+      return (reader.readStringOrNull(offset)) as P;
+    case 36:
+      return (reader.readDoubleOrNull(offset) ?? 0) as P;
+    case 37:
+      return (reader.readBoolOrNull(offset) ?? true) as P;
+    case 38:
+      return (reader.readDateTime(offset)) as P;
+    case 39:
       return (reader.readBoolOrNull(offset) ?? false) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -429,6 +538,14 @@ const _BusinessConfigdefaultOrderTypeValueEnumMap = {
   1: OrderType.dineIn,
   2: OrderType.takeaway,
   3: OrderType.delivery,
+};
+const _BusinessConfigpacProviderEnumValueMap = {
+  'none': 0,
+  'stub': 1,
+};
+const _BusinessConfigpacProviderValueEnumMap = {
+  0: PacProviderType.none,
+  1: PacProviderType.stub,
 };
 const _BusinessConfigsyncStatusEnumValueMap = {
   'pending': 0,
@@ -1466,10 +1583,394 @@ extension BusinessConfigQueryFilter
   }
 
   QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      fiscalBranchCodeIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'fiscalBranchCode',
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      fiscalBranchCodeIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'fiscalBranchCode',
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      fiscalBranchCodeEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'fiscalBranchCode',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      fiscalBranchCodeGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'fiscalBranchCode',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      fiscalBranchCodeLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'fiscalBranchCode',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      fiscalBranchCodeBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'fiscalBranchCode',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      fiscalBranchCodeStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'fiscalBranchCode',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      fiscalBranchCodeEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'fiscalBranchCode',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      fiscalBranchCodeContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'fiscalBranchCode',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      fiscalBranchCodeMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'fiscalBranchCode',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      fiscalBranchCodeIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'fiscalBranchCode',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      fiscalBranchCodeIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'fiscalBranchCode',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      fiscalInvoicingEnabledEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'fiscalInvoicingEnabled',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      fiscalNextNumberEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'fiscalNextNumber',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      fiscalNextNumberGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'fiscalNextNumber',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      fiscalNextNumberLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'fiscalNextNumber',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      fiscalNextNumberBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'fiscalNextNumber',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      fiscalPointOfSaleIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'fiscalPointOfSale',
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      fiscalPointOfSaleIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'fiscalPointOfSale',
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      fiscalPointOfSaleEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'fiscalPointOfSale',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      fiscalPointOfSaleGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'fiscalPointOfSale',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      fiscalPointOfSaleLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'fiscalPointOfSale',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      fiscalPointOfSaleBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'fiscalPointOfSale',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      fiscalPointOfSaleStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'fiscalPointOfSale',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      fiscalPointOfSaleEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'fiscalPointOfSale',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      fiscalPointOfSaleContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'fiscalPointOfSale',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      fiscalPointOfSaleMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'fiscalPointOfSale',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      fiscalPointOfSaleIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'fiscalPointOfSale',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      fiscalPointOfSaleIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'fiscalPointOfSale',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
       isDeletedEqualTo(bool value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'isDeleted',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      isFiscalReadyEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'isFiscalReady',
         value: value,
       ));
     });
@@ -1852,6 +2353,142 @@ extension BusinessConfigQueryFilter
   }
 
   QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      nextFiscalNumberEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'nextFiscalNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      nextFiscalNumberGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'nextFiscalNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      nextFiscalNumberLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'nextFiscalNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      nextFiscalNumberBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'nextFiscalNumber',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      nextFiscalNumberStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'nextFiscalNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      nextFiscalNumberEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'nextFiscalNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      nextFiscalNumberContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'nextFiscalNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      nextFiscalNumberMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'nextFiscalNumber',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      nextFiscalNumberIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'nextFiscalNumber',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      nextFiscalNumberIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'nextFiscalNumber',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
       nextReceiptNumberEqualTo(
     String value, {
     bool caseSensitive = true,
@@ -1993,6 +2630,370 @@ extension BusinessConfigQueryFilter
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'openTicketsEnabled',
         value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      pacApiTokenIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'pacApiToken',
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      pacApiTokenIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'pacApiToken',
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      pacApiTokenEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'pacApiToken',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      pacApiTokenGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'pacApiToken',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      pacApiTokenLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'pacApiToken',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      pacApiTokenBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'pacApiToken',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      pacApiTokenStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'pacApiToken',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      pacApiTokenEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'pacApiToken',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      pacApiTokenContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'pacApiToken',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      pacApiTokenMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'pacApiToken',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      pacApiTokenIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'pacApiToken',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      pacApiTokenIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'pacApiToken',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      pacApiUrlIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'pacApiUrl',
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      pacApiUrlIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'pacApiUrl',
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      pacApiUrlEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'pacApiUrl',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      pacApiUrlGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'pacApiUrl',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      pacApiUrlLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'pacApiUrl',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      pacApiUrlBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'pacApiUrl',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      pacApiUrlStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'pacApiUrl',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      pacApiUrlEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'pacApiUrl',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      pacApiUrlContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'pacApiUrl',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      pacApiUrlMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'pacApiUrl',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      pacApiUrlIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'pacApiUrl',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      pacApiUrlIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'pacApiUrl',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      pacProviderEqualTo(PacProviderType value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'pacProvider',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      pacProviderGreaterThan(
+    PacProviderType value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'pacProvider',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      pacProviderLessThan(
+    PacProviderType value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'pacProvider',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      pacProviderBetween(
+    PacProviderType lower,
+    PacProviderType upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'pacProvider',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
       ));
     });
   }
@@ -3432,6 +4433,62 @@ extension BusinessConfigQuerySortBy
     });
   }
 
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
+      sortByFiscalBranchCode() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'fiscalBranchCode', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
+      sortByFiscalBranchCodeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'fiscalBranchCode', Sort.desc);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
+      sortByFiscalInvoicingEnabled() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'fiscalInvoicingEnabled', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
+      sortByFiscalInvoicingEnabledDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'fiscalInvoicingEnabled', Sort.desc);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
+      sortByFiscalNextNumber() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'fiscalNextNumber', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
+      sortByFiscalNextNumberDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'fiscalNextNumber', Sort.desc);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
+      sortByFiscalPointOfSale() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'fiscalPointOfSale', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
+      sortByFiscalPointOfSaleDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'fiscalPointOfSale', Sort.desc);
+    });
+  }
+
   QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy> sortByIsDeleted() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isDeleted', Sort.asc);
@@ -3442,6 +4499,20 @@ extension BusinessConfigQuerySortBy
       sortByIsDeletedDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isDeleted', Sort.desc);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
+      sortByIsFiscalReady() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isFiscalReady', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
+      sortByIsFiscalReadyDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isFiscalReady', Sort.desc);
     });
   }
 
@@ -3513,6 +4584,20 @@ extension BusinessConfigQuerySortBy
   }
 
   QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
+      sortByNextFiscalNumber() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'nextFiscalNumber', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
+      sortByNextFiscalNumberDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'nextFiscalNumber', Sort.desc);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
       sortByNextReceiptNumber() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'nextReceiptNumber', Sort.asc);
@@ -3537,6 +4622,47 @@ extension BusinessConfigQuerySortBy
       sortByOpenTicketsEnabledDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'openTicketsEnabled', Sort.desc);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
+      sortByPacApiToken() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'pacApiToken', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
+      sortByPacApiTokenDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'pacApiToken', Sort.desc);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy> sortByPacApiUrl() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'pacApiUrl', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
+      sortByPacApiUrlDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'pacApiUrl', Sort.desc);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
+      sortByPacProvider() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'pacProvider', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
+      sortByPacProviderDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'pacProvider', Sort.desc);
     });
   }
 
@@ -3851,6 +4977,62 @@ extension BusinessConfigQuerySortThenBy
     });
   }
 
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
+      thenByFiscalBranchCode() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'fiscalBranchCode', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
+      thenByFiscalBranchCodeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'fiscalBranchCode', Sort.desc);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
+      thenByFiscalInvoicingEnabled() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'fiscalInvoicingEnabled', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
+      thenByFiscalInvoicingEnabledDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'fiscalInvoicingEnabled', Sort.desc);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
+      thenByFiscalNextNumber() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'fiscalNextNumber', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
+      thenByFiscalNextNumberDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'fiscalNextNumber', Sort.desc);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
+      thenByFiscalPointOfSale() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'fiscalPointOfSale', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
+      thenByFiscalPointOfSaleDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'fiscalPointOfSale', Sort.desc);
+    });
+  }
+
   QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy> thenByIsDeleted() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isDeleted', Sort.asc);
@@ -3861,6 +5043,20 @@ extension BusinessConfigQuerySortThenBy
       thenByIsDeletedDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isDeleted', Sort.desc);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
+      thenByIsFiscalReady() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isFiscalReady', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
+      thenByIsFiscalReadyDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isFiscalReady', Sort.desc);
     });
   }
 
@@ -3945,6 +5141,20 @@ extension BusinessConfigQuerySortThenBy
   }
 
   QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
+      thenByNextFiscalNumber() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'nextFiscalNumber', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
+      thenByNextFiscalNumberDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'nextFiscalNumber', Sort.desc);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
       thenByNextReceiptNumber() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'nextReceiptNumber', Sort.asc);
@@ -3969,6 +5179,47 @@ extension BusinessConfigQuerySortThenBy
       thenByOpenTicketsEnabledDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'openTicketsEnabled', Sort.desc);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
+      thenByPacApiToken() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'pacApiToken', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
+      thenByPacApiTokenDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'pacApiToken', Sort.desc);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy> thenByPacApiUrl() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'pacApiUrl', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
+      thenByPacApiUrlDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'pacApiUrl', Sort.desc);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
+      thenByPacProvider() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'pacProvider', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
+      thenByPacProviderDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'pacProvider', Sort.desc);
     });
   }
 
@@ -4228,9 +5479,46 @@ extension BusinessConfigQueryWhereDistinct
   }
 
   QueryBuilder<BusinessConfig, BusinessConfig, QDistinct>
+      distinctByFiscalBranchCode({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'fiscalBranchCode',
+          caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QDistinct>
+      distinctByFiscalInvoicingEnabled() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'fiscalInvoicingEnabled');
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QDistinct>
+      distinctByFiscalNextNumber() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'fiscalNextNumber');
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QDistinct>
+      distinctByFiscalPointOfSale({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'fiscalPointOfSale',
+          caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QDistinct>
       distinctByIsDeleted() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'isDeleted');
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QDistinct>
+      distinctByIsFiscalReady() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'isFiscalReady');
     });
   }
 
@@ -4269,6 +5557,14 @@ extension BusinessConfigQueryWhereDistinct
   }
 
   QueryBuilder<BusinessConfig, BusinessConfig, QDistinct>
+      distinctByNextFiscalNumber({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'nextFiscalNumber',
+          caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QDistinct>
       distinctByNextReceiptNumber({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'nextReceiptNumber',
@@ -4280,6 +5576,27 @@ extension BusinessConfigQueryWhereDistinct
       distinctByOpenTicketsEnabled() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'openTicketsEnabled');
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QDistinct> distinctByPacApiToken(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'pacApiToken', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QDistinct> distinctByPacApiUrl(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'pacApiUrl', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QDistinct>
+      distinctByPacProvider() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'pacProvider');
     });
   }
 
@@ -4451,9 +5768,43 @@ extension BusinessConfigQueryProperty
     });
   }
 
+  QueryBuilder<BusinessConfig, String?, QQueryOperations>
+      fiscalBranchCodeProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'fiscalBranchCode');
+    });
+  }
+
+  QueryBuilder<BusinessConfig, bool, QQueryOperations>
+      fiscalInvoicingEnabledProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'fiscalInvoicingEnabled');
+    });
+  }
+
+  QueryBuilder<BusinessConfig, int, QQueryOperations>
+      fiscalNextNumberProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'fiscalNextNumber');
+    });
+  }
+
+  QueryBuilder<BusinessConfig, String?, QQueryOperations>
+      fiscalPointOfSaleProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'fiscalPointOfSale');
+    });
+  }
+
   QueryBuilder<BusinessConfig, bool, QQueryOperations> isDeletedProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'isDeleted');
+    });
+  }
+
+  QueryBuilder<BusinessConfig, bool, QQueryOperations> isFiscalReadyProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'isFiscalReady');
     });
   }
 
@@ -4489,6 +5840,13 @@ extension BusinessConfigQueryProperty
   }
 
   QueryBuilder<BusinessConfig, String, QQueryOperations>
+      nextFiscalNumberProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'nextFiscalNumber');
+    });
+  }
+
+  QueryBuilder<BusinessConfig, String, QQueryOperations>
       nextReceiptNumberProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'nextReceiptNumber');
@@ -4499,6 +5857,26 @@ extension BusinessConfigQueryProperty
       openTicketsEnabledProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'openTicketsEnabled');
+    });
+  }
+
+  QueryBuilder<BusinessConfig, String?, QQueryOperations>
+      pacApiTokenProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'pacApiToken');
+    });
+  }
+
+  QueryBuilder<BusinessConfig, String?, QQueryOperations> pacApiUrlProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'pacApiUrl');
+    });
+  }
+
+  QueryBuilder<BusinessConfig, PacProviderType, QQueryOperations>
+      pacProviderProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'pacProvider');
     });
   }
 

@@ -32,6 +32,7 @@ import 'package:eposone/src/features/products/presentation/screens/modifier_grou
 import 'package:eposone/src/features/settings/presentation/screens/pos_pages_settings_screen.dart';
 import 'package:eposone/src/features/settings/presentation/screens/printer_settings_screen.dart';
 import 'package:eposone/src/features/settings/presentation/screens/settings_screen.dart';
+import 'package:eposone/src/features/fiscal/presentation/screens/fiscal_settings_screen.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -153,6 +154,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/settings/pos-pages/:id/edit',
         builder: (_, state) => PosPageFormScreen(pageId: state.pathParameters['id']),
       ),
+      GoRoute(path: '/settings/fiscal', builder: (_, __) => const FiscalSettingsScreen()),
+      GoRoute(path: '/settings/fiscal/documents', builder: (_, __) => const FiscalDocumentsScreen()),
     ],
   );
 });

@@ -11,6 +11,8 @@ import 'package:eposone/src/features/sales/presentation/providers/sales_provider
 import 'package:eposone/src/features/settings/data/repositories/business_config_repository.dart';
 import 'package:eposone/src/features/pos/data/repositories/open_ticket_repository.dart';
 import 'package:eposone/src/features/pos/presentation/providers/open_ticket_provider.dart';
+import 'package:eposone/src/features/fiscal/data/repositories/fiscal_repository.dart';
+import 'package:eposone/src/features/fiscal/presentation/providers/fiscal_provider.dart';
 
 /// Estado del checkout
 class CheckoutState {
@@ -186,6 +188,20 @@ final completeSaleProvider = Provider<Future<Sale?> Function({List<CartItem>? it
       items: items,
       trackInventory: config.trackInventory,
     );
+
+    if (config.isFiscalReady) {
+      try {
+        await ref.read(fiscalRepositoryProvider).emitInvoiceForSale(
+              sale: saved,
+              items: items,
+              config: config,
+            );
+        ref.invalidate(fiscalDocumentForSaleProvider(saved.localId));
+        ref.invalidate(fiscalDocumentsProvider);
+      } catch (_) {
+        // La venta ya quedó registrada; el comprobante fiscal queda en error para reintento.
+      }
+    }
 
     if (itemsOverride != null) {
       for (final item in itemsToSell) {

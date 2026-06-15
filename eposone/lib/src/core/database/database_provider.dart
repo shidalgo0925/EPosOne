@@ -21,6 +21,7 @@ import 'package:eposone/src/features/pos/domain/entities/open_ticket_line.dart';
 import 'package:eposone/src/features/pos/domain/entities/pos_page.dart';
 import 'package:eposone/src/features/pos/domain/entities/pos_page_item.dart';
 import 'package:eposone/src/features/inventory/domain/entities/stock_adjustment.dart';
+import 'package:eposone/src/features/fiscal/domain/entities/fiscal_document.dart';
 
 part 'database_provider.g.dart';
 
@@ -53,6 +54,7 @@ class Database extends _$Database {
         PosPageSchema,
         PosPageItemSchema,
         StockAdjustmentSchema,
+        FiscalDocumentSchema,
       ],
       directory: dir.path,
       inspector: true,
