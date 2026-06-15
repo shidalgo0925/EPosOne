@@ -4,7 +4,7 @@
 
 **Versión:** 2.1 — **CERRADO (TPV + scaffolding L8–L10)**  
 **Fecha:** 10 de junio de 2026  
-**Base:** `master` @ **`247b99e`** + L9/L10 local (commit de cierre pendiente en esta sesión)  
+**Base:** `master` @ **`895ae1a`** — roadmap L1–L10 cerrado  
 **Documentos relacionados:** [`EPOSONE_vs_LOYVERSE.md`](EPOSONE_vs_LOYVERSE.md) · [`EPOSONE_ARCHITECTURE_REVIEW.md`](EPOSONE_ARCHITECTURE_REVIEW.md)
 
 **Objetivo:** Alcanzar **95–98% de paridad operativa del TPV Loyverse** y superarlo con capacidades propias de Panamá (FE DGI, Yappy nativo, EN1, offline total).
@@ -546,7 +546,7 @@ Al completar **Prioridades 4–5** (L8 + L9):
 | `8431059` | L4 tesorería, L5 hardware, UX POS, descuentos |
 | `26a510d` | L3 modificadores/páginas, L6 propinas, L7 inventario |
 | `247b99e` | L8 FE DGI scaffolding |
-| *(cierre)* | L9 EN1 sync + L10 premium + Master Plan V2.1 |
+| `895ae1a` | L9 EN1 sync + L10 premium + Master Plan V2.1 |
 
 ---
 
