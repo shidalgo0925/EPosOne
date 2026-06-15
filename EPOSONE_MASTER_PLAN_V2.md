@@ -2,12 +2,14 @@
 
 ## Plan maestro de cierre de brechas vs Loyverse
 
-**Versión:** 2.0  
+**Versión:** 2.1 — **CERRADO (TPV + scaffolding L8–L10)**  
 **Fecha:** 10 de junio de 2026  
-**Base:** `master` @ `bfb8d02` + auditoría jun 2026  
+**Base:** `master` @ **`247b99e`** + L9/L10 local (commit de cierre pendiente en esta sesión)  
 **Documentos relacionados:** [`EPOSONE_vs_LOYVERSE.md`](EPOSONE_vs_LOYVERSE.md) · [`EPOSONE_ARCHITECTURE_REVIEW.md`](EPOSONE_ARCHITECTURE_REVIEW.md)
 
 **Objetivo:** Alcanzar **95–98% de paridad operativa del TPV Loyverse** y superarlo con capacidades propias de Panamá (FE DGI, Yappy nativo, EN1, offline total).
+
+> **Estado jun 2026:** Roadmap L1–L10 implementado en app Flutter. L1–L7 operativos; L8–L10 en modo **scaffolding** (stub) pendiente de APIs reales (PAC DGI, EN1 live).
 
 ---
 
@@ -28,23 +30,27 @@
 
 ## 1. Lo que tenemos hoy (inventario verificado)
 
-Commit de referencia: **`bfb8d02`** — L1 + L2 + Open Tickets V1.1 cerrados.
+Commit de referencia: **`247b99e`** — L1–L8 en remoto; **L9 + L10** en commit de cierre.
 
-### 1.1 Tabla de madurez (honesta)
+### 1.1 Tabla de madurez (jun 2026)
 
 | Área | % | Estado | Notas |
 |------|---|--------|-------|
-| **L1 POS core** | 100% | ✅ Cerrado | Tablet 6:4, grid, categorías, búsqueda, fotos, cliente |
-| **L2 Cobro avanzado** | 92% | ✅ Cerrado | Montos rápidos, split al cobrar, métodos PA; sin propina |
-| **L2 Recibos** | 88% | ✅ Cerrado | Master-detail tablet, búsqueda, reembolso; sin print/PDF |
-| **Tickets abiertos** | 90% | ✅ V1.1 | Slots, split/merge, pre-cuenta pantalla, cart guard; sin print pre-cuenta |
-| **Offline-first** | 100% | ✅ | Isar local, `SyncEntity` preparado |
-| **Catálogo base** | 85% | ✅ | CRUD productos/categorías, stock al vender, `minStockAlert` en producto |
-| **Catálogo avanzado (L3)** | 25% | 🔶 | Solo `OrderType`; sin modificadores, descuentos UI, páginas POS |
-| **Turnos / tesorería (L4)** | 30% | 🔶 | Apertura + cierre básico; resumen parcial; sin movimientos ni arqueo visual |
-| **Hardware (L5)** | 0% | ❌ | Stubs impresión/compartir |
-| **Sync EN1 (L9)** | 0% | ❌ | Entidades listas; sin transporte |
-| **FE DGI (L8)** | 0% | 🔮 | Diferenciador estratégico |
+| **L1 POS core** | 100% | ✅ Cerrado | Grid denso, split 70/30, categorías, búsqueda, fotos, cliente |
+| **L2 Cobro avanzado** | 95% | ✅ Cerrado | Split, métodos PA, propina, cupones |
+| **L2 Recibos** | 92% | ✅ Cerrado | PDF, térmica BT, share WhatsApp, print desde historial |
+| **Tickets abiertos** | 90% | ✅ V1.1 | Split/merge, pre-cuenta pantalla; pre-cuenta térmica parcial |
+| **Offline-first** | 100% | ✅ | Isar local, `SyncEntity` en todas las entidades |
+| **L3 Catálogo avanzado** | 90% | ✅ Cerrado | Modificadores, descuentos UI, páginas POS |
+| **L4 Turnos / tesorería** | 85% | ✅ Cerrado | Movimientos, tesorería, arqueo, resumen turno |
+| **L5 Hardware** | 80% | ✅ Cerrado | BT ESC/POS, escáner, cajón, PDF |
+| **L6 Experiencia cliente** | 85% | ✅ Cerrado | Propina, share PDF; firma cliente pendiente |
+| **L7 Inventario** | 75% | ✅ Base | Ajustes, bajo stock, historial; sin transferencias multi-almacén |
+| **L8 FE DGI** | 25% | 🔶 Stub | PAC stub, emisión al cobrar, nota crédito; sin PAC real |
+| **L9 EN1 Cloud** | 30% | 🔶 Stub | Cola offline, push ventas/clientes, pull catálogo demo |
+| **L10 Premium** | 40% | 🔶 Base | Cupones, CRM historial, puntos; gift cards/membresías pendientes |
+
+**Paridad TPV Loyverse estimada:** **~96%** (operación diaria cajero).
 
 ### 1.2 Funcionalidades ya alcanzadas (lista operativa)
 
@@ -89,23 +95,18 @@ Commit de referencia: **`bfb8d02`** — L1 + L2 + Open Tickets V1.1 cerrados.
 - Router GoRouter, tema EasyTech (naranja `#F58220`, navy `#1A3A5C`)
 - APK debug verificado; schema Isar con `PredefinedTicket` (upgrade puede requerir borrar datos app)
 
-### 1.3 Brechas Loyverse aún abiertas (TPV)
+### 1.3 Brechas Loyverse / producción aún abiertas
 
-| Brecha | Fase V2 |
-|--------|---------|
-| Tesorería (entradas/salidas efectivo) | L4.1 |
-| Arqueo visual esperado vs contado | L4.2 |
-| Resumen turno completo (bruto/neto/reembolsos/por método) | L4.3 |
-| Cierre obligatorio integrado al POS | L4.4 |
-| Impresión térmica recibo / pre-cuenta | L5.1 |
-| Escáner barcode | L5.2 |
-| Cajón monedero | L5.3 |
-| Modificadores producto | L3.1 |
-| Descuentos UI | L3.2 |
-| Páginas POS personalizables | L3.3 |
-| Propina | L6.3 |
-| Email / WhatsApp / PDF recibo | L6.1 |
-| Alertas stock push / conteo inventario | L7 |
+| Brecha | Prioridad | Notas |
+|--------|-----------|-------|
+| PAC + certificado DGI (FE real) | Alta | L8 live — legal + API |
+| API EN1 live + sync caja/turnos | Alta | L9 live — backend EasyTech |
+| Dashboard EN1 web | Media | L9.3 — fuera del TPV |
+| Gift cards / membresías | Baja | L10 add-on |
+| Transferencias inventario multi-almacén | Baja | L7 avanzado |
+| Firma cliente en tablet | Baja | L6.2 |
+| Etiquetas barcode / alertas push stock | Baja | L7 retail |
+| Email recibo directo | Baja | Share sheet cubre WhatsApp |
 
 ---
 
@@ -527,13 +528,26 @@ Al completar **Prioridades 4–5** (L8 + L9):
 
 ---
 
-## 17. Próximo paso inmediato
+## 17. Próximo paso (post-cierre roadmap TPV)
 
-1. **Kickoff L4.1** — entidad `CashMovement` + pantalla tesorería
-2. **Quick win L3.0** — UI descuento en `PosTicketPanel` (1 sprint)
-3. **QA regresión** — checklist §8 en tablet T10 antes de release L4
-4. Actualizar `EPOSONE_vs_LOYVERSE.md` al cerrar cada sub-fase
+**Roadmap L1–L10 en app:** ✅ cerrado (jun 2026).
+
+### Producción comercial Panamá
+
+1. **L8 live** — contrato PAC/habilitador DGI + certificado + XML/PDF legal
+2. **L9 live** — API EN1 + sync bidireccional caja/turnos + dashboard web
+3. **QA release** — checklist §8 tablet T10 + release notes schema Isar
+4. **L10 add-ons** — gift cards, membresías, reglas fidelización avanzadas
+
+### Commits de referencia
+
+| Commit | Contenido |
+|--------|-----------|
+| `8431059` | L4 tesorería, L5 hardware, UX POS, descuentos |
+| `26a510d` | L3 modificadores/páginas, L6 propinas, L7 inventario |
+| `247b99e` | L8 FE DGI scaffolding |
+| *(cierre)* | L9 EN1 sync + L10 premium + Master Plan V2.1 |
 
 ---
 
-*Documento vivo — versión 2.0 · EasyTech Services · EPOSOne*
+*Documento vivo — versión 2.1 · EasyTech Services · EPOSOne · **Roadmap TPV cerrado jun 2026***

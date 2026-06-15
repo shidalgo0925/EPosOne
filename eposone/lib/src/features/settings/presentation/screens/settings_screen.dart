@@ -45,6 +45,20 @@ class SettingsScreen extends StatelessWidget {
             trailing: const Icon(Icons.chevron_right),
             onTap: () => context.push('/settings/fiscal'),
           ),
+          ListTile(
+            leading: const Icon(Icons.cloud_sync_outlined),
+            title: const Text('EN1 Cloud'),
+            subtitle: const Text('Sync ventas, clientes, catálogo'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/settings/sync'),
+          ),
+          ListTile(
+            leading: const Icon(Icons.workspace_premium_outlined),
+            title: const Text('Premium'),
+            subtitle: const Text('Cupones, fidelización, CRM'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/settings/premium'),
+          ),
         ],
       ),
     );

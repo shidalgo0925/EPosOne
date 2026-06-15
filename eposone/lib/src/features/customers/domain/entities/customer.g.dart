@@ -67,34 +67,39 @@ const CustomerSchema = CollectionSchema(
       name: r'localId',
       type: IsarType.string,
     ),
-    r'name': PropertySchema(
+    r'loyaltyPoints': PropertySchema(
       id: 10,
+      name: r'loyaltyPoints',
+      type: IsarType.long,
+    ),
+    r'name': PropertySchema(
+      id: 11,
       name: r'name',
       type: IsarType.string,
     ),
     r'notes': PropertySchema(
-      id: 11,
+      id: 12,
       name: r'notes',
       type: IsarType.string,
     ),
     r'phone': PropertySchema(
-      id: 12,
+      id: 13,
       name: r'phone',
       type: IsarType.string,
     ),
     r'serverId': PropertySchema(
-      id: 13,
+      id: 14,
       name: r'serverId',
       type: IsarType.string,
     ),
     r'syncStatus': PropertySchema(
-      id: 14,
+      id: 15,
       name: r'syncStatus',
       type: IsarType.byte,
       enumMap: _CustomersyncStatusEnumValueMap,
     ),
     r'updatedAt': PropertySchema(
-      id: 15,
+      id: 16,
       name: r'updatedAt',
       type: IsarType.dateTime,
     )
@@ -177,12 +182,13 @@ void _customerSerialize(
   writer.writeBool(offsets[7], object.isPendingSync);
   writer.writeBool(offsets[8], object.isSynced);
   writer.writeString(offsets[9], object.localId);
-  writer.writeString(offsets[10], object.name);
-  writer.writeString(offsets[11], object.notes);
-  writer.writeString(offsets[12], object.phone);
-  writer.writeString(offsets[13], object.serverId);
-  writer.writeByte(offsets[14], object.syncStatus.index);
-  writer.writeDateTime(offsets[15], object.updatedAt);
+  writer.writeLong(offsets[10], object.loyaltyPoints);
+  writer.writeString(offsets[11], object.name);
+  writer.writeString(offsets[12], object.notes);
+  writer.writeString(offsets[13], object.phone);
+  writer.writeString(offsets[14], object.serverId);
+  writer.writeByte(offsets[15], object.syncStatus.index);
+  writer.writeDateTime(offsets[16], object.updatedAt);
 }
 
 Customer _customerDeserialize(
@@ -198,14 +204,15 @@ Customer _customerDeserialize(
     document: reader.readStringOrNull(offsets[4]),
     email: reader.readStringOrNull(offsets[5]),
     localId: reader.readString(offsets[9]),
-    name: reader.readString(offsets[10]),
-    notes: reader.readStringOrNull(offsets[11]),
-    phone: reader.readStringOrNull(offsets[12]),
-    serverId: reader.readStringOrNull(offsets[13]),
+    loyaltyPoints: reader.readLongOrNull(offsets[10]) ?? 0,
+    name: reader.readString(offsets[11]),
+    notes: reader.readStringOrNull(offsets[12]),
+    phone: reader.readStringOrNull(offsets[13]),
+    serverId: reader.readStringOrNull(offsets[14]),
     syncStatus:
-        _CustomersyncStatusValueEnumMap[reader.readByteOrNull(offsets[14])] ??
+        _CustomersyncStatusValueEnumMap[reader.readByteOrNull(offsets[15])] ??
             SyncStatus.pending,
-    updatedAt: reader.readDateTime(offsets[15]),
+    updatedAt: reader.readDateTime(offsets[16]),
   );
   return object;
 }
@@ -238,17 +245,19 @@ P _customerDeserializeProp<P>(
     case 9:
       return (reader.readString(offset)) as P;
     case 10:
-      return (reader.readString(offset)) as P;
+      return (reader.readLongOrNull(offset) ?? 0) as P;
     case 11:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 12:
       return (reader.readStringOrNull(offset)) as P;
     case 13:
       return (reader.readStringOrNull(offset)) as P;
     case 14:
+      return (reader.readStringOrNull(offset)) as P;
+    case 15:
       return (_CustomersyncStatusValueEnumMap[reader.readByteOrNull(offset)] ??
           SyncStatus.pending) as P;
-    case 15:
+    case 16:
       return (reader.readDateTime(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -1262,6 +1271,60 @@ extension CustomerQueryFilter
     });
   }
 
+  QueryBuilder<Customer, Customer, QAfterFilterCondition> loyaltyPointsEqualTo(
+      int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'loyaltyPoints',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Customer, Customer, QAfterFilterCondition>
+      loyaltyPointsGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'loyaltyPoints',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Customer, Customer, QAfterFilterCondition> loyaltyPointsLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'loyaltyPoints',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Customer, Customer, QAfterFilterCondition> loyaltyPointsBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'loyaltyPoints',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
   QueryBuilder<Customer, Customer, QAfterFilterCondition> nameEqualTo(
     String value, {
     bool caseSensitive = true,
@@ -2064,6 +2127,18 @@ extension CustomerQuerySortBy on QueryBuilder<Customer, Customer, QSortBy> {
     });
   }
 
+  QueryBuilder<Customer, Customer, QAfterSortBy> sortByLoyaltyPoints() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'loyaltyPoints', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Customer, Customer, QAfterSortBy> sortByLoyaltyPointsDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'loyaltyPoints', Sort.desc);
+    });
+  }
+
   QueryBuilder<Customer, Customer, QAfterSortBy> sortByName() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'name', Sort.asc);
@@ -2271,6 +2346,18 @@ extension CustomerQuerySortThenBy
     });
   }
 
+  QueryBuilder<Customer, Customer, QAfterSortBy> thenByLoyaltyPoints() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'loyaltyPoints', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Customer, Customer, QAfterSortBy> thenByLoyaltyPointsDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'loyaltyPoints', Sort.desc);
+    });
+  }
+
   QueryBuilder<Customer, Customer, QAfterSortBy> thenByName() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'name', Sort.asc);
@@ -2411,6 +2498,12 @@ extension CustomerQueryWhereDistinct
     });
   }
 
+  QueryBuilder<Customer, Customer, QDistinct> distinctByLoyaltyPoints() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'loyaltyPoints');
+    });
+  }
+
   QueryBuilder<Customer, Customer, QDistinct> distinctByName(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -2517,6 +2610,12 @@ extension CustomerQueryProperty
   QueryBuilder<Customer, String, QQueryOperations> localIdProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'localId');
+    });
+  }
+
+  QueryBuilder<Customer, int, QQueryOperations> loyaltyPointsProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'loyaltyPoints');
     });
   }
 

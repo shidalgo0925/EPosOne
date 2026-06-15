@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:eposone/src/core/providers/business_config_provider.dart';
 import 'package:eposone/src/features/customers/domain/entities/customer.dart';
 import 'package:eposone/src/features/customers/presentation/providers/customer_provider.dart';
+import 'package:eposone/src/features/sync/data/repositories/sync_repository.dart';
+import 'package:eposone/src/features/sync/domain/entities/sync_entity_kind.dart';
+import 'package:eposone/src/features/sync/presentation/providers/sync_provider.dart';
 
 class CustomerFormScreen extends ConsumerStatefulWidget {
   final String? customerId;
@@ -204,6 +208,15 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen> {
       }
 
       await ref.read(customerNotifierProvider.notifier).saveCustomer(customer);
+
+      final config = ref.read(businessConfigProvider);
+      if (config?.isEn1SyncReady == true) {
+        try {
+          await ref.read(syncRepositoryProvider).enqueuePush(SyncEntityKind.customer, customer.localId);
+          ref.invalidate(syncPendingCountProvider);
+          ref.read(runSyncCycleProvider)();
+        } catch (_) {}
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

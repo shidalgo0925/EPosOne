@@ -21,6 +21,7 @@ import 'package:eposone/src/features/pos/presentation/widgets/modifier_picker_sh
 import 'package:eposone/src/features/pos/presentation/providers/pos_page_provider.dart';
 import 'package:eposone/src/features/pos/domain/entities/pos_page.dart';
 import 'package:eposone/src/features/inventory/presentation/providers/inventory_provider.dart';
+import 'package:eposone/src/features/sync/presentation/providers/sync_provider.dart';
 import 'package:eposone/src/core/theme/eposone_theme.dart';
 
 class PosScreen extends ConsumerStatefulWidget {
@@ -186,6 +187,16 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                     context.push('/settings');
                   },
                 ),
+                if (ref.read(businessConfigProvider)?.isEn1SyncReady == true)
+                  ListTile(
+                    leading: const Icon(Icons.cloud_sync_outlined),
+                    title: const Text('EN1 Cloud'),
+                    subtitle: const Text('Sincronización pendiente'),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      context.push('/settings/sync');
+                    },
+                  ),
                 if (session?.role == CashierRole.admin)
                   ListTile(
                     leading: const Icon(Icons.dashboard),
@@ -226,6 +237,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
     final config = ref.watch(businessConfigProvider);
     final symbol = config?.currencySymbol ?? 'B/.';
     final trackInventory = config?.trackInventory ?? false;
+    final en1SyncReady = config?.isEn1SyncReady ?? false;
     final productsAsync = _searchQuery.isEmpty
         ? ref.watch(productsListProvider)
         : ref.watch(productsSearchProvider(_searchQuery));
@@ -361,6 +373,43 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                                 ),
                               ),
                               const Text('Ver', style: TextStyle(fontSize: 11, color: EposBrand.orange, fontWeight: FontWeight.w600)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                  loading: () => const SizedBox.shrink(),
+                  error: (_, __) => const SizedBox.shrink(),
+                );
+              },
+            ),
+          if (en1SyncReady)
+            Consumer(
+              builder: (context, ref, _) {
+                final pendingAsync = ref.watch(syncPendingCountProvider);
+                return pendingAsync.when(
+                  data: (count) {
+                    if (count <= 0) return const SizedBox.shrink();
+                    return Material(
+                      color: EposBrand.navy.withValues(alpha: 0.08),
+                      child: InkWell(
+                        onTap: () => context.push('/settings/sync'),
+                        child: Container(
+                          height: 26,
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          child: Row(
+                            children: [
+                              Icon(Icons.cloud_upload_outlined, size: 14, color: EposBrand.navy.withValues(alpha: 0.85)),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  '$count pendiente${count == 1 ? '' : 's'} de sync EN1',
+                                  style: const TextStyle(fontSize: 11, color: EposBrand.navy),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              const Text('Sync', style: TextStyle(fontSize: 11, color: EposBrand.orange, fontWeight: FontWeight.w600)),
                             ],
                           ),
                         ),

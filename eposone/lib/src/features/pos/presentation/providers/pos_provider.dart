@@ -13,6 +13,11 @@ import 'package:eposone/src/features/pos/data/repositories/open_ticket_repositor
 import 'package:eposone/src/features/pos/presentation/providers/open_ticket_provider.dart';
 import 'package:eposone/src/features/fiscal/data/repositories/fiscal_repository.dart';
 import 'package:eposone/src/features/fiscal/presentation/providers/fiscal_provider.dart';
+import 'package:eposone/src/features/sync/data/repositories/sync_repository.dart';
+import 'package:eposone/src/features/sync/domain/entities/sync_entity_kind.dart';
+import 'package:eposone/src/features/sync/presentation/providers/sync_provider.dart';
+import 'package:eposone/src/features/customers/data/repositories/customer_repository.dart';
+import 'package:eposone/src/features/premium/data/repositories/coupon_repository.dart';
 
 /// Estado del checkout
 class CheckoutState {
@@ -70,7 +75,7 @@ class SaleTotals {
 
 SaleTotals calculateSaleTotals(CartState cart, {required double taxRate, required bool taxIncluded}) {
   final subtotal = cart.subtotal;
-  final discount = cart.totalDiscount + cart.discountGlobal;
+  final discount = cart.totalDiscount + cart.discountGlobal + cart.couponDiscount;
   final taxable = (subtotal - discount).clamp(0, double.infinity);
   final taxAmount = taxIncluded ? 0.0 : taxable * (taxRate / 100);
   final total = taxable + taxAmount;
@@ -166,6 +171,8 @@ final completeSaleProvider = Provider<Future<Sale?> Function({List<CartItem>? it
       cashRegisterId: session.cashRegisterId,
       orderType: cart.orderType,
       openTicketLabel: openTicketLabel,
+      couponCode: cart.appliedCouponCode,
+      couponDiscount: cart.couponDiscount,
     );
 
     final items = itemsToSell
@@ -201,6 +208,36 @@ final completeSaleProvider = Provider<Future<Sale?> Function({List<CartItem>? it
       } catch (_) {
         // La venta ya quedó registrada; el comprobante fiscal queda en error para reintento.
       }
+    }
+
+    if (config.isEn1SyncReady) {
+      try {
+        await ref.read(syncRepositoryProvider).enqueuePush(SyncEntityKind.sale, saved.localId);
+        ref.invalidate(syncPendingCountProvider);
+        ref.read(runSyncCycleProvider)();
+      } catch (_) {}
+    }
+
+    if (cart.appliedCouponId != null) {
+      try {
+        await ref.read(couponRepositoryProvider).recordUse(cart.appliedCouponId!);
+      } catch (_) {}
+    }
+
+    final customerId = checkout.customerId ?? cart.customerId;
+    if (config.loyaltyEnabled && customerId != null) {
+      try {
+        final customerRepo = ref.read(customerRepositoryProvider);
+        final customer = await customerRepo.getCustomerById(customerId);
+        if (customer != null) {
+          final points = (saleTotal * config.loyaltyPointsPerUnit).floor();
+          if (points > 0) {
+            await customerRepo.saveCustomer(
+              customer.copyWith(loyaltyPoints: customer.loyaltyPoints + points).markAsModified(),
+            );
+          }
+        }
+      } catch (_) {}
     }
 
     if (itemsOverride != null) {

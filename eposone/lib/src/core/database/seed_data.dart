@@ -7,6 +7,7 @@ import 'package:eposone/src/features/products/domain/entities/product_modifier_l
 import 'package:eposone/src/features/pos/domain/entities/pos_page.dart';
 import 'package:eposone/src/features/pos/domain/entities/pos_page_item.dart';
 import 'package:eposone/src/features/customers/domain/entities/customer.dart';
+import 'package:eposone/src/features/premium/domain/entities/coupon.dart';
 
 /// Datos demo de productos (después del onboarding o para pruebas).
 Future<void> seedDemoProducts(Isar isar) async {
@@ -84,6 +85,18 @@ Future<void> seedDemoProducts(Isar isar) async {
     final customers = await isar.customers.where().findAll();
     if (customers.isEmpty) {
       await isar.customers.put(Customer.create(name: 'Cliente Ocasional', phone: '', document: ''));
+    }
+
+    final coupons = await isar.coupons.where().findAll();
+    if (coupons.isEmpty) {
+      await isar.coupons.put(
+        Coupon.create(
+          code: 'WELCOME10',
+          description: '10% de bienvenida',
+          discountType: CouponDiscountType.percent,
+          value: 10,
+        ),
+      );
     }
   });
 }

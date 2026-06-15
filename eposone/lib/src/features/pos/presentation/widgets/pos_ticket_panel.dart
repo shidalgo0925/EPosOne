@@ -12,6 +12,7 @@ import 'package:eposone/src/features/pos/presentation/providers/open_ticket_prov
 import 'package:eposone/src/features/pos/presentation/providers/pos_provider.dart';
 import 'package:eposone/src/features/pos/presentation/widgets/customer_picker_tile.dart';
 import 'package:eposone/src/features/pos/presentation/widgets/open_tickets_sheet.dart';
+import 'package:eposone/src/features/premium/data/repositories/coupon_repository.dart';
 
 class PosTicketPanel extends ConsumerWidget {
   final bool expanded;
@@ -78,6 +79,8 @@ class PosTicketPanel extends ConsumerWidget {
                           ref.read(cartProvider.notifier).clear();
                         case 'descuento':
                           await _showDiscountDialog(context, ref, cart.discountPercent);
+                        case 'cupon':
+                          await _showCouponDialog(context, ref, cart);
                         case 'guardar':
                           await _saveTicket(context, ref);
                         case 'dividir':
@@ -88,6 +91,7 @@ class PosTicketPanel extends ConsumerWidget {
                       if (cart.items.isNotEmpty) ...[
                         const PopupMenuItem(value: 'precuenta', child: Text('Pre-cuenta')),
                         const PopupMenuItem(value: 'descuento', child: Text('Descuento ticket')),
+                        const PopupMenuItem(value: 'cupon', child: Text('Cupón promocional')),
                         if (openTicketsOn)
                           const PopupMenuItem(value: 'guardar', child: Text('Guardar ticket')),
                         if (cart.items.length > 1)
@@ -140,14 +144,24 @@ class PosTicketPanel extends ConsumerWidget {
               children: [
                 if (cart.items.isNotEmpty) ...[
                   _TotalRow(label: 'Subtotal', value: '$symbol${totals.subtotal.toStringAsFixed(2)}'),
+                  if (cart.totalDiscount > 0)
+                    _TotalRow(
+                      label: 'Desc. líneas',
+                      value: '-$symbol${cart.totalDiscount.toStringAsFixed(2)}',
+                      valueColor: Colors.red.shade400,
+                    ),
                   if (cart.discountPercent != null && cart.discountPercent! > 0)
                     _TotalRow(
                       label: 'Desc. (${cart.discountPercent!.toStringAsFixed(0)}%)',
-                      value: '-$symbol${totals.discount.toStringAsFixed(2)}',
+                      value: '-$symbol${cart.discountGlobal.toStringAsFixed(2)}',
                       valueColor: Colors.red.shade400,
-                    )
-                  else if (totals.discount > 0)
-                    _TotalRow(label: 'Descuento', value: '-$symbol${totals.discount.toStringAsFixed(2)}', valueColor: Colors.red.shade400),
+                    ),
+                  if (cart.appliedCouponCode != null && cart.couponDiscount > 0)
+                    _TotalRow(
+                      label: 'Cupón ${cart.appliedCouponCode}',
+                      value: '-$symbol${cart.couponDiscount.toStringAsFixed(2)}',
+                      valueColor: Colors.red.shade400,
+                    ),
                   if (totals.taxAmount > 0)
                     _TotalRow(label: taxLabel, value: '$symbol${totals.taxAmount.toStringAsFixed(2)}'),
                   _TotalRow(
@@ -288,6 +302,60 @@ class PosTicketPanel extends ConsumerWidget {
       notifier.clearGlobalDiscount();
     } else if (result.percent != null) {
       notifier.setGlobalDiscount(result.percent!);
+    }
+  }
+
+  Future<void> _showCouponDialog(BuildContext context, WidgetRef ref, CartState cart) async {
+    final codeCtrl = TextEditingController(text: cart.appliedCouponCode ?? '');
+
+    final action = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Cupón promocional'),
+        content: TextField(
+          controller: codeCtrl,
+          textCapitalization: TextCapitalization.characters,
+          decoration: const InputDecoration(
+            labelText: 'Código',
+            border: OutlineInputBorder(),
+            hintText: 'WELCOME10',
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          if (cart.appliedCouponCode != null)
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, 'remove'),
+              child: const Text('Quitar'),
+            ),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, 'apply'),
+            child: const Text('Aplicar'),
+          ),
+        ],
+      ),
+    );
+
+    final notifier = ref.read(cartProvider.notifier);
+    if (action == 'remove') {
+      notifier.clearCoupon();
+      return;
+    }
+    if (action != 'apply') return;
+
+    try {
+      final subtotalBase = cart.subtotal - cart.totalDiscount - cart.discountGlobal;
+      final coupon = await ref.read(couponRepositoryProvider).validateForCart(
+            code: codeCtrl.text,
+            subtotalAfterLineDiscounts: subtotalBase.clamp(0, double.infinity),
+          );
+      final discount = coupon.calculateDiscount(subtotalBase.clamp(0, double.infinity));
+      notifier.applyCoupon(couponId: coupon.localId, code: coupon.code, discountAmount: discount);
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e'), backgroundColor: Colors.red));
+      }
     }
   }
 }

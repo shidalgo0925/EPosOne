@@ -119,4 +119,21 @@ class SaleRepository {
     }
     return query.sortBySaleDateDesc().findAll();
   }
+
+  Future<List<Sale>> getSalesByCustomerId(String customerId, {int limit = 50}) async {
+    final sales = await _isar.sales
+        .filter()
+        .customerIdEqualTo(customerId)
+        .isDeletedEqualTo(false)
+        .sortBySaleDateDesc()
+        .findAll();
+    return sales.take(limit).toList();
+  }
+
+  Future<double> getCustomerLifetimeTotal(String customerId) async {
+    final sales = await getSalesByCustomerId(customerId, limit: 10000);
+    return sales
+        .where((s) => s.status == SaleStatus.completed)
+        .fold<double>(0, (sum, s) => sum + s.total);
+  }
 }

@@ -33,6 +33,8 @@ class Sale extends SyncEntity {
   @enumerated
   final OrderType orderType;
   final String? openTicketLabel;
+  final String? couponCode;
+  final double couponDiscount;
 
   const Sale({
     required super.localId,
@@ -59,6 +61,8 @@ class Sale extends SyncEntity {
     this.cashRegisterId,
     this.orderType = OrderType.generic,
     this.openTicketLabel,
+    this.couponCode,
+    this.couponDiscount = 0,
   });
 
   @override
@@ -95,6 +99,8 @@ class Sale extends SyncEntity {
     String? cashRegisterId,
     OrderType? orderType,
     String? openTicketLabel,
+    String? couponCode,
+    double? couponDiscount,
   }) =>
       Sale(
         localId: localId ?? this.localId,
@@ -121,6 +127,8 @@ class Sale extends SyncEntity {
         cashRegisterId: cashRegisterId ?? this.cashRegisterId,
         orderType: orderType ?? this.orderType,
         openTicketLabel: openTicketLabel ?? this.openTicketLabel,
+        couponCode: couponCode ?? this.couponCode,
+        couponDiscount: couponDiscount ?? this.couponDiscount,
       );
 
   factory Sale.create({
@@ -140,6 +148,8 @@ class Sale extends SyncEntity {
     String? cashRegisterId,
     OrderType orderType = OrderType.generic,
     String? openTicketLabel,
+    String? couponCode,
+    double couponDiscount = 0,
   }) =>
       Sale(
         localId: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -160,6 +170,8 @@ class Sale extends SyncEntity {
         cashRegisterId: cashRegisterId,
         orderType: orderType,
         openTicketLabel: openTicketLabel,
+        couponCode: couponCode,
+        couponDiscount: couponDiscount,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );

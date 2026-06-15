@@ -68,6 +68,9 @@ class CartState {
   final double? discountPercent;
   final String? openTicketId;
   final OrderType orderType;
+  final String? appliedCouponId;
+  final String? appliedCouponCode;
+  final double couponDiscount;
 
   const CartState({
     this.items = const [],
@@ -75,12 +78,16 @@ class CartState {
     this.discountPercent,
     this.openTicketId,
     this.orderType = OrderType.generic,
+    this.appliedCouponId,
+    this.appliedCouponCode,
+    this.couponDiscount = 0,
   });
 
   double get subtotal => items.fold(0, (sum, i) => sum + i.subtotal);
   double get totalDiscount => items.fold(0, (sum, i) => sum + i.discount);
   double get discountGlobal => discountPercent != null ? subtotal * (discountPercent! / 100) : 0;
-  double get total => (subtotal - totalDiscount - discountGlobal).clamp(0, double.infinity);
+  double get total =>
+      (subtotal - totalDiscount - discountGlobal - couponDiscount).clamp(0, double.infinity);
   int get itemCount => items.length;
   int get totalQuantity => items.fold(0, (sum, i) => sum + i.quantity.toInt());
 
@@ -93,6 +100,10 @@ class CartState {
     String? openTicketId,
     bool clearOpenTicket = false,
     OrderType? orderType,
+    String? appliedCouponId,
+    String? appliedCouponCode,
+    bool clearCoupon = false,
+    double? couponDiscount,
   }) =>
       CartState(
         items: items ?? this.items,
@@ -100,6 +111,9 @@ class CartState {
         discountPercent: clearDiscountPercent ? null : (discountPercent ?? this.discountPercent),
         openTicketId: clearOpenTicket ? null : (openTicketId ?? this.openTicketId),
         orderType: orderType ?? this.orderType,
+        appliedCouponId: clearCoupon ? null : (appliedCouponId ?? this.appliedCouponId),
+        appliedCouponCode: clearCoupon ? null : (appliedCouponCode ?? this.appliedCouponCode),
+        couponDiscount: clearCoupon ? 0 : (couponDiscount ?? this.couponDiscount),
       );
 }
 
@@ -200,6 +214,18 @@ class CartNotifier extends StateNotifier<CartState> {
 
   void clearGlobalDiscount() {
     state = state.copyWith(clearDiscountPercent: true);
+  }
+
+  void applyCoupon({required String couponId, required String code, required double discountAmount}) {
+    state = state.copyWith(
+      appliedCouponId: couponId,
+      appliedCouponCode: code,
+      couponDiscount: discountAmount,
+    );
+  }
+
+  void clearCoupon() {
+    state = state.copyWith(clearCoupon: true);
   }
 
   void setOpenTicketId(String? id) {

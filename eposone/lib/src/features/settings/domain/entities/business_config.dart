@@ -2,6 +2,7 @@ import 'package:isar/isar.dart';
 import 'package:eposone/src/core/entities/sync_entity.dart';
 import 'package:eposone/src/features/pos/domain/entities/order_type.dart';
 import 'package:eposone/src/features/fiscal/domain/entities/pac_provider_type.dart';
+import 'package:eposone/src/features/sync/domain/entities/en1_sync_mode.dart';
 
 part 'business_config.g.dart';
 
@@ -39,6 +40,15 @@ class BusinessConfig extends SyncEntity {
   final String? fiscalBranchCode;
   final String? fiscalPointOfSale;
   final int fiscalNextNumber;
+  final bool en1SyncEnabled;
+  @enumerated
+  final En1SyncMode en1SyncMode;
+  final String? en1ApiUrl;
+  final String? en1ApiToken;
+  final String? en1BranchId;
+  final DateTime? en1LastSyncAt;
+  final bool loyaltyEnabled;
+  final double loyaltyPointsPerUnit;
 
   const BusinessConfig({
     required super.localId,
@@ -75,6 +85,14 @@ class BusinessConfig extends SyncEntity {
     this.fiscalBranchCode,
     this.fiscalPointOfSale,
     this.fiscalNextNumber = 1,
+    this.en1SyncEnabled = false,
+    this.en1SyncMode = En1SyncMode.none,
+    this.en1ApiUrl,
+    this.en1ApiToken,
+    this.en1BranchId,
+    this.en1LastSyncAt,
+    this.loyaltyEnabled = false,
+    this.loyaltyPointsPerUnit = 1,
   });
 
   String get nextReceiptNumber => '$receiptPrefix-${receiptNextNumber.toString().padLeft(6, '0')}';
@@ -93,6 +111,14 @@ class BusinessConfig extends SyncEntity {
       ruc!.trim().isNotEmpty &&
       fiscalBranchCode != null &&
       fiscalPointOfSale != null;
+
+  bool get isEn1SyncReady =>
+      en1SyncEnabled &&
+      en1SyncMode != En1SyncMode.none &&
+      en1BranchId != null &&
+      en1BranchId!.trim().isNotEmpty &&
+      (en1SyncMode == En1SyncMode.stub ||
+          (en1ApiUrl != null && en1ApiUrl!.trim().isNotEmpty));
 
   @override
   BusinessConfig markAsModified() => copyWith(syncStatus: SyncStatus.modified, updatedAt: DateTime.now());
@@ -138,6 +164,14 @@ class BusinessConfig extends SyncEntity {
     String? fiscalBranchCode,
     String? fiscalPointOfSale,
     int? fiscalNextNumber,
+    bool? en1SyncEnabled,
+    En1SyncMode? en1SyncMode,
+    String? en1ApiUrl,
+    String? en1ApiToken,
+    String? en1BranchId,
+    DateTime? en1LastSyncAt,
+    bool? loyaltyEnabled,
+    double? loyaltyPointsPerUnit,
   }) =>
       BusinessConfig(
         localId: localId ?? this.localId,
@@ -174,6 +208,14 @@ class BusinessConfig extends SyncEntity {
         fiscalBranchCode: fiscalBranchCode ?? this.fiscalBranchCode,
         fiscalPointOfSale: fiscalPointOfSale ?? this.fiscalPointOfSale,
         fiscalNextNumber: fiscalNextNumber ?? this.fiscalNextNumber,
+        en1SyncEnabled: en1SyncEnabled ?? this.en1SyncEnabled,
+        en1SyncMode: en1SyncMode ?? this.en1SyncMode,
+        en1ApiUrl: en1ApiUrl ?? this.en1ApiUrl,
+        en1ApiToken: en1ApiToken ?? this.en1ApiToken,
+        en1BranchId: en1BranchId ?? this.en1BranchId,
+        en1LastSyncAt: en1LastSyncAt ?? this.en1LastSyncAt,
+        loyaltyEnabled: loyaltyEnabled ?? this.loyaltyEnabled,
+        loyaltyPointsPerUnit: loyaltyPointsPerUnit ?? this.loyaltyPointsPerUnit,
       );
 
   factory BusinessConfig.defaultConfig() => BusinessConfig(

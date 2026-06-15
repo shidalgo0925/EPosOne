@@ -33,6 +33,10 @@ import 'package:eposone/src/features/settings/presentation/screens/pos_pages_set
 import 'package:eposone/src/features/settings/presentation/screens/printer_settings_screen.dart';
 import 'package:eposone/src/features/settings/presentation/screens/settings_screen.dart';
 import 'package:eposone/src/features/fiscal/presentation/screens/fiscal_settings_screen.dart';
+import 'package:eposone/src/features/sync/presentation/screens/sync_settings_screen.dart';
+import 'package:eposone/src/features/premium/presentation/screens/premium_settings_screen.dart';
+import 'package:eposone/src/features/premium/presentation/screens/coupons_settings_screen.dart';
+import 'package:eposone/src/features/customers/presentation/screens/customer_detail_screen.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -108,6 +112,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/customers', builder: (_, __) => const CustomerListScreen()),
       GoRoute(path: '/customers/new', builder: (_, __) => const CustomerFormScreen()),
       GoRoute(
+        path: '/customers/:id',
+        builder: (_, state) => CustomerDetailScreen(customerId: state.pathParameters['id']!),
+      ),
+      GoRoute(
         path: '/customers/:id/edit',
         builder: (_, state) => CustomerFormScreen(customerId: state.pathParameters['id']),
       ),
@@ -156,6 +164,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(path: '/settings/fiscal', builder: (_, __) => const FiscalSettingsScreen()),
       GoRoute(path: '/settings/fiscal/documents', builder: (_, __) => const FiscalDocumentsScreen()),
+      GoRoute(path: '/settings/sync', builder: (_, __) => const SyncSettingsScreen()),
+      GoRoute(path: '/settings/sync/history', builder: (_, __) => const SyncHistoryScreen()),
+      GoRoute(path: '/settings/premium', builder: (_, __) => const PremiumSettingsScreen()),
+      GoRoute(path: '/settings/premium/coupons', builder: (_, __) => const CouponsSettingsScreen()),
     ],
   );
 });

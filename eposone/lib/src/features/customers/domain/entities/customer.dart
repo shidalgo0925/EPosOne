@@ -13,6 +13,7 @@ class Customer extends SyncEntity {
   final String? document; // cédula, RUC, etc.
   final String? address;
   final String? notes;
+  final int loyaltyPoints;
 
   const Customer({
     required super.localId,
@@ -27,6 +28,7 @@ class Customer extends SyncEntity {
     this.document,
     this.address,
     this.notes,
+    this.loyaltyPoints = 0,
   });
 
   @override
@@ -51,6 +53,7 @@ class Customer extends SyncEntity {
     String? document,
     String? address,
     String? notes,
+    int? loyaltyPoints,
   }) =>
       Customer(
         localId: localId ?? this.localId,
@@ -65,6 +68,7 @@ class Customer extends SyncEntity {
         document: document ?? this.document,
         address: address ?? this.address,
         notes: notes ?? this.notes,
+        loyaltyPoints: loyaltyPoints ?? this.loyaltyPoints,
       );
 
   factory Customer.create({

@@ -92,7 +92,7 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
               final customer = customers[index];
               return _CustomerCard(
                 customer: customer,
-                onTap: () => context.push('/customers/${customer.localId}/edit'),
+                onTap: () => context.push('/customers/${customer.localId}'),
                 onDelete: () => _confirmDelete(context, customer),
               );
             },
