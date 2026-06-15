@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:eposone/src/core/providers/business_config_provider.dart';
+import 'package:eposone/src/core/printing/receipt_document_service.dart';
 import 'package:eposone/src/core/utils/view_insets.dart';
 import 'package:eposone/src/features/pos/presentation/providers/pos_provider.dart';
 import 'package:eposone/src/features/sales/domain/entities/sale.dart';
@@ -142,11 +143,13 @@ class ReceiptScreen extends ConsumerWidget {
                       children: [
                         Expanded(
                           child: OutlinedButton.icon(
-                            onPressed: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Impresión: próximamente')),
-                              );
-                            },
+                            onPressed: () => ReceiptDocumentService.printSale(
+                              context: context,
+                              config: config,
+                              sale: sale,
+                              items: items,
+                              symbol: symbol,
+                            ),
                             icon: const Icon(Icons.print),
                             label: const Text('Imprimir'),
                           ),
@@ -154,11 +157,12 @@ class ReceiptScreen extends ConsumerWidget {
                         const SizedBox(width: 8),
                         Expanded(
                           child: OutlinedButton.icon(
-                            onPressed: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Compartir: próximamente')),
-                              );
-                            },
+                            onPressed: () => ReceiptDocumentService.shareSalePdf(
+                              sale: sale,
+                              config: config,
+                              items: items,
+                              symbol: symbol,
+                            ),
                             icon: const Icon(Icons.share),
                             label: const Text('Compartir'),
                           ),

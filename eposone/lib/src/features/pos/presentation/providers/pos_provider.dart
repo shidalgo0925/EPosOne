@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:eposone/src/core/printing/thermal_printer_service.dart';
 import 'package:eposone/src/core/providers/business_config_provider.dart';
 import 'package:eposone/src/core/session/pos_session.dart';
 import 'package:eposone/src/features/pos/presentation/providers/cart_provider.dart';
@@ -197,6 +198,10 @@ final completeSaleProvider = Provider<Future<Sale?> Function({List<CartItem>? it
     ref.read(posSessionProvider.notifier).touch();
     ref.invalidate(salesHistoryProvider);
     ref.invalidate(productsListProvider);
+
+    if (checkout.paymentMethod == PaymentMethod.cash) {
+      ThermalPrinterService.openDrawerIfConfigured(isCashPayment: true);
+    }
 
     return saved;
   };

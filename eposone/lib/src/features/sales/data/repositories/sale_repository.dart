@@ -111,4 +111,12 @@ class SaleRepository {
         .statusEqualTo(SaleStatus.completed)
         .count();
   }
+
+  Future<List<Sale>> getSalesForCashRegister(String cashRegisterId, {SaleStatus? status}) async {
+    var query = _isar.sales.filter().cashRegisterIdEqualTo(cashRegisterId).isDeletedEqualTo(false);
+    if (status != null) {
+      query = query.statusEqualTo(status);
+    }
+    return query.sortBySaleDateDesc().findAll();
+  }
 }

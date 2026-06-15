@@ -6,7 +6,9 @@ import 'package:eposone/src/features/customers/presentation/providers/customer_p
 import 'package:eposone/src/features/pos/presentation/providers/cart_provider.dart';
 
 class CustomerPickerTile extends ConsumerWidget {
-  const CustomerPickerTile({super.key});
+  final bool compact;
+
+  const CustomerPickerTile({super.key, this.compact = false});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -25,22 +27,22 @@ class CustomerPickerTile extends ConsumerWidget {
       onTap: () => _pickCustomer(context, ref),
       borderRadius: BorderRadius.circular(8),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        padding: EdgeInsets.symmetric(horizontal: compact ? 8 : 10, vertical: compact ? 5 : 8),
         decoration: BoxDecoration(
           color: EposBrand.background,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(compact ? 6 : 8),
           border: Border.all(color: EposBrand.divider),
         ),
         child: Row(
           children: [
-            Icon(Icons.person_outline, size: 18, color: EposBrand.navy.withValues(alpha: 0.7)),
-            const SizedBox(width: 8),
+            Icon(Icons.person_outline, size: compact ? 15 : 18, color: EposBrand.navy.withValues(alpha: 0.7)),
+            SizedBox(width: compact ? 6 : 8),
             Expanded(
               child: Text(
                 label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+                style: TextStyle(fontSize: compact ? 11 : 13, fontWeight: FontWeight.w500),
               ),
             ),
             if (cart.customerId != null)

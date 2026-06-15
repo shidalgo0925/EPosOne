@@ -36,6 +36,12 @@ final productByIdProvider = FutureProvider.family<Product?, String>((ref, localI
   return repo.getProductById(localId);
 });
 
+/// Provider de producto por código de barras (L5.2).
+final productByBarcodeProvider = FutureProvider.family<Product?, String>((ref, barcode) async {
+  final repo = ref.watch(productRepositoryProvider);
+  return repo.getProductByBarcode(barcode.trim());
+});
+
 /// Provider de categorías
 final categoriesListProvider = FutureProvider<List<Category>>((ref) async {
   final repo = ref.watch(productRepositoryProvider);

@@ -7,10 +7,13 @@ import 'package:eposone/src/features/auth/presentation/screens/onboarding_screen
 import 'package:eposone/src/features/auth/presentation/screens/pin_screen.dart';
 import 'package:eposone/src/features/auth/presentation/screens/splash_screen.dart';
 import 'package:eposone/src/features/cash_register/presentation/screens/cash_open_screen.dart';
+import 'package:eposone/src/features/cash_register/presentation/screens/cash_close_screen.dart';
 import 'package:eposone/src/features/cash_register/presentation/screens/cash_register_screen.dart';
+import 'package:eposone/src/features/cash_register/presentation/screens/treasury_screen.dart';
 import 'package:eposone/src/features/customers/presentation/screens/customer_form_screen.dart';
 import 'package:eposone/src/features/customers/presentation/screens/customer_list_screen.dart';
 import 'package:eposone/src/features/home/presentation/screens/home_screen.dart';
+import 'package:eposone/src/features/pos/presentation/screens/barcode_scanner_screen.dart';
 import 'package:eposone/src/features/pos/presentation/screens/payment_screen.dart';
 import 'package:eposone/src/features/pos/presentation/screens/split_bill_screen.dart';
 import 'package:eposone/src/features/pos/presentation/screens/pos_screen.dart';
@@ -24,6 +27,7 @@ import 'package:eposone/src/features/sales/presentation/screens/sales_history_sc
 import 'package:eposone/src/features/pos/presentation/screens/pick_ticket_screen.dart';
 import 'package:eposone/src/features/pos/presentation/screens/split_open_ticket_screen.dart';
 import 'package:eposone/src/features/settings/presentation/screens/open_tickets_settings_screen.dart';
+import 'package:eposone/src/features/settings/presentation/screens/printer_settings_screen.dart';
 import 'package:eposone/src/features/settings/presentation/screens/settings_screen.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -81,6 +85,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/pin', builder: (_, __) => const PinScreen()),
       GoRoute(path: '/cash/open', builder: (_, __) => const CashOpenScreen()),
       GoRoute(path: '/pos', builder: (_, __) => const PosScreen()),
+      GoRoute(path: '/pos/scan', builder: (_, __) => const BarcodeScannerScreen()),
       GoRoute(path: '/payment', builder: (_, __) => const PaymentScreen()),
       GoRoute(path: '/payment/split', builder: (_, __) => const SplitBillScreen()),
       GoRoute(
@@ -102,6 +107,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (_, state) => CustomerFormScreen(customerId: state.pathParameters['id']),
       ),
       GoRoute(path: '/cash-register', builder: (_, __) => const CashRegisterScreen()),
+      GoRoute(path: '/cash-register/treasury', builder: (_, __) => const TreasuryScreen()),
+      GoRoute(path: '/cash-register/close', builder: (_, __) => const CashCloseScreen()),
       GoRoute(
         path: '/sales',
         builder: (_, state) => SalesHistoryScreen(
@@ -129,6 +136,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(path: '/settings', builder: (_, __) => const SettingsScreen()),
       GoRoute(path: '/settings/open-tickets', builder: (_, __) => const OpenTicketsSettingsScreen()),
+      GoRoute(path: '/settings/printer', builder: (_, __) => const PrinterSettingsScreen()),
     ],
   );
 });

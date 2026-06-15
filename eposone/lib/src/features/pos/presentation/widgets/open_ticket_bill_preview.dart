@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:eposone/src/core/printing/receipt_document_service.dart';
 import 'package:eposone/src/core/theme/eposone_theme.dart';
 import 'package:eposone/src/features/pos/domain/entities/open_ticket.dart';
 import 'package:eposone/src/features/pos/domain/entities/open_ticket_line.dart';
@@ -117,8 +118,20 @@ Future<void> showOpenTicketBillPreview({
         TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cerrar')),
         OutlinedButton.icon(
           onPressed: () {
-            ScaffoldMessenger.of(ctx).showSnackBar(
-              const SnackBar(content: Text('Impresión: próximamente (L5)')),
+            Navigator.pop(ctx);
+            ReceiptDocumentService.printBillPreview(
+              context: context,
+              config: config,
+              symbol: symbol,
+              ticketLabel: ticketLabel,
+              comment: comment,
+              lines: lines
+                  .map((l) => (name: l.productName, qty: l.quantity, lineTotal: l.lineTotal))
+                  .toList(),
+              subtotal: totals.subtotal,
+              discount: totals.discount,
+              tax: totals.taxAmount,
+              total: totals.total,
             );
           },
           icon: const Icon(Icons.print_outlined),

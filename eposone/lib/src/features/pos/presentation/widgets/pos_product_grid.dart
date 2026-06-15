@@ -17,7 +17,7 @@ class PosProductGrid extends StatelessWidget {
     required this.symbol,
     required this.trackInventory,
     required this.onProductTap,
-    this.crossAxisCount = 3,
+    this.crossAxisCount = 4,
   });
 
   @override
@@ -27,12 +27,12 @@ class PosProductGrid extends StatelessWidget {
     }
 
     return GridView.builder(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.fromLTRB(6, 4, 6, 6),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: crossAxisCount,
-        childAspectRatio: 0.82,
-        crossAxisSpacing: 10,
-        mainAxisSpacing: 10,
+        childAspectRatio: 1.0,
+        crossAxisSpacing: 4,
+        mainAxisSpacing: 4,
       ),
       itemCount: products.length,
       itemBuilder: (_, i) => _ProductTile(
@@ -58,108 +58,118 @@ class _ProductTile extends StatelessWidget {
     required this.onTap,
   });
 
+  static const _fallbackColors = [
+    EposBrand.orange,
+    EposBrand.navy,
+    Color(0xFF2E7D32),
+    Color(0xFF6A1B9A),
+    Color(0xFF00838F),
+    Color(0xFFC62828),
+  ];
+
+  Color _tileColor(String name) => _fallbackColors[name.hashCode.abs() % _fallbackColors.length];
+
   @override
   Widget build(BuildContext context) {
     final out = trackInventory && product.stock <= 0;
+    final hasImage = _hasImage(product.imagePath);
 
     return Material(
-      color: out ? EposBrand.background : EposBrand.surface,
-      elevation: out ? 0 : 1,
-      shadowColor: Colors.black12,
-      borderRadius: BorderRadius.circular(12),
+      color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
         onTap: out ? null : onTap,
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: out ? EposBrand.divider : EposBrand.divider.withValues(alpha: 0.5)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(
-                flex: 3,
-                child: ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(11)),
-                  child: _ProductImage(imagePath: product.imagePath, outOfStock: out),
-                ),
-              ),
-              Expanded(
-                flex: 2,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        product.name,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 13,
-                          color: out ? EposBrand.textSecondary : EposBrand.textPrimary,
-                        ),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (hasImage)
+              _ProductImage(imagePath: product.imagePath!)
+            else
+              ColoredBox(
+                color: out ? EposBrand.divider : _tileColor(product.name),
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: Text(
+                      product.name,
+                      textAlign: TextAlign.center,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: out ? EposBrand.textSecondary : Colors.white,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                        height: 1.15,
                       ),
-                      const Spacer(),
-                      if (trackInventory)
-                        Text(
-                          out ? 'Sin stock' : 'Stock: ${product.stock.toStringAsFixed(0)}',
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: out ? Colors.red.shade400 : EposBrand.textSecondary,
-                          ),
-                        ),
-                      Text(
-                        '$symbol${product.price.toStringAsFixed(2)}',
-                        style: TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.bold,
-                          color: out ? EposBrand.textSecondary : EposBrand.orange,
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               ),
-            ],
-          ),
+            if (hasImage)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: Container(
+                  padding: const EdgeInsets.fromLTRB(6, 18, 6, 6),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Colors.black.withValues(alpha: 0.78),
+                      ],
+                    ),
+                  ),
+                  child: Text(
+                    product.name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: out ? Colors.white70 : Colors.white,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 11,
+                      height: 1.15,
+                    ),
+                  ),
+                ),
+              ),
+            if (out)
+              Container(color: Colors.white.withValues(alpha: 0.45)),
+            Positioned(
+              top: 4,
+              right: 4,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.55),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  '$symbol${product.price.toStringAsFixed(2)}',
+                  style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
+
+  bool _hasImage(String? path) {
+    if (path == null || path.isEmpty) return false;
+    return File(path).existsSync();
+  }
 }
 
 class _ProductImage extends StatelessWidget {
-  final String? imagePath;
-  final bool outOfStock;
+  final String imagePath;
 
-  const _ProductImage({this.imagePath, required this.outOfStock});
+  const _ProductImage({required this.imagePath});
 
   @override
   Widget build(BuildContext context) {
-    if (imagePath != null && imagePath!.isNotEmpty) {
-      final file = File(imagePath!);
-      if (file.existsSync()) {
-        return Stack(
-          fit: StackFit.expand,
-          children: [
-            Image.file(file, fit: BoxFit.cover),
-            if (outOfStock)
-              Container(color: Colors.white.withValues(alpha: 0.55)),
-          ],
-        );
-      }
-    }
-
-    return Container(
-      color: EposBrand.background,
-      child: Icon(
-        Icons.inventory_2_outlined,
-        size: 36,
-        color: outOfStock ? EposBrand.textSecondary : EposBrand.navy.withValues(alpha: 0.35),
-      ),
-    );
+    return Image.file(File(imagePath), fit: BoxFit.cover);
   }
 }

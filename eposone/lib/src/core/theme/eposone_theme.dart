@@ -135,7 +135,7 @@ class EposOneLogo extends StatelessWidget {
   }
 }
 
-/// Ícono de marca: monitor + carrito estilizado.
+/// Ícono de marca — logo oficial (monitor + carrito).
 class EposBrandIcon extends StatelessWidget {
   final double size;
 
@@ -143,30 +143,24 @@ class EposBrandIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return Image.asset(
+      'assets/images/app_logo.png',
+      width: size,
+      height: size,
+      fit: BoxFit.contain,
+      errorBuilder: (_, __, ___) => _fallback(size),
+    );
+  }
+
+  Widget _fallback(double size) {
     return Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
         color: EposBrand.navy,
         borderRadius: BorderRadius.circular(size * 0.22),
-        boxShadow: [
-          BoxShadow(
-            color: EposBrand.navy.withValues(alpha: 0.25),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
       ),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          Icon(Icons.desktop_windows_outlined, color: Colors.white.withValues(alpha: 0.9), size: size * 0.55),
-          Positioned(
-            bottom: size * 0.18,
-            child: Icon(Icons.shopping_cart_outlined, color: EposBrand.orange, size: size * 0.28),
-          ),
-        ],
-      ),
+      child: Icon(Icons.shopping_cart_outlined, color: EposBrand.orange, size: size * 0.45),
     );
   }
 }

@@ -11,6 +11,13 @@ class SettingsScreen extends StatelessWidget {
       body: ListView(
         children: [
           ListTile(
+            leading: const Icon(Icons.print_outlined),
+            title: const Text('Impresora térmica'),
+            subtitle: const Text('Bluetooth, cajón monedero'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/settings/printer'),
+          ),
+          ListTile(
             leading: const Icon(Icons.receipt_long_outlined),
             title: const Text('Tickets abiertos'),
             subtitle: const Text('Nombres predefinidos, tipo de orden'),

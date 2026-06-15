@@ -66,6 +66,7 @@ class CartState {
     String? customerId,
     bool clearCustomer = false,
     double? discountPercent,
+    bool clearDiscountPercent = false,
     String? openTicketId,
     bool clearOpenTicket = false,
     OrderType? orderType,
@@ -73,7 +74,7 @@ class CartState {
       CartState(
         items: items ?? this.items,
         customerId: clearCustomer ? null : (customerId ?? this.customerId),
-        discountPercent: discountPercent ?? this.discountPercent,
+        discountPercent: clearDiscountPercent ? null : (discountPercent ?? this.discountPercent),
         openTicketId: clearOpenTicket ? null : (openTicketId ?? this.openTicketId),
         orderType: orderType ?? this.orderType,
       );
@@ -158,8 +159,12 @@ class CartNotifier extends StateNotifier<CartState> {
     state = state.copyWith(customerId: customerId, clearCustomer: customerId == null);
   }
 
-  void setGlobalDiscount(double? percent) {
+  void setGlobalDiscount(double percent) {
     state = state.copyWith(discountPercent: percent);
+  }
+
+  void clearGlobalDiscount() {
+    state = state.copyWith(clearDiscountPercent: true);
   }
 
   void setOpenTicketId(String? id) {

@@ -57,6 +57,11 @@ class PosSessionNotifier extends StateNotifier<PosSession?> {
     state = state!.copyWith(cashRegisterId: registerId, lastActivityAt: DateTime.now());
   }
 
+  void clearCashRegister() {
+    if (state == null) return;
+    state = state!.copyWith(clearCashRegister: true, lastActivityAt: DateTime.now());
+  }
+
   void touch() {
     if (state == null) return;
     state = state!.copyWith(lastActivityAt: DateTime.now());

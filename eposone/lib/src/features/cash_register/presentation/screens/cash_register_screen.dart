@@ -1,31 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
+import 'package:eposone/src/core/providers/business_config_provider.dart';
+import 'package:eposone/src/core/theme/eposone_theme.dart';
 import 'package:eposone/src/features/cash_register/domain/entities/cash_register.dart';
+import 'package:eposone/src/core/session/pos_session.dart';
 import 'package:eposone/src/features/cash_register/presentation/providers/cash_register_provider.dart';
+import 'package:eposone/src/features/pos/presentation/providers/pos_provider.dart';
+import 'package:eposone/src/features/sales/domain/entities/sale.dart';
 
-class CashRegisterScreen extends ConsumerStatefulWidget {
+/// Hub del turno — resumen L4.3 + acceso a tesorería y cierre.
+class CashRegisterScreen extends ConsumerWidget {
   const CashRegisterScreen({super.key});
 
   @override
-  ConsumerState<CashRegisterScreen> createState() => _CashRegisterScreenState();
-}
-
-class _CashRegisterScreenState extends ConsumerState<CashRegisterScreen> {
-  final _amountController = TextEditingController();
-  final _closingController = TextEditingController();
-  final _notesController = TextEditingController();
-
-  @override
-  void dispose() {
-    _amountController.dispose();
-    _closingController.dispose();
-    _notesController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final currentAsync = ref.watch(currentCashRegisterProvider);
+    final symbol = ref.watch(businessConfigProvider)?.currencySymbol ?? 'B/.';
 
     ref.listen(cashRegisterNotifierProvider, (_, next) {
       next.whenOrNull(
@@ -42,150 +34,97 @@ class _CashRegisterScreenState extends ConsumerState<CashRegisterScreen> {
     });
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Caja'),
-      ),
+      appBar: AppBar(title: const Text('Turno / Caja')),
       body: currentAsync.when(
         data: (current) {
           if (current == null) {
-            return _OpenRegisterForm(
-              amountController: _amountController,
-              notesController: _notesController,
-              onOpen: _openRegister,
-            );
+            return _OpenRegisterPanel(symbol: symbol);
           }
-          return _CurrentRegisterView(
-            register: current,
-            closingController: _closingController,
-            notesController: _notesController,
-            onClose: _closeRegister,
-          );
+          return _ShiftHub(register: current, symbol: symbol);
         },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error: $e')),
       ),
     );
   }
-
-  void _openRegister() {
-    final amount = double.tryParse(_amountController.text) ?? 0;
-    if (amount < 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('El monto debe ser positivo')),
-      );
-      return;
-    }
-    ref.read(cashRegisterNotifierProvider.notifier).open(
-      amount,
-      notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
-    );
-    _amountController.clear();
-    _notesController.clear();
-  }
-
-  void _closeRegister(String registerId, double expectedAmount) {
-    final closing = double.tryParse(_closingController.text) ?? 0;
-    if (closing < 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('El monto de cierre debe ser positivo')),
-      );
-      return;
-    }
-    ref.read(cashRegisterNotifierProvider.notifier).close(
-      registerId: registerId,
-      closingAmount: closing,
-      expectedAmount: expectedAmount,
-      notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
-    );
-    _closingController.clear();
-    _notesController.clear();
-  }
 }
 
-class _OpenRegisterForm extends StatelessWidget {
-  final TextEditingController amountController;
-  final TextEditingController notesController;
-  final VoidCallback onOpen;
+class _OpenRegisterPanel extends ConsumerStatefulWidget {
+  final String symbol;
+  const _OpenRegisterPanel({required this.symbol});
 
-  const _OpenRegisterForm({
-    required this.amountController,
-    required this.notesController,
-    required this.onOpen,
-  });
+  @override
+  ConsumerState<_OpenRegisterPanel> createState() => _OpenRegisterPanelState();
+}
+
+class _OpenRegisterPanelState extends ConsumerState<_OpenRegisterPanel> {
+  final _amountCtrl = TextEditingController();
+  final _notesCtrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _amountCtrl.dispose();
+    _notesCtrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Center(
-            child: Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: Colors.orange.shade900.withOpacity(0.3),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.lock_outline,
-                size: 64,
-                color: Colors.orange.shade400,
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-          Center(
-            child: Text(
-              'Caja Cerrada',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
+          const Icon(Icons.lock_outline, size: 64, color: EposBrand.orange),
+          const SizedBox(height: 16),
+          const Text(
+            'No hay turno abierto',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: EposBrand.navy),
           ),
           const SizedBox(height: 8),
-          Center(
-            child: Text(
-              'Abre la caja para comenzar a vender',
-              style: TextStyle(color: Colors.grey.shade400),
-            ),
+          const Text(
+            'Abre la caja para comenzar a vender',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: EposBrand.textSecondary),
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 24),
           TextField(
-            controller: amountController,
+            controller: _amountCtrl,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             decoration: InputDecoration(
-              labelText: 'Monto inicial en caja *',
-              hintText: '0.00',
-              prefixIcon: const Icon(Icons.attach_money),
-              prefixText: '\$ ',
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              filled: true,
-              fillColor: Theme.of(context).colorScheme.surface,
+              labelText: 'Monto inicial en caja',
+              prefixText: '${widget.symbol} ',
+              border: const OutlineInputBorder(),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           TextField(
-            controller: notesController,
-            decoration: InputDecoration(
+            controller: _notesCtrl,
+            decoration: const InputDecoration(
               labelText: 'Notas (opcional)',
-              hintText: 'Observaciones...',
-              prefixIcon: const Icon(Icons.notes),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              filled: true,
-              fillColor: Theme.of(context).colorScheme.surface,
+              border: OutlineInputBorder(),
             ),
             maxLines: 2,
           ),
-          const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            height: 56,
-            child: FilledButton.icon(
-              onPressed: onOpen,
-              icon: const Icon(Icons.lock_open),
-              label: const Text('Abrir Caja'),
-            ),
+          const SizedBox(height: 20),
+          FilledButton.icon(
+            onPressed: () {
+              final amount = double.tryParse(_amountCtrl.text) ?? -1;
+              if (amount < 0) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Indica un monto válido')),
+                );
+                return;
+              }
+              ref.read(cashRegisterNotifierProvider.notifier).open(
+                    amount,
+                    openedBy: ref.read(posSessionProvider)?.cashierName,
+                    notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
+                  );
+            },
+            icon: const Icon(Icons.lock_open),
+            label: const Text('Abrir turno'),
           ),
         ],
       ),
@@ -193,188 +132,120 @@ class _OpenRegisterForm extends StatelessWidget {
   }
 }
 
-class _CurrentRegisterView extends ConsumerStatefulWidget {
+class _ShiftHub extends ConsumerWidget {
   final CashRegister register;
-  final TextEditingController closingController;
-  final TextEditingController notesController;
-  final Function(String, double) onClose;
+  final String symbol;
 
-  const _CurrentRegisterView({
-    required this.register,
-    required this.closingController,
-    required this.notesController,
-    required this.onClose,
-  });
+  const _ShiftHub({required this.register, required this.symbol});
 
   @override
-  ConsumerState<_CurrentRegisterView> createState() => _CurrentRegisterViewState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final summaryAsync = ref.watch(shiftSummaryProvider(register.localId));
+    final dateFmt = DateFormat('dd/MM/yyyy HH:mm');
 
-class _CurrentRegisterViewState extends ConsumerState<_CurrentRegisterView> {
-  @override
-  Widget build(BuildContext context) {
-    final summaryAsync = ref.watch(cashRegisterSalesSummaryProvider(widget.register.localId));
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Status card
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.green.shade900.withOpacity(0.3),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.green.shade700),
+    return summaryAsync.when(
+      data: (summary) => SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.green.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.green.shade400),
+              ),
+              child: Column(
+                children: [
+                  const Icon(Icons.lock_open, color: Colors.green, size: 40),
+                  const SizedBox(height: 8),
+                  const Text('Turno abierto', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                  Text('Desde ${dateFmt.format(register.openDate)}', style: const TextStyle(color: EposBrand.textSecondary)),
+                  if (register.openedBy != null)
+                    Text('Por ${register.openedBy}', style: const TextStyle(color: EposBrand.textSecondary, fontSize: 12)),
+                ],
+              ),
             ),
-            child: Column(
-              children: [
-                Icon(Icons.lock_open, size: 48, color: Colors.green.shade400),
-                const SizedBox(height: 12),
-                Text(
-                  'Caja Abierta',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.green.shade400,
-                      ),
+            const SizedBox(height: 20),
+            const Text('Resumen del turno', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: EposBrand.navy)),
+            const SizedBox(height: 8),
+            _SummaryTile(label: 'Ventas brutas', value: '$symbol${summary.grossSales.toStringAsFixed(2)}'),
+            _SummaryTile(label: 'Reembolsos', value: '-$symbol${summary.totalRefunds.toStringAsFixed(2)}', valueColor: Colors.red),
+            _SummaryTile(label: 'Ventas netas', value: '$symbol${summary.netSales.toStringAsFixed(2)}', bold: true),
+            _SummaryTile(label: 'Descuentos', value: '$symbol${summary.totalDiscount.toStringAsFixed(2)}'),
+            _SummaryTile(label: 'ITBMS', value: '$symbol${summary.totalTax.toStringAsFixed(2)}'),
+            _SummaryTile(label: 'Transacciones', value: '${summary.saleCount} ventas · ${summary.refundCount} reembolsos'),
+            const Divider(height: 24),
+            const Text('Por método de pago', style: TextStyle(fontWeight: FontWeight.w600, color: EposBrand.navy)),
+            const SizedBox(height: 8),
+            for (final method in PaymentMethod.values)
+              if (summary.paymentTotal(method) > 0)
+                _SummaryTile(
+                  label: paymentMethodLabel(method),
+                  value: '$symbol${summary.paymentTotal(method).toStringAsFixed(2)}',
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  'Abierta: ${_formatDate(widget.register.openDate)}',
-                  style: TextStyle(color: Colors.grey.shade400),
-                ),
-              ],
+            const Divider(height: 24),
+            _SummaryTile(label: 'Apertura', value: '$symbol${summary.openingAmount.toStringAsFixed(2)}'),
+            _SummaryTile(label: 'Efectivo ventas (neto)', value: '$symbol${summary.cashFromSales.toStringAsFixed(2)}'),
+            _SummaryTile(label: 'Movimientos +', value: '+$symbol${summary.cashMovementIn.toStringAsFixed(2)}', valueColor: Colors.green),
+            _SummaryTile(label: 'Movimientos −', value: '-$symbol${summary.cashMovementOut.toStringAsFixed(2)}', valueColor: Colors.red),
+            _SummaryTile(
+              label: 'Efectivo esperado',
+              value: '$symbol${summary.expectedCash.toStringAsFixed(2)}',
+              bold: true,
+              valueColor: EposBrand.orange,
             ),
-          ),
-          const SizedBox(height: 24),
-
-          // Summary
-          Text('Resumen del turno', style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 12),
-          _SummaryCard(
-            label: 'Monto inicial',
-            value: '\$${widget.register.openingAmount.toStringAsFixed(2)}',
-            icon: Icons.account_balance_wallet,
-            color: Colors.blue,
-          ),
-          summaryAsync.when(
-            data: (summary) => Column(
-              children: [
-                _SummaryCard(
-                  label: 'Ventas realizadas',
-                  value: '${summary['count']} ventas',
-                  icon: Icons.receipt_long,
-                  color: Colors.green,
-                ),
-                _SummaryCard(
-                  label: 'Total vendido',
-                  value: '\$${(summary['total'] as double).toStringAsFixed(2)}',
-                  icon: Icons.trending_up,
-                  color: Colors.green,
-                ),
-                _SummaryCard(
-                  label: 'Efectivo esperado',
-                  value: '\$${(widget.register.openingAmount + (summary['total'] as double)).toStringAsFixed(2)}',
-                  icon: Icons.calculate,
-                  color: Colors.orange,
-                ),
-              ],
+            const SizedBox(height: 24),
+            FilledButton.icon(
+              onPressed: () => context.push('/cash-register/treasury'),
+              icon: const Icon(Icons.swap_vert),
+              label: const Text('Tesorería'),
             ),
-            loading: () => const Padding(
-              padding: EdgeInsets.all(16),
-              child: Center(child: CircularProgressIndicator()),
-            ),
-            error: (_, __) => const SizedBox.shrink(),
-          ),
-          const SizedBox(height: 24),
-
-          // Close register
-          Text('Cerrar caja', style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 12),
-          TextField(
-            controller: widget.closingController,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: InputDecoration(
-              labelText: 'Monto final en caja *',
-              hintText: '0.00',
-              prefixIcon: const Icon(Icons.attach_money),
-              prefixText: '\$ ',
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              filled: true,
-              fillColor: Theme.of(context).colorScheme.surface,
-            ),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: widget.notesController,
-            decoration: InputDecoration(
-              labelText: 'Notas (opcional)',
-              prefixIcon: const Icon(Icons.notes),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              filled: true,
-              fillColor: Theme.of(context).colorScheme.surface,
-            ),
-            maxLines: 2,
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            height: 56,
-            child: FilledButton.icon(
-              onPressed: () {
-                final expected = widget.register.openingAmount +
-                    (summaryAsync.valueOrNull?['total'] as double? ?? 0);
-                widget.onClose(widget.register.localId, expected);
-              },
+            const SizedBox(height: 8),
+            FilledButton.icon(
+              onPressed: () => context.push('/cash-register/close'),
+              style: FilledButton.styleFrom(backgroundColor: Colors.red.shade700),
               icon: const Icon(Icons.lock),
-              label: const Text('Cerrar Caja'),
-              style: FilledButton.styleFrom(backgroundColor: Colors.red),
+              label: const Text('Cerrar turno'),
             ),
-          ),
-          const SizedBox(height: 32),
-        ],
+          ],
+        ),
       ),
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => Center(child: Text('Error: $e')),
     );
   }
-
-  String _formatDate(DateTime date) {
-    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
-  }
 }
 
-class _SummaryCard extends StatelessWidget {
+class _SummaryTile extends StatelessWidget {
   final String label;
   final String value;
-  final IconData icon;
-  final Color color;
+  final bool bold;
+  final Color? valueColor;
 
-  const _SummaryCard({
+  const _SummaryTile({
     required this.label,
     required this.value,
-    required this.icon,
-    required this.color,
+    this.bold = false,
+    this.valueColor,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: color.withOpacity(0.2),
-          child: Icon(icon, color: color),
-        ),
-        title: Text(label),
-        trailing: Text(
-          value,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: color,
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Expanded(child: Text(label, style: TextStyle(fontWeight: bold ? FontWeight.bold : FontWeight.normal))),
+          Text(
+            value,
+            style: TextStyle(
+              fontWeight: bold ? FontWeight.bold : FontWeight.w600,
+              color: valueColor ?? EposBrand.navy,
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
