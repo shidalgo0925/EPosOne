@@ -5,7 +5,7 @@
 **Versión:** 2.1 — **CERRADO (TPV + scaffolding L8–L10)**  
 **Fecha:** 10 de junio de 2026  
 **Base:** `master` @ **`895ae1a`** — roadmap L1–L10 cerrado  
-**Documentos relacionados:** [`EPOSONE_vs_LOYVERSE.md`](EPOSONE_vs_LOYVERSE.md) · [`EPOSONE_ARCHITECTURE_REVIEW.md`](EPOSONE_ARCHITECTURE_REVIEW.md)
+**Documentos relacionados:** [`EPOSONE_MASTER_PLAN_V3.md`](EPOSONE_MASTER_PLAN_V3.md) · [`EPOSONE_vs_LOYVERSE.md`](EPOSONE_vs_LOYVERSE.md) · [`EPOSONE_ARCHITECTURE_REVIEW.md`](EPOSONE_ARCHITECTURE_REVIEW.md)
 
 **Objetivo:** Alcanzar **95–98% de paridad operativa del TPV Loyverse** y superarlo con capacidades propias de Panamá (FE DGI, Yappy nativo, EN1, offline total).
 
@@ -532,12 +532,18 @@ Al completar **Prioridades 4–5** (L8 + L9):
 
 **Roadmap L1–L10 en app:** ✅ cerrado (jun 2026).
 
-### Producción comercial Panamá
+**Roadmap activo:** [`EPOSONE_MASTER_PLAN_V3.md`](EPOSONE_MASTER_PLAN_V3.md) — producto comercial, plataforma EN1, FE Panamá, pilotos y GTM.
 
-1. **L8 live** — contrato PAC/habilitador DGI + certificado + XML/PDF legal
-2. **L9 live** — API EN1 + sync bidireccional caja/turnos + dashboard web
-3. **QA release** — checklist §8 tablet T10 + release notes schema Isar
-4. **L10 add-ons** — gift cards, membresías, reglas fidelización avanzadas
+### Resumen V3
+
+| Fase | Enfoque |
+|------|---------|
+| V3.1 | Certificación operativa (QA tablet) |
+| V3.2 | Arquitectura comercial (Local / Cloud / Business) |
+| V3.3 | Plataforma Cloud EasyTech (EN1 + colas + eFacturapty) |
+| V3.4 | FE Panamá sobre infraestructura V3.3 |
+| V3.5–V3.8 | Dashboard EN1, release, pilotos, lanzamiento PA |
+| V3.9 | Roadmap 2027 (post-clientes activos) |
 
 ### Commits de referencia
 
