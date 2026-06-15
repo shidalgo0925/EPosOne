@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:eposone/src/features/pos/domain/entities/order_type.dart';
 import 'package:eposone/src/features/products/domain/entities/product.dart';
 
 /// Item en el carrito POS
@@ -43,12 +44,14 @@ class CartState {
   final String? customerId;
   final double? discountPercent;
   final String? openTicketId;
+  final OrderType orderType;
 
   const CartState({
     this.items = const [],
     this.customerId,
     this.discountPercent,
     this.openTicketId,
+    this.orderType = OrderType.generic,
   });
 
   double get subtotal => items.fold(0, (sum, i) => sum + i.subtotal);
@@ -65,12 +68,14 @@ class CartState {
     double? discountPercent,
     String? openTicketId,
     bool clearOpenTicket = false,
+    OrderType? orderType,
   }) =>
       CartState(
         items: items ?? this.items,
         customerId: clearCustomer ? null : (customerId ?? this.customerId),
         discountPercent: discountPercent ?? this.discountPercent,
         openTicketId: clearOpenTicket ? null : (openTicketId ?? this.openTicketId),
+        orderType: orderType ?? this.orderType,
       );
 }
 
@@ -125,6 +130,30 @@ class CartNotifier extends StateNotifier<CartState> {
     state = state.copyWith(items: state.items.where((i) => i.id != itemId).toList());
   }
 
+  /// Reduce cantidad de una línea; elimina si llega a cero.
+  void removeQuantity(String itemId, double quantity) {
+    if (quantity <= 0) return;
+    final index = state.items.indexWhere((i) => i.id == itemId);
+    if (index < 0) return;
+    final item = state.items[index];
+    final remaining = item.quantity - quantity;
+    if (remaining <= 0.0001) {
+      removeItem(itemId);
+    } else {
+      final newItems = [...state.items];
+      newItems[index] = item.copyWith(quantity: remaining);
+      state = state.copyWith(items: newItems);
+    }
+  }
+
+  /// Extrae líneas del carrito y las devuelve (para cobro parcial).
+  List<CartItem> takeItems(Iterable<String> itemIds) {
+    final idSet = itemIds.toSet();
+    final taken = state.items.where((i) => idSet.contains(i.id)).toList();
+    state = state.copyWith(items: state.items.where((i) => !idSet.contains(i.id)).toList());
+    return taken;
+  }
+
   void setCustomer(String? customerId) {
     state = state.copyWith(customerId: customerId, clearCustomer: customerId == null);
   }
@@ -137,17 +166,23 @@ class CartNotifier extends StateNotifier<CartState> {
     state = state.copyWith(openTicketId: id, clearOpenTicket: id == null);
   }
 
+  void setOrderType(OrderType type) {
+    state = state.copyWith(orderType: type);
+  }
+
   void loadCart({
     required List<CartItem> items,
     String? customerId,
     String? openTicketId,
     double? discountPercent,
+    OrderType orderType = OrderType.generic,
   }) {
     state = CartState(
       items: items,
       customerId: customerId,
       openTicketId: openTicketId,
       discountPercent: discountPercent,
+      orderType: orderType,
     );
   }
 

@@ -5,7 +5,7 @@ import 'package:eposone/src/core/providers/business_config_provider.dart';
 import 'package:eposone/src/core/session/pos_session.dart';
 import 'package:eposone/src/features/auth/domain/entities/cashier.dart';
 import 'package:eposone/src/features/pos/presentation/providers/cart_provider.dart';
-import 'package:eposone/src/features/pos/presentation/providers/open_ticket_provider.dart';
+import 'package:eposone/src/features/pos/presentation/utils/save_open_ticket_flow.dart';
 import 'package:eposone/src/features/pos/presentation/widgets/pos_product_grid.dart';
 import 'package:eposone/src/features/pos/presentation/widgets/pos_ticket_panel.dart';
 import 'package:eposone/src/features/pos/presentation/utils/pos_layout.dart';
@@ -192,28 +192,24 @@ class _PosScreenState extends ConsumerState<PosScreen> {
         ),
         actions: [
           const OpenTicketsButton(),
-          IconButton(
-            icon: const Icon(Icons.save_outlined),
-            tooltip: 'Guardar ticket',
-            onPressed: cart.items.isEmpty
-                ? null
-                : () async {
-                    try {
-                      await ref.read(openTicketActionsProvider).saveCurrentCart();
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Ticket guardado')),
-                        );
+          if (ref.watch(businessConfigProvider)?.openTicketsEnabled ?? true)
+            IconButton(
+              icon: const Icon(Icons.save_outlined),
+              tooltip: 'Guardar ticket',
+              onPressed: cart.items.isEmpty
+                  ? null
+                  : () async {
+                      try {
+                        await saveOpenTicketFlow(context, ref);
+                      } catch (e) {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('$e'), backgroundColor: Colors.red),
+                          );
+                        }
                       }
-                    } catch (e) {
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('$e'), backgroundColor: Colors.red),
-                        );
-                      }
-                    }
-                  },
-          ),
+                    },
+            ),
         ],
       ),
       body: isTablet

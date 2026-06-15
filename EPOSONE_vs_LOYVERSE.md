@@ -83,9 +83,9 @@ Leyenda: ✅ Implementado · ⚠️ Parcial · ❌ No implementado · 🔮 Roadm
 | Añadir al carrito / cantidades | ✅ | Tap suma; qty +/- en ticket |
 | ITBMS / impuesto configurable | ✅ | `BusinessConfig.taxRate` |
 | Cliente en ticket | ✅ | `CustomerPickerTile` en panel ticket |
-| Tipo de orden (Comer dentro / para llevar) | ❌ | |
-| **GUARDAR** ticket | ✅ | Isar `OpenTicket` |
-| **TICKETS ABIERTOS** | ✅ | Sheet + badge AppBar |
+| Tipo de orden (Comer dentro / para llevar) | ✅ | `OrderType` en ticket y venta |
+| **GUARDAR** ticket | ✅ | Isar `OpenTicket` + slots predefinidos |
+| **TICKETS ABIERTOS** | ✅ | Sheet: abrir, cobrar, editar, mover, dividir, fusionar, pre-cuenta |
 | Botón **COBRAR** prominente | ✅ | Navega a `/payment` |
 | Escáner código de barras | ❌ | |
 | Modificadores (extras, variantes) | ❌ | |
@@ -97,12 +97,12 @@ Leyenda: ✅ Implementado · ⚠️ Parcial · ❌ No implementado · 🔮 Roadm
 | Funcionalidad Loyverse | EPOSOne | Notas |
 |------------------------|---------|-------|
 | Pantalla split (ticket + pago) | ⚠️ | Pantalla dedicada; ticket resumido |
-| Efectivo + montos rápidos | ⚠️ | Efectivo sí; botones B/.1, B/.5… ❌ |
+| Efectivo + montos rápidos | ✅ | B/.1, B/.5, B/.10, B/.20 + Exacto |
 | Tarjeta | ✅ | |
 | Yappy | ✅ | `PaymentMethod.yappy` |
 | Transferencia / Otro | ✅ | |
 | Cálculo de cambio | ✅ | |
-| **DIVIDIR** cuenta | ❌ | |
+| **DIVIDIR** cuenta | ✅ | Split por ítems o partes iguales al cobrar |
 | Propina | ❌ | |
 | Email recibo post-venta | ❌ | |
 | **NUEVA VENTA** post-cobro | ✅ | Desde `/receipt/:id` |
@@ -111,10 +111,10 @@ Leyenda: ✅ Implementado · ⚠️ Parcial · ❌ No implementado · 🔮 Roadm
 
 | Funcionalidad Loyverse | EPOSOne | Notas |
 |------------------------|---------|-------|
-| Lista master-detail (tablet) | ❌ | Lista + detalle en rutas separadas |
-| Búsqueda por recibo | ⚠️ | Filtro por fecha en `/sales` |
+| Lista master-detail (tablet) | ✅ | `SalesHistoryScreen` lista + panel detalle |
+| Búsqueda por recibo | ✅ | Barra búsqueda por número / cliente |
 | Detalle: empleado, TPV, ITBMS, método | ⚠️ | Parcial en detalle/recibo |
-| **REEMBOLSAR** | ❌ | `SaleStatus.refunded` existe; sin acción UI |
+| **REEMBOLSAR** | ✅ | Acción en detalle; revierte stock |
 | Recibo visual post-venta | ✅ | `/receipt/:id` |
 | Impresión térmica | ❌ | Deps en pubspec sin uso |
 | PDF | ❌ | |
@@ -209,13 +209,13 @@ Prioridad sugerida para acercarse al TPV Loyverse sin bloquear FE Panamá.
 
 ### L2 — Cobro avanzado y recibos
 
-| ID | Historia | Criterio de aceptación |
-|----|----------|------------------------|
-| L2.1 | Montos rápidos efectivo | Botones B/.1, B/.5, B/.10, B/.20, exacto |
-| L2.2 | Dividir cuenta | Split por ítems o por monto; N pagos → N ventas o modelo split |
-| L2.3 | Reembolso | Acción REEMBOLSAR; revierte stock; `SaleStatus.refunded` |
-| L2.4 | Recibos master-detail | Una pantalla: lista izq + detalle der (tablet) |
-| L2.5 | Búsqueda recibo | Por número, fecha, cajero |
+| ID | Historia | Estado |
+|----|----------|--------|
+| L2.1 | Montos rápidos efectivo | ✅ Botones B/.1, B/.5, B/.10, B/.20, exacto |
+| L2.2 | Dividir cuenta | ✅ Split por ítems o partes iguales |
+| L2.3 | Reembolso | ✅ REEMBOLSAR; revierte stock |
+| L2.4 | Recibos master-detail | ✅ Lista + detalle en tablet |
+| L2.5 | Búsqueda recibo | ✅ Por número / cliente |
 
 ### L3 — Catálogo enriquecido
 
@@ -224,7 +224,7 @@ Prioridad sugerida para acercarse al TPV Loyverse sin bloquear FE Panamá.
 | L3.1 | Modificadores | Grupos (ej. tamaño, extras); precio adicional |
 | L3.2 | Descuentos | % o monto fijo; por línea y ticket |
 | L3.3 | Páginas POS | Configurar layout de botones por categoría/página |
-| L3.4 | Tipo de orden | Enum dine-in / takeout / delivery en ticket |
+| L3.4 | Tipo de orden | ✅ Enum dine-in / takeaway / delivery en ticket y venta |
 
 ### L4 — Turno completo
 
@@ -260,8 +260,11 @@ Entidades actuales relevantes: `Sale`, `SaleItem`, `Product`, `Category`, `Custo
 
 | Feature L1–L4 | Entidad / campo sugerido |
 |---------------|--------------------------|
-| Tickets abiertos | `OpenTicket` + `OpenTicketLine` |
-| Dividir cuenta | `Sale.parentSaleId` o `PaymentSplit` |
+| Tickets abiertos | ✅ `OpenTicket` + `OpenTicketLine` + `PredefinedTicket` |
+| Dividir ticket abierto | ✅ `/tickets/:id/split` — mover líneas a otro ticket |
+| Pre-cuenta | ✅ Diálogo informativo desde sheet o carrito activo |
+| Fusionar tickets | ✅ Desde sheet tickets abiertos |
+| Dividir cuenta (cobro) | ✅ `SplitBillScreen` — N pagos al cobrar |
 | Modificadores | `ModifierGroup`, `Modifier`, línea con `modifiers[]` |
 | Tesorería | `CashMovement` (type, amount, reason, registerId) |
 | Tipo orden | `OrderType` enum en `Sale` / `OpenTicket` |

@@ -87,56 +87,67 @@ const SaleSchema = CollectionSchema(
       name: r'notes',
       type: IsarType.string,
     ),
-    r'paymentMethod': PropertySchema(
+    r'openTicketLabel': PropertySchema(
       id: 14,
+      name: r'openTicketLabel',
+      type: IsarType.string,
+    ),
+    r'orderType': PropertySchema(
+      id: 15,
+      name: r'orderType',
+      type: IsarType.byte,
+      enumMap: _SaleorderTypeEnumValueMap,
+    ),
+    r'paymentMethod': PropertySchema(
+      id: 16,
       name: r'paymentMethod',
       type: IsarType.byte,
       enumMap: _SalepaymentMethodEnumValueMap,
     ),
     r'receiptNumber': PropertySchema(
-      id: 15,
+      id: 17,
       name: r'receiptNumber',
       type: IsarType.string,
     ),
     r'saleDate': PropertySchema(
-      id: 16,
+      id: 18,
       name: r'saleDate',
       type: IsarType.dateTime,
     ),
     r'serverId': PropertySchema(
-      id: 17,
+      id: 19,
       name: r'serverId',
       type: IsarType.string,
     ),
     r'status': PropertySchema(
-      id: 18,
+      id: 20,
       name: r'status',
       type: IsarType.byte,
       enumMap: _SalestatusEnumValueMap,
     ),
     r'subtotal': PropertySchema(
-      id: 19,
+      id: 21,
       name: r'subtotal',
       type: IsarType.double,
     ),
     r'syncStatus': PropertySchema(
-      id: 20,
+      id: 22,
       name: r'syncStatus',
       type: IsarType.byte,
       enumMap: _SalesyncStatusEnumValueMap,
     ),
     r'taxAmount': PropertySchema(
-      id: 21,
+      id: 23,
       name: r'taxAmount',
       type: IsarType.double,
     ),
     r'total': PropertySchema(
-      id: 22,
+      id: 24,
       name: r'total',
       type: IsarType.double,
     ),
     r'updatedAt': PropertySchema(
-      id: 23,
+      id: 25,
       name: r'updatedAt',
       type: IsarType.dateTime,
     )
@@ -193,6 +204,12 @@ int _saleEstimateSize(
     }
   }
   {
+    final value = object.openTicketLabel;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
     final value = object.receiptNumber;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
@@ -227,16 +244,18 @@ void _saleSerialize(
   writer.writeBool(offsets[11], object.isSynced);
   writer.writeString(offsets[12], object.localId);
   writer.writeString(offsets[13], object.notes);
-  writer.writeByte(offsets[14], object.paymentMethod.index);
-  writer.writeString(offsets[15], object.receiptNumber);
-  writer.writeDateTime(offsets[16], object.saleDate);
-  writer.writeString(offsets[17], object.serverId);
-  writer.writeByte(offsets[18], object.status.index);
-  writer.writeDouble(offsets[19], object.subtotal);
-  writer.writeByte(offsets[20], object.syncStatus.index);
-  writer.writeDouble(offsets[21], object.taxAmount);
-  writer.writeDouble(offsets[22], object.total);
-  writer.writeDateTime(offsets[23], object.updatedAt);
+  writer.writeString(offsets[14], object.openTicketLabel);
+  writer.writeByte(offsets[15], object.orderType.index);
+  writer.writeByte(offsets[16], object.paymentMethod.index);
+  writer.writeString(offsets[17], object.receiptNumber);
+  writer.writeDateTime(offsets[18], object.saleDate);
+  writer.writeString(offsets[19], object.serverId);
+  writer.writeByte(offsets[20], object.status.index);
+  writer.writeDouble(offsets[21], object.subtotal);
+  writer.writeByte(offsets[22], object.syncStatus.index);
+  writer.writeDouble(offsets[23], object.taxAmount);
+  writer.writeDouble(offsets[24], object.total);
+  writer.writeDateTime(offsets[25], object.updatedAt);
 }
 
 Sale _saleDeserialize(
@@ -257,21 +276,24 @@ Sale _saleDeserialize(
     discount: reader.readDoubleOrNull(offsets[8]) ?? 0,
     localId: reader.readString(offsets[12]),
     notes: reader.readStringOrNull(offsets[13]),
+    openTicketLabel: reader.readStringOrNull(offsets[14]),
+    orderType: _SaleorderTypeValueEnumMap[reader.readByteOrNull(offsets[15])] ??
+        OrderType.generic,
     paymentMethod:
-        _SalepaymentMethodValueEnumMap[reader.readByteOrNull(offsets[14])] ??
+        _SalepaymentMethodValueEnumMap[reader.readByteOrNull(offsets[16])] ??
             PaymentMethod.cash,
-    receiptNumber: reader.readStringOrNull(offsets[15]),
-    saleDate: reader.readDateTime(offsets[16]),
-    serverId: reader.readStringOrNull(offsets[17]),
-    status: _SalestatusValueEnumMap[reader.readByteOrNull(offsets[18])] ??
+    receiptNumber: reader.readStringOrNull(offsets[17]),
+    saleDate: reader.readDateTime(offsets[18]),
+    serverId: reader.readStringOrNull(offsets[19]),
+    status: _SalestatusValueEnumMap[reader.readByteOrNull(offsets[20])] ??
         SaleStatus.completed,
-    subtotal: reader.readDouble(offsets[19]),
+    subtotal: reader.readDouble(offsets[21]),
     syncStatus:
-        _SalesyncStatusValueEnumMap[reader.readByteOrNull(offsets[20])] ??
+        _SalesyncStatusValueEnumMap[reader.readByteOrNull(offsets[22])] ??
             SyncStatus.pending,
-    taxAmount: reader.readDouble(offsets[21]),
-    total: reader.readDouble(offsets[22]),
-    updatedAt: reader.readDateTime(offsets[23]),
+    taxAmount: reader.readDouble(offsets[23]),
+    total: reader.readDouble(offsets[24]),
+    updatedAt: reader.readDateTime(offsets[25]),
   );
   return object;
 }
@@ -312,33 +334,50 @@ P _saleDeserializeProp<P>(
     case 13:
       return (reader.readStringOrNull(offset)) as P;
     case 14:
+      return (reader.readStringOrNull(offset)) as P;
+    case 15:
+      return (_SaleorderTypeValueEnumMap[reader.readByteOrNull(offset)] ??
+          OrderType.generic) as P;
+    case 16:
       return (_SalepaymentMethodValueEnumMap[reader.readByteOrNull(offset)] ??
           PaymentMethod.cash) as P;
-    case 15:
-      return (reader.readStringOrNull(offset)) as P;
-    case 16:
-      return (reader.readDateTime(offset)) as P;
     case 17:
       return (reader.readStringOrNull(offset)) as P;
     case 18:
+      return (reader.readDateTime(offset)) as P;
+    case 19:
+      return (reader.readStringOrNull(offset)) as P;
+    case 20:
       return (_SalestatusValueEnumMap[reader.readByteOrNull(offset)] ??
           SaleStatus.completed) as P;
-    case 19:
-      return (reader.readDouble(offset)) as P;
-    case 20:
-      return (_SalesyncStatusValueEnumMap[reader.readByteOrNull(offset)] ??
-          SyncStatus.pending) as P;
     case 21:
       return (reader.readDouble(offset)) as P;
     case 22:
-      return (reader.readDouble(offset)) as P;
+      return (_SalesyncStatusValueEnumMap[reader.readByteOrNull(offset)] ??
+          SyncStatus.pending) as P;
     case 23:
+      return (reader.readDouble(offset)) as P;
+    case 24:
+      return (reader.readDouble(offset)) as P;
+    case 25:
       return (reader.readDateTime(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
 }
 
+const _SaleorderTypeEnumValueMap = {
+  'generic': 0,
+  'dineIn': 1,
+  'takeaway': 2,
+  'delivery': 3,
+};
+const _SaleorderTypeValueEnumMap = {
+  0: OrderType.generic,
+  1: OrderType.dineIn,
+  2: OrderType.takeaway,
+  3: OrderType.delivery,
+};
 const _SalepaymentMethodEnumValueMap = {
   'cash': 0,
   'card': 1,
@@ -1706,6 +1745,205 @@ extension SaleQueryFilter on QueryBuilder<Sale, Sale, QFilterCondition> {
     });
   }
 
+  QueryBuilder<Sale, Sale, QAfterFilterCondition> openTicketLabelIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'openTicketLabel',
+      ));
+    });
+  }
+
+  QueryBuilder<Sale, Sale, QAfterFilterCondition> openTicketLabelIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'openTicketLabel',
+      ));
+    });
+  }
+
+  QueryBuilder<Sale, Sale, QAfterFilterCondition> openTicketLabelEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'openTicketLabel',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Sale, Sale, QAfterFilterCondition> openTicketLabelGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'openTicketLabel',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Sale, Sale, QAfterFilterCondition> openTicketLabelLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'openTicketLabel',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Sale, Sale, QAfterFilterCondition> openTicketLabelBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'openTicketLabel',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Sale, Sale, QAfterFilterCondition> openTicketLabelStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'openTicketLabel',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Sale, Sale, QAfterFilterCondition> openTicketLabelEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'openTicketLabel',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Sale, Sale, QAfterFilterCondition> openTicketLabelContains(
+      String value,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'openTicketLabel',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Sale, Sale, QAfterFilterCondition> openTicketLabelMatches(
+      String pattern,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'openTicketLabel',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Sale, Sale, QAfterFilterCondition> openTicketLabelIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'openTicketLabel',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<Sale, Sale, QAfterFilterCondition> openTicketLabelIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'openTicketLabel',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<Sale, Sale, QAfterFilterCondition> orderTypeEqualTo(
+      OrderType value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'orderType',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Sale, Sale, QAfterFilterCondition> orderTypeGreaterThan(
+    OrderType value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'orderType',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Sale, Sale, QAfterFilterCondition> orderTypeLessThan(
+    OrderType value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'orderType',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Sale, Sale, QAfterFilterCondition> orderTypeBetween(
+    OrderType lower,
+    OrderType upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'orderType',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
   QueryBuilder<Sale, Sale, QAfterFilterCondition> paymentMethodEqualTo(
       PaymentMethod value) {
     return QueryBuilder.apply(this, (query) {
@@ -2622,6 +2860,30 @@ extension SaleQuerySortBy on QueryBuilder<Sale, Sale, QSortBy> {
     });
   }
 
+  QueryBuilder<Sale, Sale, QAfterSortBy> sortByOpenTicketLabel() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'openTicketLabel', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Sale, Sale, QAfterSortBy> sortByOpenTicketLabelDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'openTicketLabel', Sort.desc);
+    });
+  }
+
+  QueryBuilder<Sale, Sale, QAfterSortBy> sortByOrderType() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'orderType', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Sale, Sale, QAfterSortBy> sortByOrderTypeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'orderType', Sort.desc);
+    });
+  }
+
   QueryBuilder<Sale, Sale, QAfterSortBy> sortByPaymentMethod() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'paymentMethod', Sort.asc);
@@ -2924,6 +3186,30 @@ extension SaleQuerySortThenBy on QueryBuilder<Sale, Sale, QSortThenBy> {
     });
   }
 
+  QueryBuilder<Sale, Sale, QAfterSortBy> thenByOpenTicketLabel() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'openTicketLabel', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Sale, Sale, QAfterSortBy> thenByOpenTicketLabelDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'openTicketLabel', Sort.desc);
+    });
+  }
+
+  QueryBuilder<Sale, Sale, QAfterSortBy> thenByOrderType() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'orderType', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Sale, Sale, QAfterSortBy> thenByOrderTypeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'orderType', Sort.desc);
+    });
+  }
+
   QueryBuilder<Sale, Sale, QAfterSortBy> thenByPaymentMethod() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'paymentMethod', Sort.asc);
@@ -3137,6 +3423,20 @@ extension SaleQueryWhereDistinct on QueryBuilder<Sale, Sale, QDistinct> {
     });
   }
 
+  QueryBuilder<Sale, Sale, QDistinct> distinctByOpenTicketLabel(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'openTicketLabel',
+          caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<Sale, Sale, QDistinct> distinctByOrderType() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'orderType');
+    });
+  }
+
   QueryBuilder<Sale, Sale, QDistinct> distinctByPaymentMethod() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'paymentMethod');
@@ -3289,6 +3589,18 @@ extension SaleQueryProperty on QueryBuilder<Sale, Sale, QQueryProperty> {
   QueryBuilder<Sale, String?, QQueryOperations> notesProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'notes');
+    });
+  }
+
+  QueryBuilder<Sale, String?, QQueryOperations> openTicketLabelProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'openTicketLabel');
+    });
+  }
+
+  QueryBuilder<Sale, OrderType, QQueryOperations> orderTypeProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'orderType');
     });
   }
 

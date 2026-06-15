@@ -69,6 +69,32 @@ class SaleRepository {
     }
   }
 
+  Future<Sale> refundSale(String localId, {required bool trackInventory}) async {
+    final sale = await getSaleById(localId);
+    if (sale == null) {
+      throw StateError('Venta no encontrada');
+    }
+    if (sale.status != SaleStatus.completed) {
+      throw StateError('Solo se pueden reembolsar ventas completadas');
+    }
+
+    final items = await getSaleItems(localId);
+    final refunded = sale.copyWith(status: SaleStatus.refunded, updatedAt: DateTime.now());
+
+    await _isar.writeTxn(() async {
+      await _isar.sales.put(refunded);
+      if (trackInventory) {
+        for (final item in items) {
+          final product = await _isar.products.filter().localIdEqualTo(item.productId).findFirst();
+          if (product != null) {
+            await _isar.products.put(product.copyWith(stock: product.stock + item.quantity));
+          }
+        }
+      }
+    });
+    return refunded;
+  }
+
   Future<double> getTotalSalesForCashRegister(String cashRegisterId) async {
     final sales = await _isar.sales
         .filter()

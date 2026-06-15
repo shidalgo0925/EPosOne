@@ -38,6 +38,16 @@ class SalesNotifier extends StateNotifier<AsyncValue<void>> {
       state = AsyncValue.error(e, st);
     }
   }
+
+  Future<void> refundSale(String localId, {required bool trackInventory}) async {
+    state = const AsyncValue.loading();
+    try {
+      await _repo.refundSale(localId, trackInventory: trackInventory);
+      state = const AsyncValue.data(null);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
 }
 
 final salesNotifierProvider = StateNotifierProvider<SalesNotifier, AsyncValue<void>>((ref) {

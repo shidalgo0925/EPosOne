@@ -4,7 +4,10 @@ import 'package:go_router/go_router.dart';
 import 'package:eposone/src/core/providers/business_config_provider.dart';
 import 'package:eposone/src/core/theme/eposone_theme.dart';
 import 'package:eposone/src/core/utils/view_insets.dart';
+import 'package:eposone/src/features/pos/domain/entities/order_type.dart';
 import 'package:eposone/src/features/pos/presentation/providers/cart_provider.dart';
+import 'package:eposone/src/features/pos/presentation/utils/save_open_ticket_flow.dart';
+import 'package:eposone/src/features/pos/presentation/widgets/open_ticket_bill_preview.dart';
 import 'package:eposone/src/features/pos/presentation/providers/open_ticket_provider.dart';
 import 'package:eposone/src/features/pos/presentation/providers/pos_provider.dart';
 import 'package:eposone/src/features/pos/presentation/widgets/customer_picker_tile.dart';
@@ -25,6 +28,8 @@ class PosTicketPanel extends ConsumerWidget {
     final config = ref.watch(businessConfigProvider);
     final symbol = config?.currencySymbol ?? 'B/.';
     final taxLabel = config?.taxIncluded == true ? 'Imp. incl.' : 'ITBMS';
+
+    final openTicketsOn = config?.openTicketsEnabled ?? true;
 
     return Container(
       decoration: BoxDecoration(
@@ -66,6 +71,10 @@ class PosTicketPanel extends ConsumerWidget {
             const Padding(
               padding: EdgeInsets.fromLTRB(12, 8, 12, 0),
               child: CustomerPickerTile(),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+              child: _OrderTypeSelector(orderType: cart.orderType),
             ),
           ],
           Expanded(
@@ -112,13 +121,20 @@ class PosTicketPanel extends ConsumerWidget {
                   ],
                   Row(
                     children: [
-                      if (expanded)
+                      if (expanded && openTicketsOn)
                         OutlinedButton.icon(
                           onPressed: cart.items.isEmpty ? null : () => _saveTicket(context, ref),
                           icon: const Icon(Icons.save_outlined, size: 18),
                           label: const Text('Guardar'),
                         ),
-                      if (expanded) const SizedBox(width: 8),
+                      if (expanded && openTicketsOn) const SizedBox(width: 8),
+                      if (expanded && cart.items.length > 1) ...[
+                        OutlinedButton(
+                          onPressed: () => context.push('/payment/split'),
+                          child: const Icon(Icons.call_split, size: 20),
+                        ),
+                        const SizedBox(width: 8),
+                      ],
                       Expanded(
                         child: FilledButton(
                           onPressed: cart.items.isEmpty ? null : () => context.push('/payment'),
@@ -132,6 +148,11 @@ class PosTicketPanel extends ConsumerWidget {
                   ),
                   if (expanded && cart.items.isNotEmpty) ...[
                     const SizedBox(height: 6),
+                    TextButton.icon(
+                      onPressed: () => showBillForCart(context, cart, config),
+                      icon: const Icon(Icons.receipt_long_outlined, size: 18),
+                      label: const Text('Pre-cuenta'),
+                    ),
                     TextButton.icon(
                       onPressed: () {
                         ref.read(cartProvider.notifier).clear();
@@ -150,12 +171,7 @@ class PosTicketPanel extends ConsumerWidget {
 
   Future<void> _saveTicket(BuildContext context, WidgetRef ref) async {
     try {
-      await ref.read(openTicketActionsProvider).saveCurrentCart();
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Ticket guardado')),
-        );
-      }
+      await saveOpenTicketFlow(context, ref);
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -163,6 +179,60 @@ class PosTicketPanel extends ConsumerWidget {
         );
       }
     }
+  }
+}
+
+class _OrderTypeSelector extends ConsumerWidget {
+  final OrderType orderType;
+
+  const _OrderTypeSelector({required this.orderType});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return InkWell(
+      onTap: () async {
+        final selected = await showModalBottomSheet<OrderType>(
+          context: context,
+          builder: (ctx) => SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Text('Tipo de orden', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                ),
+                for (final t in OrderType.values)
+                  ListTile(
+                    title: Text(orderTypeLabel(t)),
+                    trailing: orderType == t ? const Icon(Icons.check, color: EposBrand.orange) : null,
+                    onTap: () => Navigator.pop(ctx, t),
+                  ),
+              ],
+            ),
+          ),
+        );
+        if (selected != null) {
+          ref.read(cartProvider.notifier).setOrderType(selected);
+        }
+      },
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          border: Border.all(color: EposBrand.divider),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.restaurant_menu, size: 18, color: EposBrand.textSecondary),
+            const SizedBox(width: 8),
+            Text(orderTypeLabel(orderType), style: const TextStyle(fontSize: 13)),
+            const Spacer(),
+            const Icon(Icons.expand_more, size: 18, color: EposBrand.textSecondary),
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -321,6 +391,9 @@ class OpenTicketsButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final config = ref.watch(businessConfigProvider);
+    if (config?.openTicketsEnabled == false) return const SizedBox.shrink();
+
     final countAsync = ref.watch(openTicketsCountProvider);
 
     return countAsync.when(

@@ -12,24 +12,44 @@ import 'package:eposone/src/features/customers/presentation/screens/customer_for
 import 'package:eposone/src/features/customers/presentation/screens/customer_list_screen.dart';
 import 'package:eposone/src/features/home/presentation/screens/home_screen.dart';
 import 'package:eposone/src/features/pos/presentation/screens/payment_screen.dart';
+import 'package:eposone/src/features/pos/presentation/screens/split_bill_screen.dart';
 import 'package:eposone/src/features/pos/presentation/screens/pos_screen.dart';
 import 'package:eposone/src/features/products/presentation/screens/category_list_screen.dart';
 import 'package:eposone/src/features/products/presentation/screens/product_form_screen.dart';
 import 'package:eposone/src/features/products/presentation/screens/product_list_screen.dart';
+import 'package:eposone/src/features/pos/presentation/utils/pos_layout.dart';
 import 'package:eposone/src/features/sales/presentation/screens/receipt_screen.dart';
 import 'package:eposone/src/features/sales/presentation/screens/sale_detail_screen.dart';
 import 'package:eposone/src/features/sales/presentation/screens/sales_history_screen.dart';
+import 'package:eposone/src/features/pos/presentation/screens/pick_ticket_screen.dart';
+import 'package:eposone/src/features/pos/presentation/screens/split_open_ticket_screen.dart';
+import 'package:eposone/src/features/settings/presentation/screens/open_tickets_settings_screen.dart';
 import 'package:eposone/src/features/settings/presentation/screens/settings_screen.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
+/// Solo cambia en login/logout/apertura de caja — no en touch() de actividad.
+int _sessionRouterGate(PosSession? session) {
+  if (session == null) return 0;
+  if (session.cashRegisterId == null) return 1;
+  return 2;
+}
+
 final appRouterProvider = Provider<GoRouter>((ref) {
-  final session = ref.watch(posSessionProvider);
+  final refresh = ValueNotifier(0);
+  ref.onDispose(refresh.dispose);
+
+  ref.listen<int>(
+    posSessionProvider.select(_sessionRouterGate),
+    (_, __) => refresh.value++,
+  );
 
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
+    refreshListenable: refresh,
     initialLocation: '/splash',
     redirect: (context, state) {
+      final session = ref.read(posSessionProvider);
       final path = state.uri.path;
       const publicRoutes = ['/splash', '/onboarding', '/pin'];
       final isPublic = publicRoutes.contains(path);
@@ -62,6 +82,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/cash/open', builder: (_, __) => const CashOpenScreen()),
       GoRoute(path: '/pos', builder: (_, __) => const PosScreen()),
       GoRoute(path: '/payment', builder: (_, __) => const PaymentScreen()),
+      GoRoute(path: '/payment/split', builder: (_, __) => const SplitBillScreen()),
       GoRoute(
         path: '/receipt/:id',
         builder: (_, state) => ReceiptScreen(saleId: state.pathParameters['id']!),
@@ -81,12 +102,33 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (_, state) => CustomerFormScreen(customerId: state.pathParameters['id']),
       ),
       GoRoute(path: '/cash-register', builder: (_, __) => const CashRegisterScreen()),
-      GoRoute(path: '/sales', builder: (_, __) => const SalesHistoryScreen()),
+      GoRoute(
+        path: '/sales',
+        builder: (_, state) => SalesHistoryScreen(
+          initialSaleId: state.uri.queryParameters['id'],
+        ),
+      ),
       GoRoute(
         path: '/sales/:id',
-        builder: (_, state) => SaleDetailScreen(saleId: state.pathParameters['id']!),
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+          if (PosLayout.isTablet(context)) {
+            return SalesHistoryScreen(initialSaleId: id);
+          }
+          return SaleDetailScreen(saleId: id);
+        },
+      ),
+      GoRoute(path: '/tickets/pick', builder: (_, __) => const PickTicketScreen()),
+      GoRoute(
+        path: '/tickets/pick/move/:id',
+        builder: (_, state) => PickTicketScreen(moveTicketId: state.pathParameters['id']),
+      ),
+      GoRoute(
+        path: '/tickets/:id/split',
+        builder: (_, state) => SplitOpenTicketScreen(ticketId: state.pathParameters['id']!),
       ),
       GoRoute(path: '/settings', builder: (_, __) => const SettingsScreen()),
+      GoRoute(path: '/settings/open-tickets', builder: (_, __) => const OpenTicketsSettingsScreen()),
     ],
   );
 });

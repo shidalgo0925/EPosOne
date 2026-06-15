@@ -69,6 +69,14 @@ SaleTotals calculateSaleTotals(CartState cart, {required double taxRate, require
   return SaleTotals(subtotal: subtotal, discount: discount, taxAmount: taxAmount, total: total);
 }
 
+SaleTotals calculateTotalsForItems(List<CartItem> items, CartState cart, {required double taxRate, required bool taxIncluded}) {
+  return calculateSaleTotals(
+    CartState(items: items, discountPercent: cart.discountPercent, customerId: cart.customerId),
+    taxRate: taxRate,
+    taxIncluded: taxIncluded,
+  );
+}
+
 final saleTotalsProvider = Provider<SaleTotals>((ref) {
   final cart = ref.watch(cartProvider);
   final config = ref.watch(businessConfigProvider);
@@ -79,10 +87,11 @@ final saleTotalsProvider = Provider<SaleTotals>((ref) {
   );
 });
 
-final completeSaleProvider = Provider<Future<Sale?> Function()>((ref) {
-  return () async {
+final completeSaleProvider = Provider<Future<Sale?> Function({List<CartItem>? itemsOverride, String? notes})>((ref) {
+  return ({List<CartItem>? itemsOverride, String? notes}) async {
     final cart = ref.read(cartProvider);
-    if (cart.items.isEmpty) return null;
+    final itemsToSell = itemsOverride ?? cart.items;
+    if (itemsToSell.isEmpty) return null;
 
     final session = ref.read(posSessionProvider);
     if (session == null || session.cashRegisterId == null) {
@@ -95,7 +104,11 @@ final completeSaleProvider = Provider<Future<Sale?> Function()>((ref) {
     final configRepo = ref.read(businessConfigRepositoryProvider);
 
     final totals = calculateSaleTotals(
-      cart,
+      CartState(
+        items: itemsToSell,
+        discountPercent: cart.discountPercent,
+        customerId: cart.customerId,
+      ),
       taxRate: config.taxRate,
       taxIncluded: config.taxIncluded,
     );
@@ -111,13 +124,19 @@ final completeSaleProvider = Provider<Future<Sale?> Function()>((ref) {
       throw StateError('Monto recibido insuficiente');
     }
 
-    for (final item in cart.items) {
+    for (final item in itemsToSell) {
       if (config.trackInventory && item.quantity > item.product.stock) {
         throw StateError('Stock insuficiente: ${item.product.name}');
       }
     }
 
     final receiptNumber = await configRepo.getNextReceiptNumber();
+
+    String? openTicketLabel;
+    if (cart.openTicketId != null) {
+      final ot = await ref.read(openTicketRepositoryProvider).getById(cart.openTicketId!);
+      openTicketLabel = ot?.label;
+    }
 
     final sale = Sale.create(
       subtotal: totals.subtotal,
@@ -129,12 +148,15 @@ final completeSaleProvider = Provider<Future<Sale?> Function()>((ref) {
       customerId: checkout.customerId ?? cart.customerId,
       discount: totals.discount,
       receiptNumber: receiptNumber,
+      notes: notes,
       cashierName: session.cashierName,
       cashierId: session.cashierId,
       cashRegisterId: session.cashRegisterId,
+      orderType: cart.orderType,
+      openTicketLabel: openTicketLabel,
     );
 
-    final items = cart.items
+    final items = itemsToSell
         .map(
           (item) => SaleItem.create(
             saleId: sale.localId,
@@ -154,12 +176,23 @@ final completeSaleProvider = Provider<Future<Sale?> Function()>((ref) {
       trackInventory: config.trackInventory,
     );
 
-    if (cart.openTicketId != null) {
-      await ref.read(openTicketRepositoryProvider).deleteTicket(cart.openTicketId!);
-      ref.invalidate(openTicketsCountProvider);
+    if (itemsOverride != null) {
+      for (final item in itemsToSell) {
+        ref.read(cartProvider.notifier).removeQuantity(item.id, item.quantity);
+      }
+      final remaining = ref.read(cartProvider);
+      if (remaining.items.isEmpty && remaining.openTicketId != null) {
+        await ref.read(openTicketRepositoryProvider).deleteTicket(remaining.openTicketId!);
+        ref.invalidate(openTicketsCountProvider);
+      }
+    } else {
+      if (cart.openTicketId != null) {
+        await ref.read(openTicketRepositoryProvider).deleteTicket(cart.openTicketId!);
+        ref.invalidate(openTicketsCountProvider);
+      }
+      ref.read(cartProvider.notifier).clear();
     }
 
-    ref.read(cartProvider.notifier).clear();
     ref.read(checkoutProvider.notifier).reset();
     ref.read(posSessionProvider.notifier).touch();
     ref.invalidate(salesHistoryProvider);

@@ -9,6 +9,45 @@ import 'package:eposone/src/features/sales/domain/entities/sale.dart';
 import 'package:eposone/src/features/sales/domain/entities/sale_item.dart';
 import 'package:eposone/src/features/sales/presentation/providers/sales_provider.dart';
 
+void _confirmRefund(BuildContext context, WidgetRef ref, Sale sale) {
+  final trackInventory = ref.read(businessConfigProvider)?.trackInventory ?? true;
+  showDialog(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: const Text('Reembolsar venta'),
+      content: Text(
+        '¿Reembolsar esta venta?'
+        '${trackInventory ? '\nEl stock de los productos será restaurado.' : ''}',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(dialogContext),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton(
+          onPressed: () async {
+            Navigator.pop(dialogContext);
+            await ref.read(salesNotifierProvider.notifier).refundSale(
+                  sale.localId,
+                  trackInventory: trackInventory,
+                );
+            ref.invalidate(saleDetailProvider(sale.localId));
+            ref.invalidate(salesHistoryProvider);
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Venta reembolsada')),
+              );
+              context.go('/pos');
+            }
+          },
+          style: FilledButton.styleFrom(backgroundColor: Colors.orange),
+          child: const Text('Reembolsar'),
+        ),
+      ],
+    ),
+  );
+}
+
 class ReceiptScreen extends ConsumerWidget {
   final String saleId;
   const ReceiptScreen({super.key, required this.saleId});
@@ -127,9 +166,15 @@ class ReceiptScreen extends ConsumerWidget {
                       ],
                     ),
                     TextButton(
-                      onPressed: () => context.push('/sales/${sale.localId}'),
+                      onPressed: () => context.go('/sales/${sale.localId}'),
                       child: const Text('Ver historial'),
                     ),
+                    if (sale.status == SaleStatus.completed)
+                      TextButton.icon(
+                        onPressed: () => _confirmRefund(context, ref, sale),
+                        icon: const Icon(Icons.replay, color: Colors.orange),
+                        label: const Text('Reembolsar', style: TextStyle(color: Colors.orange)),
+                      ),
                   ],
                 ),
               ),

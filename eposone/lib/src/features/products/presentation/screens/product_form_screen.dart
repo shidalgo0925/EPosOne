@@ -1,6 +1,10 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:eposone/src/core/utils/product_image_storage.dart';
+import 'package:eposone/src/core/theme/eposone_theme.dart';
 import 'package:eposone/src/features/products/domain/entities/product.dart';
 import 'package:eposone/src/features/products/domain/entities/category.dart';
 import 'package:eposone/src/features/products/presentation/providers/product_provider.dart';
@@ -25,6 +29,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
   final _minStockController = TextEditingController();
 
   String? _selectedCategoryId;
+  String? _imagePath;
   bool _isActive = true;
   bool _allowDecimalQty = false;
 
@@ -53,6 +58,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
       _stockController.text = product.stock.toString();
       _minStockController.text = product.minStockAlert?.toString() ?? '';
       _selectedCategoryId = product.categoryId;
+      _imagePath = product.imagePath;
       _isActive = product.isActive;
       _allowDecimalQty = product.allowDecimalQty;
     }
@@ -89,6 +95,8 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    _buildImageSection(),
+                    const SizedBox(height: 16),
                     // Nombre
                     _buildTextField(
                       controller: _nameController,
@@ -257,6 +265,96 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
     );
   }
 
+  Widget _buildImageSection() {
+    final hasImage = _imagePath != null && _imagePath!.isNotEmpty && File(_imagePath!).existsSync();
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Foto del producto', style: TextStyle(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 12),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 96,
+                  height: 96,
+                  decoration: BoxDecoration(
+                    color: EposBrand.background,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: EposBrand.divider),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: hasImage
+                      ? Image.file(File(_imagePath!), fit: BoxFit.cover)
+                      : Icon(Icons.inventory_2_outlined, size: 40, color: EposBrand.navy.withValues(alpha: 0.35)),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      FilledButton.tonalIcon(
+                        onPressed: _isLoading ? null : _takePhoto,
+                        icon: const Icon(Icons.camera_alt, size: 18),
+                        label: const Text('Cámara'),
+                      ),
+                      OutlinedButton.icon(
+                        onPressed: _isLoading ? null : _pickFromGallery,
+                        icon: const Icon(Icons.photo_library_outlined, size: 18),
+                        label: const Text('Galería'),
+                      ),
+                      if (hasImage)
+                        TextButton.icon(
+                          onPressed: _isLoading ? null : _removeImage,
+                          icon: const Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                          label: const Text('Quitar', style: TextStyle(color: Colors.red)),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _takePhoto() async {
+    try {
+      final path = await ProductImageStorage.pickFromCamera();
+      if (path != null && mounted) setState(() => _imagePath = path);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('No se pudo abrir la cámara: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  Future<void> _pickFromGallery() async {
+    try {
+      final path = await ProductImageStorage.pickFromGallery();
+      if (path != null && mounted) setState(() => _imagePath = path);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('No se pudo abrir la galería: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  void _removeImage() {
+    setState(() => _imagePath = null);
+  }
+
   Widget _buildTextField({
     required TextEditingController controller,
     required String label,
@@ -338,6 +436,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
           cost: cost,
           stock: stock,
           categoryId: _selectedCategoryId,
+          imagePath: _imagePath,
           isActive: _isActive,
           allowDecimalQty: _allowDecimalQty,
           minStockAlert: minStock,
@@ -355,10 +454,11 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
           categoryId: _selectedCategoryId,
           allowDecimalQty: _allowDecimalQty,
           minStockAlert: minStock,
-        );
+        ).copyWith(imagePath: _imagePath);
       }
 
       await ref.read(productNotifierProvider.notifier).saveProduct(product);
+      ref.invalidate(productsListProvider);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

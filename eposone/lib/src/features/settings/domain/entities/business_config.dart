@@ -1,5 +1,6 @@
 import 'package:isar/isar.dart';
 import 'package:eposone/src/core/entities/sync_entity.dart';
+import 'package:eposone/src/features/pos/domain/entities/order_type.dart';
 
 part 'business_config.g.dart';
 
@@ -25,6 +26,10 @@ class BusinessConfig extends SyncEntity {
   final bool trackInventory;
   final String? ruc;
   final bool isSetupComplete;
+  final bool openTicketsEnabled;
+  final bool usePredefinedTickets;
+  @enumerated
+  final OrderType defaultOrderType;
 
   const BusinessConfig({
     required super.localId,
@@ -51,6 +56,9 @@ class BusinessConfig extends SyncEntity {
     this.trackInventory = true,
     this.ruc,
     this.isSetupComplete = false,
+    this.openTicketsEnabled = true,
+    this.usePredefinedTickets = false,
+    this.defaultOrderType = OrderType.generic,
   });
 
   String get nextReceiptNumber => '$receiptPrefix-${receiptNextNumber.toString().padLeft(6, '0')}';
@@ -89,6 +97,9 @@ class BusinessConfig extends SyncEntity {
     bool? trackInventory,
     String? ruc,
     bool? isSetupComplete,
+    bool? openTicketsEnabled,
+    bool? usePredefinedTickets,
+    OrderType? defaultOrderType,
   }) =>
       BusinessConfig(
         localId: localId ?? this.localId,
@@ -115,6 +126,9 @@ class BusinessConfig extends SyncEntity {
         trackInventory: trackInventory ?? this.trackInventory,
         ruc: ruc ?? this.ruc,
         isSetupComplete: isSetupComplete ?? this.isSetupComplete,
+        openTicketsEnabled: openTicketsEnabled ?? this.openTicketsEnabled,
+        usePredefinedTickets: usePredefinedTickets ?? this.usePredefinedTickets,
+        defaultOrderType: defaultOrderType ?? this.defaultOrderType,
       );
 
   factory BusinessConfig.defaultConfig() => BusinessConfig(

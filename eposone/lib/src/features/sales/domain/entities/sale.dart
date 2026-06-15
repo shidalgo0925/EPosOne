@@ -1,5 +1,6 @@
 import 'package:isar/isar.dart';
 import 'package:eposone/src/core/entities/sync_entity.dart';
+import 'package:eposone/src/features/pos/domain/entities/order_type.dart';
 
 part 'sale.g.dart';
 
@@ -28,6 +29,9 @@ class Sale extends SyncEntity {
   final String? cashierName; // quien atendió
   final String? cashierId;
   final String? cashRegisterId; // caja donde se hizo
+  @enumerated
+  final OrderType orderType;
+  final String? openTicketLabel;
 
   const Sale({
     required super.localId,
@@ -51,6 +55,8 @@ class Sale extends SyncEntity {
     this.cashierName,
     this.cashierId,
     this.cashRegisterId,
+    this.orderType = OrderType.generic,
+    this.openTicketLabel,
   });
 
   @override
@@ -84,6 +90,8 @@ class Sale extends SyncEntity {
     String? cashierName,
     String? cashierId,
     String? cashRegisterId,
+    OrderType? orderType,
+    String? openTicketLabel,
   }) =>
       Sale(
         localId: localId ?? this.localId,
@@ -107,6 +115,8 @@ class Sale extends SyncEntity {
         cashierName: cashierName ?? this.cashierName,
         cashierId: cashierId ?? this.cashierId,
         cashRegisterId: cashRegisterId ?? this.cashRegisterId,
+        orderType: orderType ?? this.orderType,
+        openTicketLabel: openTicketLabel ?? this.openTicketLabel,
       );
 
   factory Sale.create({
@@ -123,6 +133,8 @@ class Sale extends SyncEntity {
     String? cashierName,
     String? cashierId,
     String? cashRegisterId,
+    OrderType orderType = OrderType.generic,
+    String? openTicketLabel,
   }) =>
       Sale(
         localId: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -140,6 +152,8 @@ class Sale extends SyncEntity {
         cashierName: cashierName,
         cashierId: cashierId,
         cashRegisterId: cashRegisterId,
+        orderType: orderType,
+        openTicketLabel: openTicketLabel,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );

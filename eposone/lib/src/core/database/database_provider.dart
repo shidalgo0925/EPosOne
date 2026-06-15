@@ -12,6 +12,7 @@ import 'package:eposone/src/features/cash_register/domain/entities/cash_register
 import 'package:eposone/src/features/settings/domain/entities/business_config.dart';
 import 'package:eposone/src/features/auth/domain/entities/cashier.dart';
 import 'package:eposone/src/features/pos/domain/entities/open_ticket.dart';
+import 'package:eposone/src/features/pos/domain/entities/predefined_ticket.dart';
 import 'package:eposone/src/features/pos/domain/entities/open_ticket_line.dart';
 
 part 'database_provider.g.dart';
@@ -37,6 +38,7 @@ class Database extends _$Database {
         CashierSchema,
         OpenTicketSchema,
         OpenTicketLineSchema,
+        PredefinedTicketSchema,
       ],
       directory: dir.path,
       inspector: true,

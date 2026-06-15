@@ -27,69 +27,91 @@ const OpenTicketSchema = CollectionSchema(
       name: r'cashierId',
       type: IsarType.string,
     ),
-    r'createdAt': PropertySchema(
+    r'comment': PropertySchema(
       id: 2,
+      name: r'comment',
+      type: IsarType.string,
+    ),
+    r'createdAt': PropertySchema(
+      id: 3,
       name: r'createdAt',
       type: IsarType.dateTime,
     ),
     r'customerId': PropertySchema(
-      id: 3,
+      id: 4,
       name: r'customerId',
       type: IsarType.string,
     ),
     r'deletedAt': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'deletedAt',
       type: IsarType.dateTime,
     ),
     r'discountPercent': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'discountPercent',
       type: IsarType.double,
     ),
     r'isDeleted': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'isDeleted',
       type: IsarType.bool,
     ),
     r'isPendingSync': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'isPendingSync',
       type: IsarType.bool,
     ),
     r'isSynced': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'isSynced',
       type: IsarType.bool,
     ),
     r'label': PropertySchema(
-      id: 9,
+      id: 10,
       name: r'label',
       type: IsarType.string,
     ),
     r'localId': PropertySchema(
-      id: 10,
+      id: 11,
       name: r'localId',
       type: IsarType.string,
     ),
+    r'orderType': PropertySchema(
+      id: 12,
+      name: r'orderType',
+      type: IsarType.byte,
+      enumMap: _OpenTicketorderTypeEnumValueMap,
+    ),
+    r'predefinedSlotId': PropertySchema(
+      id: 13,
+      name: r'predefinedSlotId',
+      type: IsarType.string,
+    ),
     r'savedAt': PropertySchema(
-      id: 11,
+      id: 14,
       name: r'savedAt',
       type: IsarType.dateTime,
     ),
     r'serverId': PropertySchema(
-      id: 12,
+      id: 15,
       name: r'serverId',
       type: IsarType.string,
     ),
+    r'status': PropertySchema(
+      id: 16,
+      name: r'status',
+      type: IsarType.byte,
+      enumMap: _OpenTicketstatusEnumValueMap,
+    ),
     r'syncStatus': PropertySchema(
-      id: 13,
+      id: 17,
       name: r'syncStatus',
       type: IsarType.byte,
       enumMap: _OpenTicketsyncStatusEnumValueMap,
     ),
     r'updatedAt': PropertySchema(
-      id: 14,
+      id: 18,
       name: r'updatedAt',
       type: IsarType.dateTime,
     )
@@ -127,6 +149,12 @@ int _openTicketEstimateSize(
     }
   }
   {
+    final value = object.comment;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
     final value = object.customerId;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
@@ -139,6 +167,12 @@ int _openTicketEstimateSize(
     }
   }
   bytesCount += 3 + object.localId.length * 3;
+  {
+    final value = object.predefinedSlotId;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   {
     final value = object.serverId;
     if (value != null) {
@@ -156,19 +190,23 @@ void _openTicketSerialize(
 ) {
   writer.writeString(offsets[0], object.cashRegisterId);
   writer.writeString(offsets[1], object.cashierId);
-  writer.writeDateTime(offsets[2], object.createdAt);
-  writer.writeString(offsets[3], object.customerId);
-  writer.writeDateTime(offsets[4], object.deletedAt);
-  writer.writeDouble(offsets[5], object.discountPercent);
-  writer.writeBool(offsets[6], object.isDeleted);
-  writer.writeBool(offsets[7], object.isPendingSync);
-  writer.writeBool(offsets[8], object.isSynced);
-  writer.writeString(offsets[9], object.label);
-  writer.writeString(offsets[10], object.localId);
-  writer.writeDateTime(offsets[11], object.savedAt);
-  writer.writeString(offsets[12], object.serverId);
-  writer.writeByte(offsets[13], object.syncStatus.index);
-  writer.writeDateTime(offsets[14], object.updatedAt);
+  writer.writeString(offsets[2], object.comment);
+  writer.writeDateTime(offsets[3], object.createdAt);
+  writer.writeString(offsets[4], object.customerId);
+  writer.writeDateTime(offsets[5], object.deletedAt);
+  writer.writeDouble(offsets[6], object.discountPercent);
+  writer.writeBool(offsets[7], object.isDeleted);
+  writer.writeBool(offsets[8], object.isPendingSync);
+  writer.writeBool(offsets[9], object.isSynced);
+  writer.writeString(offsets[10], object.label);
+  writer.writeString(offsets[11], object.localId);
+  writer.writeByte(offsets[12], object.orderType.index);
+  writer.writeString(offsets[13], object.predefinedSlotId);
+  writer.writeDateTime(offsets[14], object.savedAt);
+  writer.writeString(offsets[15], object.serverId);
+  writer.writeByte(offsets[16], object.status.index);
+  writer.writeByte(offsets[17], object.syncStatus.index);
+  writer.writeDateTime(offsets[18], object.updatedAt);
 }
 
 OpenTicket _openTicketDeserialize(
@@ -180,18 +218,25 @@ OpenTicket _openTicketDeserialize(
   final object = OpenTicket(
     cashRegisterId: reader.readStringOrNull(offsets[0]),
     cashierId: reader.readStringOrNull(offsets[1]),
-    createdAt: reader.readDateTime(offsets[2]),
-    customerId: reader.readStringOrNull(offsets[3]),
-    deletedAt: reader.readDateTimeOrNull(offsets[4]),
-    discountPercent: reader.readDoubleOrNull(offsets[5]),
-    label: reader.readStringOrNull(offsets[9]),
-    localId: reader.readString(offsets[10]),
-    savedAt: reader.readDateTime(offsets[11]),
-    serverId: reader.readStringOrNull(offsets[12]),
+    comment: reader.readStringOrNull(offsets[2]),
+    createdAt: reader.readDateTime(offsets[3]),
+    customerId: reader.readStringOrNull(offsets[4]),
+    deletedAt: reader.readDateTimeOrNull(offsets[5]),
+    discountPercent: reader.readDoubleOrNull(offsets[6]),
+    label: reader.readStringOrNull(offsets[10]),
+    localId: reader.readString(offsets[11]),
+    orderType:
+        _OpenTicketorderTypeValueEnumMap[reader.readByteOrNull(offsets[12])] ??
+            OrderType.generic,
+    predefinedSlotId: reader.readStringOrNull(offsets[13]),
+    savedAt: reader.readDateTime(offsets[14]),
+    serverId: reader.readStringOrNull(offsets[15]),
+    status: _OpenTicketstatusValueEnumMap[reader.readByteOrNull(offsets[16])] ??
+        OpenTicketStatus.open,
     syncStatus:
-        _OpenTicketsyncStatusValueEnumMap[reader.readByteOrNull(offsets[13])] ??
+        _OpenTicketsyncStatusValueEnumMap[reader.readByteOrNull(offsets[17])] ??
             SyncStatus.pending,
-    updatedAt: reader.readDateTime(offsets[14]),
+    updatedAt: reader.readDateTime(offsets[18]),
   );
   return object;
 }
@@ -208,38 +253,68 @@ P _openTicketDeserializeProp<P>(
     case 1:
       return (reader.readStringOrNull(offset)) as P;
     case 2:
-      return (reader.readDateTime(offset)) as P;
-    case 3:
       return (reader.readStringOrNull(offset)) as P;
+    case 3:
+      return (reader.readDateTime(offset)) as P;
     case 4:
-      return (reader.readDateTimeOrNull(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 5:
-      return (reader.readDoubleOrNull(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 6:
-      return (reader.readBool(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 7:
       return (reader.readBool(offset)) as P;
     case 8:
       return (reader.readBool(offset)) as P;
     case 9:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 10:
-      return (reader.readString(offset)) as P;
-    case 11:
-      return (reader.readDateTime(offset)) as P;
-    case 12:
       return (reader.readStringOrNull(offset)) as P;
+    case 11:
+      return (reader.readString(offset)) as P;
+    case 12:
+      return (_OpenTicketorderTypeValueEnumMap[reader.readByteOrNull(offset)] ??
+          OrderType.generic) as P;
     case 13:
+      return (reader.readStringOrNull(offset)) as P;
+    case 14:
+      return (reader.readDateTime(offset)) as P;
+    case 15:
+      return (reader.readStringOrNull(offset)) as P;
+    case 16:
+      return (_OpenTicketstatusValueEnumMap[reader.readByteOrNull(offset)] ??
+          OpenTicketStatus.open) as P;
+    case 17:
       return (_OpenTicketsyncStatusValueEnumMap[
               reader.readByteOrNull(offset)] ??
           SyncStatus.pending) as P;
-    case 14:
+    case 18:
       return (reader.readDateTime(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
 }
 
+const _OpenTicketorderTypeEnumValueMap = {
+  'generic': 0,
+  'dineIn': 1,
+  'takeaway': 2,
+  'delivery': 3,
+};
+const _OpenTicketorderTypeValueEnumMap = {
+  0: OrderType.generic,
+  1: OrderType.dineIn,
+  2: OrderType.takeaway,
+  3: OrderType.delivery,
+};
+const _OpenTicketstatusEnumValueMap = {
+  'open': 0,
+  'cancelled': 1,
+};
+const _OpenTicketstatusValueEnumMap = {
+  0: OpenTicketStatus.open,
+  1: OpenTicketStatus.cancelled,
+};
 const _OpenTicketsyncStatusEnumValueMap = {
   'pending': 0,
   'synced': 1,
@@ -647,6 +722,155 @@ extension OpenTicketQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.greaterThan(
         property: r'cashierId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<OpenTicket, OpenTicket, QAfterFilterCondition> commentIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'comment',
+      ));
+    });
+  }
+
+  QueryBuilder<OpenTicket, OpenTicket, QAfterFilterCondition>
+      commentIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'comment',
+      ));
+    });
+  }
+
+  QueryBuilder<OpenTicket, OpenTicket, QAfterFilterCondition> commentEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'comment',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OpenTicket, OpenTicket, QAfterFilterCondition>
+      commentGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'comment',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OpenTicket, OpenTicket, QAfterFilterCondition> commentLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'comment',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OpenTicket, OpenTicket, QAfterFilterCondition> commentBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'comment',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OpenTicket, OpenTicket, QAfterFilterCondition> commentStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'comment',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OpenTicket, OpenTicket, QAfterFilterCondition> commentEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'comment',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OpenTicket, OpenTicket, QAfterFilterCondition> commentContains(
+      String value,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'comment',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OpenTicket, OpenTicket, QAfterFilterCondition> commentMatches(
+      String pattern,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'comment',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OpenTicket, OpenTicket, QAfterFilterCondition> commentIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'comment',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<OpenTicket, OpenTicket, QAfterFilterCondition>
+      commentIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'comment',
         value: '',
       ));
     });
@@ -1377,6 +1601,214 @@ extension OpenTicketQueryFilter
     });
   }
 
+  QueryBuilder<OpenTicket, OpenTicket, QAfterFilterCondition> orderTypeEqualTo(
+      OrderType value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'orderType',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<OpenTicket, OpenTicket, QAfterFilterCondition>
+      orderTypeGreaterThan(
+    OrderType value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'orderType',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<OpenTicket, OpenTicket, QAfterFilterCondition> orderTypeLessThan(
+    OrderType value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'orderType',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<OpenTicket, OpenTicket, QAfterFilterCondition> orderTypeBetween(
+    OrderType lower,
+    OrderType upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'orderType',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<OpenTicket, OpenTicket, QAfterFilterCondition>
+      predefinedSlotIdIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'predefinedSlotId',
+      ));
+    });
+  }
+
+  QueryBuilder<OpenTicket, OpenTicket, QAfterFilterCondition>
+      predefinedSlotIdIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'predefinedSlotId',
+      ));
+    });
+  }
+
+  QueryBuilder<OpenTicket, OpenTicket, QAfterFilterCondition>
+      predefinedSlotIdEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'predefinedSlotId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OpenTicket, OpenTicket, QAfterFilterCondition>
+      predefinedSlotIdGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'predefinedSlotId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OpenTicket, OpenTicket, QAfterFilterCondition>
+      predefinedSlotIdLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'predefinedSlotId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OpenTicket, OpenTicket, QAfterFilterCondition>
+      predefinedSlotIdBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'predefinedSlotId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OpenTicket, OpenTicket, QAfterFilterCondition>
+      predefinedSlotIdStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'predefinedSlotId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OpenTicket, OpenTicket, QAfterFilterCondition>
+      predefinedSlotIdEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'predefinedSlotId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OpenTicket, OpenTicket, QAfterFilterCondition>
+      predefinedSlotIdContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'predefinedSlotId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OpenTicket, OpenTicket, QAfterFilterCondition>
+      predefinedSlotIdMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'predefinedSlotId',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OpenTicket, OpenTicket, QAfterFilterCondition>
+      predefinedSlotIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'predefinedSlotId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<OpenTicket, OpenTicket, QAfterFilterCondition>
+      predefinedSlotIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'predefinedSlotId',
+        value: '',
+      ));
+    });
+  }
+
   QueryBuilder<OpenTicket, OpenTicket, QAfterFilterCondition> savedAtEqualTo(
       DateTime value) {
     return QueryBuilder.apply(this, (query) {
@@ -1582,6 +2014,59 @@ extension OpenTicketQueryFilter
     });
   }
 
+  QueryBuilder<OpenTicket, OpenTicket, QAfterFilterCondition> statusEqualTo(
+      OpenTicketStatus value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'status',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<OpenTicket, OpenTicket, QAfterFilterCondition> statusGreaterThan(
+    OpenTicketStatus value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'status',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<OpenTicket, OpenTicket, QAfterFilterCondition> statusLessThan(
+    OpenTicketStatus value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'status',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<OpenTicket, OpenTicket, QAfterFilterCondition> statusBetween(
+    OpenTicketStatus lower,
+    OpenTicketStatus upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'status',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
   QueryBuilder<OpenTicket, OpenTicket, QAfterFilterCondition> syncStatusEqualTo(
       SyncStatus value) {
     return QueryBuilder.apply(this, (query) {
@@ -1725,6 +2210,18 @@ extension OpenTicketQuerySortBy
     });
   }
 
+  QueryBuilder<OpenTicket, OpenTicket, QAfterSortBy> sortByComment() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'comment', Sort.asc);
+    });
+  }
+
+  QueryBuilder<OpenTicket, OpenTicket, QAfterSortBy> sortByCommentDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'comment', Sort.desc);
+    });
+  }
+
   QueryBuilder<OpenTicket, OpenTicket, QAfterSortBy> sortByCreatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'createdAt', Sort.asc);
@@ -1834,6 +2331,31 @@ extension OpenTicketQuerySortBy
     });
   }
 
+  QueryBuilder<OpenTicket, OpenTicket, QAfterSortBy> sortByOrderType() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'orderType', Sort.asc);
+    });
+  }
+
+  QueryBuilder<OpenTicket, OpenTicket, QAfterSortBy> sortByOrderTypeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'orderType', Sort.desc);
+    });
+  }
+
+  QueryBuilder<OpenTicket, OpenTicket, QAfterSortBy> sortByPredefinedSlotId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'predefinedSlotId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<OpenTicket, OpenTicket, QAfterSortBy>
+      sortByPredefinedSlotIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'predefinedSlotId', Sort.desc);
+    });
+  }
+
   QueryBuilder<OpenTicket, OpenTicket, QAfterSortBy> sortBySavedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'savedAt', Sort.asc);
@@ -1855,6 +2377,18 @@ extension OpenTicketQuerySortBy
   QueryBuilder<OpenTicket, OpenTicket, QAfterSortBy> sortByServerIdDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'serverId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<OpenTicket, OpenTicket, QAfterSortBy> sortByStatus() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'status', Sort.asc);
+    });
+  }
+
+  QueryBuilder<OpenTicket, OpenTicket, QAfterSortBy> sortByStatusDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'status', Sort.desc);
     });
   }
 
@@ -1907,6 +2441,18 @@ extension OpenTicketQuerySortThenBy
   QueryBuilder<OpenTicket, OpenTicket, QAfterSortBy> thenByCashierIdDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'cashierId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<OpenTicket, OpenTicket, QAfterSortBy> thenByComment() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'comment', Sort.asc);
+    });
+  }
+
+  QueryBuilder<OpenTicket, OpenTicket, QAfterSortBy> thenByCommentDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'comment', Sort.desc);
     });
   }
 
@@ -2031,6 +2577,31 @@ extension OpenTicketQuerySortThenBy
     });
   }
 
+  QueryBuilder<OpenTicket, OpenTicket, QAfterSortBy> thenByOrderType() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'orderType', Sort.asc);
+    });
+  }
+
+  QueryBuilder<OpenTicket, OpenTicket, QAfterSortBy> thenByOrderTypeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'orderType', Sort.desc);
+    });
+  }
+
+  QueryBuilder<OpenTicket, OpenTicket, QAfterSortBy> thenByPredefinedSlotId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'predefinedSlotId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<OpenTicket, OpenTicket, QAfterSortBy>
+      thenByPredefinedSlotIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'predefinedSlotId', Sort.desc);
+    });
+  }
+
   QueryBuilder<OpenTicket, OpenTicket, QAfterSortBy> thenBySavedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'savedAt', Sort.asc);
@@ -2052,6 +2623,18 @@ extension OpenTicketQuerySortThenBy
   QueryBuilder<OpenTicket, OpenTicket, QAfterSortBy> thenByServerIdDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'serverId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<OpenTicket, OpenTicket, QAfterSortBy> thenByStatus() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'status', Sort.asc);
+    });
+  }
+
+  QueryBuilder<OpenTicket, OpenTicket, QAfterSortBy> thenByStatusDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'status', Sort.desc);
     });
   }
 
@@ -2094,6 +2677,13 @@ extension OpenTicketQueryWhereDistinct
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'cashierId', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<OpenTicket, OpenTicket, QDistinct> distinctByComment(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'comment', caseSensitive: caseSensitive);
     });
   }
 
@@ -2154,6 +2744,20 @@ extension OpenTicketQueryWhereDistinct
     });
   }
 
+  QueryBuilder<OpenTicket, OpenTicket, QDistinct> distinctByOrderType() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'orderType');
+    });
+  }
+
+  QueryBuilder<OpenTicket, OpenTicket, QDistinct> distinctByPredefinedSlotId(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'predefinedSlotId',
+          caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<OpenTicket, OpenTicket, QDistinct> distinctBySavedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'savedAt');
@@ -2164,6 +2768,12 @@ extension OpenTicketQueryWhereDistinct
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'serverId', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<OpenTicket, OpenTicket, QDistinct> distinctByStatus() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'status');
     });
   }
 
@@ -2197,6 +2807,12 @@ extension OpenTicketQueryProperty
   QueryBuilder<OpenTicket, String?, QQueryOperations> cashierIdProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'cashierId');
+    });
+  }
+
+  QueryBuilder<OpenTicket, String?, QQueryOperations> commentProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'comment');
     });
   }
 
@@ -2255,6 +2871,19 @@ extension OpenTicketQueryProperty
     });
   }
 
+  QueryBuilder<OpenTicket, OrderType, QQueryOperations> orderTypeProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'orderType');
+    });
+  }
+
+  QueryBuilder<OpenTicket, String?, QQueryOperations>
+      predefinedSlotIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'predefinedSlotId');
+    });
+  }
+
   QueryBuilder<OpenTicket, DateTime, QQueryOperations> savedAtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'savedAt');
@@ -2264,6 +2893,13 @@ extension OpenTicketQueryProperty
   QueryBuilder<OpenTicket, String?, QQueryOperations> serverIdProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'serverId');
+    });
+  }
+
+  QueryBuilder<OpenTicket, OpenTicketStatus, QQueryOperations>
+      statusProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'status');
     });
   }
 

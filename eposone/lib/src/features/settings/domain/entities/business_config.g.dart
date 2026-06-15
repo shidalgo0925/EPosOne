@@ -47,116 +47,132 @@ const BusinessConfigSchema = CollectionSchema(
       name: r'currencySymbol',
       type: IsarType.string,
     ),
-    r'deletedAt': PropertySchema(
+    r'defaultOrderType': PropertySchema(
       id: 6,
+      name: r'defaultOrderType',
+      type: IsarType.byte,
+      enumMap: _BusinessConfigdefaultOrderTypeEnumValueMap,
+    ),
+    r'deletedAt': PropertySchema(
+      id: 7,
       name: r'deletedAt',
       type: IsarType.dateTime,
     ),
     r'email': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'email',
       type: IsarType.string,
     ),
     r'isDeleted': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'isDeleted',
       type: IsarType.bool,
     ),
     r'isPendingSync': PropertySchema(
-      id: 9,
+      id: 10,
       name: r'isPendingSync',
       type: IsarType.bool,
     ),
     r'isSetupComplete': PropertySchema(
-      id: 10,
+      id: 11,
       name: r'isSetupComplete',
       type: IsarType.bool,
     ),
     r'isSynced': PropertySchema(
-      id: 11,
+      id: 12,
       name: r'isSynced',
       type: IsarType.bool,
     ),
     r'localId': PropertySchema(
-      id: 12,
+      id: 13,
       name: r'localId',
       type: IsarType.string,
     ),
     r'logoPath': PropertySchema(
-      id: 13,
+      id: 14,
       name: r'logoPath',
       type: IsarType.string,
     ),
     r'nextReceiptNumber': PropertySchema(
-      id: 14,
+      id: 15,
       name: r'nextReceiptNumber',
       type: IsarType.string,
     ),
+    r'openTicketsEnabled': PropertySchema(
+      id: 16,
+      name: r'openTicketsEnabled',
+      type: IsarType.bool,
+    ),
     r'phone': PropertySchema(
-      id: 15,
+      id: 17,
       name: r'phone',
       type: IsarType.string,
     ),
     r'receiptFooter': PropertySchema(
-      id: 16,
+      id: 18,
       name: r'receiptFooter',
       type: IsarType.string,
     ),
     r'receiptHeader': PropertySchema(
-      id: 17,
+      id: 19,
       name: r'receiptHeader',
       type: IsarType.string,
     ),
     r'receiptNextNumber': PropertySchema(
-      id: 18,
+      id: 20,
       name: r'receiptNextNumber',
       type: IsarType.long,
     ),
     r'receiptPrefix': PropertySchema(
-      id: 19,
+      id: 21,
       name: r'receiptPrefix',
       type: IsarType.string,
     ),
     r'ruc': PropertySchema(
-      id: 20,
+      id: 22,
       name: r'ruc',
       type: IsarType.string,
     ),
     r'serverId': PropertySchema(
-      id: 21,
+      id: 23,
       name: r'serverId',
       type: IsarType.string,
     ),
     r'syncStatus': PropertySchema(
-      id: 22,
+      id: 24,
       name: r'syncStatus',
       type: IsarType.byte,
       enumMap: _BusinessConfigsyncStatusEnumValueMap,
     ),
     r'taxIncluded': PropertySchema(
-      id: 23,
+      id: 25,
       name: r'taxIncluded',
       type: IsarType.bool,
     ),
     r'taxName': PropertySchema(
-      id: 24,
+      id: 26,
       name: r'taxName',
       type: IsarType.string,
     ),
     r'taxRate': PropertySchema(
-      id: 25,
+      id: 27,
       name: r'taxRate',
       type: IsarType.double,
     ),
     r'trackInventory': PropertySchema(
-      id: 26,
+      id: 28,
       name: r'trackInventory',
       type: IsarType.bool,
     ),
     r'updatedAt': PropertySchema(
-      id: 27,
+      id: 29,
       name: r'updatedAt',
       type: IsarType.dateTime,
+    ),
+    r'usePredefinedTickets': PropertySchema(
+      id: 30,
+      name: r'usePredefinedTickets',
+      type: IsarType.bool,
     )
   },
   estimateSize: _businessConfigEstimateSize,
@@ -254,28 +270,31 @@ void _businessConfigSerialize(
   writer.writeDateTime(offsets[3], object.createdAt);
   writer.writeString(offsets[4], object.currency);
   writer.writeString(offsets[5], object.currencySymbol);
-  writer.writeDateTime(offsets[6], object.deletedAt);
-  writer.writeString(offsets[7], object.email);
-  writer.writeBool(offsets[8], object.isDeleted);
-  writer.writeBool(offsets[9], object.isPendingSync);
-  writer.writeBool(offsets[10], object.isSetupComplete);
-  writer.writeBool(offsets[11], object.isSynced);
-  writer.writeString(offsets[12], object.localId);
-  writer.writeString(offsets[13], object.logoPath);
-  writer.writeString(offsets[14], object.nextReceiptNumber);
-  writer.writeString(offsets[15], object.phone);
-  writer.writeString(offsets[16], object.receiptFooter);
-  writer.writeString(offsets[17], object.receiptHeader);
-  writer.writeLong(offsets[18], object.receiptNextNumber);
-  writer.writeString(offsets[19], object.receiptPrefix);
-  writer.writeString(offsets[20], object.ruc);
-  writer.writeString(offsets[21], object.serverId);
-  writer.writeByte(offsets[22], object.syncStatus.index);
-  writer.writeBool(offsets[23], object.taxIncluded);
-  writer.writeString(offsets[24], object.taxName);
-  writer.writeDouble(offsets[25], object.taxRate);
-  writer.writeBool(offsets[26], object.trackInventory);
-  writer.writeDateTime(offsets[27], object.updatedAt);
+  writer.writeByte(offsets[6], object.defaultOrderType.index);
+  writer.writeDateTime(offsets[7], object.deletedAt);
+  writer.writeString(offsets[8], object.email);
+  writer.writeBool(offsets[9], object.isDeleted);
+  writer.writeBool(offsets[10], object.isPendingSync);
+  writer.writeBool(offsets[11], object.isSetupComplete);
+  writer.writeBool(offsets[12], object.isSynced);
+  writer.writeString(offsets[13], object.localId);
+  writer.writeString(offsets[14], object.logoPath);
+  writer.writeString(offsets[15], object.nextReceiptNumber);
+  writer.writeBool(offsets[16], object.openTicketsEnabled);
+  writer.writeString(offsets[17], object.phone);
+  writer.writeString(offsets[18], object.receiptFooter);
+  writer.writeString(offsets[19], object.receiptHeader);
+  writer.writeLong(offsets[20], object.receiptNextNumber);
+  writer.writeString(offsets[21], object.receiptPrefix);
+  writer.writeString(offsets[22], object.ruc);
+  writer.writeString(offsets[23], object.serverId);
+  writer.writeByte(offsets[24], object.syncStatus.index);
+  writer.writeBool(offsets[25], object.taxIncluded);
+  writer.writeString(offsets[26], object.taxName);
+  writer.writeDouble(offsets[27], object.taxRate);
+  writer.writeBool(offsets[28], object.trackInventory);
+  writer.writeDateTime(offsets[29], object.updatedAt);
+  writer.writeBool(offsets[30], object.usePredefinedTickets);
 }
 
 BusinessConfig _businessConfigDeserialize(
@@ -291,27 +310,32 @@ BusinessConfig _businessConfigDeserialize(
     createdAt: reader.readDateTime(offsets[3]),
     currency: reader.readStringOrNull(offsets[4]) ?? 'USD',
     currencySymbol: reader.readStringOrNull(offsets[5]),
-    deletedAt: reader.readDateTimeOrNull(offsets[6]),
-    email: reader.readStringOrNull(offsets[7]),
-    isSetupComplete: reader.readBoolOrNull(offsets[10]) ?? false,
-    localId: reader.readString(offsets[12]),
-    logoPath: reader.readStringOrNull(offsets[13]),
-    phone: reader.readStringOrNull(offsets[15]),
-    receiptFooter: reader.readStringOrNull(offsets[16]) ?? 'Vuelva pronto',
+    defaultOrderType: _BusinessConfigdefaultOrderTypeValueEnumMap[
+            reader.readByteOrNull(offsets[6])] ??
+        OrderType.generic,
+    deletedAt: reader.readDateTimeOrNull(offsets[7]),
+    email: reader.readStringOrNull(offsets[8]),
+    isSetupComplete: reader.readBoolOrNull(offsets[11]) ?? false,
+    localId: reader.readString(offsets[13]),
+    logoPath: reader.readStringOrNull(offsets[14]),
+    openTicketsEnabled: reader.readBoolOrNull(offsets[16]) ?? true,
+    phone: reader.readStringOrNull(offsets[17]),
+    receiptFooter: reader.readStringOrNull(offsets[18]) ?? 'Vuelva pronto',
     receiptHeader:
-        reader.readStringOrNull(offsets[17]) ?? 'Gracias por su compra',
-    receiptNextNumber: reader.readLongOrNull(offsets[18]) ?? 1,
-    receiptPrefix: reader.readStringOrNull(offsets[19]),
-    ruc: reader.readStringOrNull(offsets[20]),
-    serverId: reader.readStringOrNull(offsets[21]),
+        reader.readStringOrNull(offsets[19]) ?? 'Gracias por su compra',
+    receiptNextNumber: reader.readLongOrNull(offsets[20]) ?? 1,
+    receiptPrefix: reader.readStringOrNull(offsets[21]),
+    ruc: reader.readStringOrNull(offsets[22]),
+    serverId: reader.readStringOrNull(offsets[23]),
     syncStatus: _BusinessConfigsyncStatusValueEnumMap[
-            reader.readByteOrNull(offsets[22])] ??
+            reader.readByteOrNull(offsets[24])] ??
         SyncStatus.pending,
-    taxIncluded: reader.readBoolOrNull(offsets[23]) ?? false,
-    taxName: reader.readStringOrNull(offsets[24]),
-    taxRate: reader.readDoubleOrNull(offsets[25]) ?? 0,
-    trackInventory: reader.readBoolOrNull(offsets[26]) ?? true,
-    updatedAt: reader.readDateTime(offsets[27]),
+    taxIncluded: reader.readBoolOrNull(offsets[25]) ?? false,
+    taxName: reader.readStringOrNull(offsets[26]),
+    taxRate: reader.readDoubleOrNull(offsets[27]) ?? 0,
+    trackInventory: reader.readBoolOrNull(offsets[28]) ?? true,
+    updatedAt: reader.readDateTime(offsets[29]),
+    usePredefinedTickets: reader.readBoolOrNull(offsets[30]) ?? false,
   );
   return object;
 }
@@ -336,56 +360,76 @@ P _businessConfigDeserializeProp<P>(
     case 5:
       return (reader.readStringOrNull(offset)) as P;
     case 6:
-      return (reader.readDateTimeOrNull(offset)) as P;
+      return (_BusinessConfigdefaultOrderTypeValueEnumMap[
+              reader.readByteOrNull(offset)] ??
+          OrderType.generic) as P;
     case 7:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 8:
-      return (reader.readBool(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 9:
       return (reader.readBool(offset)) as P;
     case 10:
-      return (reader.readBoolOrNull(offset) ?? false) as P;
-    case 11:
       return (reader.readBool(offset)) as P;
+    case 11:
+      return (reader.readBoolOrNull(offset) ?? false) as P;
     case 12:
-      return (reader.readString(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 13:
-      return (reader.readStringOrNull(offset)) as P;
-    case 14:
       return (reader.readString(offset)) as P;
+    case 14:
+      return (reader.readStringOrNull(offset)) as P;
     case 15:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 16:
-      return (reader.readStringOrNull(offset) ?? 'Vuelva pronto') as P;
+      return (reader.readBoolOrNull(offset) ?? true) as P;
     case 17:
-      return (reader.readStringOrNull(offset) ?? 'Gracias por su compra') as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 18:
-      return (reader.readLongOrNull(offset) ?? 1) as P;
+      return (reader.readStringOrNull(offset) ?? 'Vuelva pronto') as P;
     case 19:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readStringOrNull(offset) ?? 'Gracias por su compra') as P;
     case 20:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readLongOrNull(offset) ?? 1) as P;
     case 21:
       return (reader.readStringOrNull(offset)) as P;
     case 22:
+      return (reader.readStringOrNull(offset)) as P;
+    case 23:
+      return (reader.readStringOrNull(offset)) as P;
+    case 24:
       return (_BusinessConfigsyncStatusValueEnumMap[
               reader.readByteOrNull(offset)] ??
           SyncStatus.pending) as P;
-    case 23:
-      return (reader.readBoolOrNull(offset) ?? false) as P;
-    case 24:
-      return (reader.readStringOrNull(offset)) as P;
     case 25:
-      return (reader.readDoubleOrNull(offset) ?? 0) as P;
+      return (reader.readBoolOrNull(offset) ?? false) as P;
     case 26:
-      return (reader.readBoolOrNull(offset) ?? true) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 27:
+      return (reader.readDoubleOrNull(offset) ?? 0) as P;
+    case 28:
+      return (reader.readBoolOrNull(offset) ?? true) as P;
+    case 29:
       return (reader.readDateTime(offset)) as P;
+    case 30:
+      return (reader.readBoolOrNull(offset) ?? false) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
 }
 
+const _BusinessConfigdefaultOrderTypeEnumValueMap = {
+  'generic': 0,
+  'dineIn': 1,
+  'takeaway': 2,
+  'delivery': 3,
+};
+const _BusinessConfigdefaultOrderTypeValueEnumMap = {
+  0: OrderType.generic,
+  1: OrderType.dineIn,
+  2: OrderType.takeaway,
+  3: OrderType.delivery,
+};
 const _BusinessConfigsyncStatusEnumValueMap = {
   'pending': 0,
   'synced': 1,
@@ -1138,6 +1182,62 @@ extension BusinessConfigQueryFilter
   }
 
   QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      defaultOrderTypeEqualTo(OrderType value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'defaultOrderType',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      defaultOrderTypeGreaterThan(
+    OrderType value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'defaultOrderType',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      defaultOrderTypeLessThan(
+    OrderType value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'defaultOrderType',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      defaultOrderTypeBetween(
+    OrderType lower,
+    OrderType upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'defaultOrderType',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
       deletedAtIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
@@ -1883,6 +1983,16 @@ extension BusinessConfigQueryFilter
       return query.addFilterCondition(FilterCondition.greaterThan(
         property: r'nextReceiptNumber',
         value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      openTicketsEnabledEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'openTicketsEnabled',
+        value: value,
       ));
     });
   }
@@ -3182,6 +3292,16 @@ extension BusinessConfigQueryFilter
       ));
     });
   }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      usePredefinedTicketsEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'usePredefinedTickets',
+        value: value,
+      ));
+    });
+  }
 }
 
 extension BusinessConfigQueryObject
@@ -3270,6 +3390,20 @@ extension BusinessConfigQuerySortBy
       sortByCurrencySymbolDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'currencySymbol', Sort.desc);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
+      sortByDefaultOrderType() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'defaultOrderType', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
+      sortByDefaultOrderTypeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'defaultOrderType', Sort.desc);
     });
   }
 
@@ -3389,6 +3523,20 @@ extension BusinessConfigQuerySortBy
       sortByNextReceiptNumberDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'nextReceiptNumber', Sort.desc);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
+      sortByOpenTicketsEnabled() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'openTicketsEnabled', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
+      sortByOpenTicketsEnabledDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'openTicketsEnabled', Sort.desc);
     });
   }
 
@@ -3565,6 +3713,20 @@ extension BusinessConfigQuerySortBy
       return query.addSortBy(r'updatedAt', Sort.desc);
     });
   }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
+      sortByUsePredefinedTickets() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'usePredefinedTickets', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
+      sortByUsePredefinedTicketsDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'usePredefinedTickets', Sort.desc);
+    });
+  }
 }
 
 extension BusinessConfigQuerySortThenBy
@@ -3647,6 +3809,20 @@ extension BusinessConfigQuerySortThenBy
       thenByCurrencySymbolDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'currencySymbol', Sort.desc);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
+      thenByDefaultOrderType() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'defaultOrderType', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
+      thenByDefaultOrderTypeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'defaultOrderType', Sort.desc);
     });
   }
 
@@ -3779,6 +3955,20 @@ extension BusinessConfigQuerySortThenBy
       thenByNextReceiptNumberDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'nextReceiptNumber', Sort.desc);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
+      thenByOpenTicketsEnabled() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'openTicketsEnabled', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
+      thenByOpenTicketsEnabledDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'openTicketsEnabled', Sort.desc);
     });
   }
 
@@ -3955,6 +4145,20 @@ extension BusinessConfigQuerySortThenBy
       return query.addSortBy(r'updatedAt', Sort.desc);
     });
   }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
+      thenByUsePredefinedTickets() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'usePredefinedTickets', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
+      thenByUsePredefinedTicketsDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'usePredefinedTickets', Sort.desc);
+    });
+  }
 }
 
 extension BusinessConfigQueryWhereDistinct
@@ -3999,6 +4203,13 @@ extension BusinessConfigQueryWhereDistinct
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'currencySymbol',
           caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QDistinct>
+      distinctByDefaultOrderType() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'defaultOrderType');
     });
   }
 
@@ -4062,6 +4273,13 @@ extension BusinessConfigQueryWhereDistinct
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'nextReceiptNumber',
           caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QDistinct>
+      distinctByOpenTicketsEnabled() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'openTicketsEnabled');
     });
   }
 
@@ -4157,6 +4375,13 @@ extension BusinessConfigQueryWhereDistinct
       return query.addDistinctBy(r'updatedAt');
     });
   }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QDistinct>
+      distinctByUsePredefinedTickets() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'usePredefinedTickets');
+    });
+  }
 }
 
 extension BusinessConfigQueryProperty
@@ -4203,6 +4428,13 @@ extension BusinessConfigQueryProperty
       currencySymbolProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'currencySymbol');
+    });
+  }
+
+  QueryBuilder<BusinessConfig, OrderType, QQueryOperations>
+      defaultOrderTypeProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'defaultOrderType');
     });
   }
 
@@ -4260,6 +4492,13 @@ extension BusinessConfigQueryProperty
       nextReceiptNumberProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'nextReceiptNumber');
+    });
+  }
+
+  QueryBuilder<BusinessConfig, bool, QQueryOperations>
+      openTicketsEnabledProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'openTicketsEnabled');
     });
   }
 
@@ -4344,6 +4583,13 @@ extension BusinessConfigQueryProperty
   QueryBuilder<BusinessConfig, DateTime, QQueryOperations> updatedAtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'updatedAt');
+    });
+  }
+
+  QueryBuilder<BusinessConfig, bool, QQueryOperations>
+      usePredefinedTicketsProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'usePredefinedTickets');
     });
   }
 }
