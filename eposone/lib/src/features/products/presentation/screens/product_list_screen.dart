@@ -80,6 +80,11 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
           ),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.category_outlined),
+            tooltip: 'Categorías',
+            onPressed: () => context.push('/categories'),
+          ),
           if (trackInventory)
             IconButton(
               icon: const Icon(Icons.warehouse_outlined),

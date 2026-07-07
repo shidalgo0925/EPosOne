@@ -6,6 +6,7 @@ import 'package:eposone/src/features/pos/data/repositories/open_ticket_repositor
 import 'package:eposone/src/features/pos/domain/entities/order_type.dart';
 import 'package:eposone/src/features/pos/presentation/providers/cart_provider.dart';
 import 'package:eposone/src/features/pos/presentation/providers/open_ticket_provider.dart';
+import 'package:eposone/src/features/pos/presentation/widgets/open_tickets_sheet.dart';
 
 /// Flujo compartido Guardar → elegir ticket predefinido o personalizado.
 Future<void> saveOpenTicketFlow(BuildContext context, WidgetRef ref) async {
@@ -49,7 +50,13 @@ Future<void> saveOpenTicketFlow(BuildContext context, WidgetRef ref) async {
 
   if (context.mounted) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Ticket guardado${params.label != null ? ': ${params.label}' : ''}')),
+      SnackBar(
+        content: Text('Ticket guardado${params.label != null ? ': ${params.label}' : ''}'),
+        action: SnackBarAction(
+          label: 'Ver tickets',
+          onPressed: () => showOpenTicketsSheet(context, ref),
+        ),
+      ),
     );
   }
 }

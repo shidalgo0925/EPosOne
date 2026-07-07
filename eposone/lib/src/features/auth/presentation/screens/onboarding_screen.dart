@@ -9,7 +9,7 @@ import 'package:eposone/src/features/auth/data/repositories/cashier_repository.d
 import 'package:eposone/src/features/auth/domain/entities/cashier.dart';
 import 'package:eposone/src/features/cash_register/data/repositories/cash_register_repository.dart';
 import 'package:eposone/src/features/settings/data/repositories/business_config_repository.dart';
-import 'package:eposone/src/features/settings/domain/entities/business_config.dart';
+import 'package:eposone/src/features/pos/domain/entities/order_type.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
@@ -43,7 +43,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final isar = await ref.read(databaseProvider.future);
     final config = await BusinessConfigRepository(isar).getConfig();
     if (mounted) {
-      _businessName.text = config.businessName == 'Mi Negocio' ? '' : config.businessName;
+      _businessName.text = config.businessName == 'Mi Negocio' ? 'Istmo' : config.businessName;
       _ruc.text = config.ruc ?? '';
       _address.text = config.address ?? '';
       _taxRate.text = config.taxRate.toStringAsFixed(0);
@@ -94,8 +94,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         address: _address.text.trim().isEmpty ? null : _address.text.trim(),
         taxRate: tax,
         taxName: 'ITBMS',
+        taxIncluded: true,
         currency: 'PAB',
         currencySymbol: 'B/.',
+        trackInventory: false,
+        openTicketsEnabled: true,
+        defaultOrderType: OrderType.dineIn,
         isSetupComplete: true,
         updatedAt: DateTime.now(),
       );
@@ -111,7 +115,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         );
       }
 
-      await seedDemoProducts(isar);
+      await seedClientCatalog(isar);
 
       final openAmount = double.tryParse(_openingAmount.text) ?? 0;
       if (await cashRepo.getOpenRegister() == null) {

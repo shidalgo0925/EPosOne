@@ -9,6 +9,7 @@ import 'package:eposone/src/features/pos/presentation/providers/cart_provider.da
 import 'package:eposone/src/features/pos/presentation/utils/save_open_ticket_flow.dart';
 import 'package:eposone/src/features/pos/presentation/widgets/pos_product_grid.dart';
 import 'package:eposone/src/features/pos/presentation/widgets/pos_ticket_panel.dart';
+import 'package:eposone/src/features/pos/presentation/widgets/open_tickets_sheet.dart';
 import 'package:eposone/src/features/pos/presentation/utils/pos_layout.dart';
 import 'package:eposone/src/core/utils/view_insets.dart';
 import 'package:eposone/src/features/products/domain/entities/category.dart';
@@ -144,6 +145,25 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                     context.push('/products');
                   },
                 ),
+                ListTile(
+                  leading: const Icon(Icons.category_outlined),
+                  title: const Text('Categorías'),
+                  subtitle: const Text('Organizar catálogo'),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    context.push('/categories');
+                  },
+                ),
+                if (ref.read(businessConfigProvider)?.openTicketsEnabled ?? true)
+                  ListTile(
+                    leading: const Icon(Icons.receipt_long_outlined),
+                    title: const Text('Tickets abiertos'),
+                    subtitle: const Text('Recuperar tickets guardados'),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      showOpenTicketsSheet(context, ref);
+                    },
+                  ),
                 if (ref.read(businessConfigProvider)?.trackInventory == true)
                   ListTile(
                     leading: const Icon(Icons.warehouse_outlined),
@@ -286,7 +306,8 @@ class _PosScreenState extends ConsumerState<PosScreen> {
             tooltip: 'Escanear código',
             onPressed: _scanBarcode,
           ),
-          if (ref.watch(businessConfigProvider)?.openTicketsEnabled ?? true)
+          if (ref.watch(businessConfigProvider)?.openTicketsEnabled ?? true) ...[
+            const OpenTicketsButton(),
             IconButton(
               icon: const Icon(Icons.save_outlined, size: 22),
               tooltip: 'Guardar ticket',
@@ -304,6 +325,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                       }
                     },
             ),
+          ],
         ],
       ),
       body: Column(
@@ -442,7 +464,10 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                     onProductTap: _addProduct,
                     posPages: posPages,
                     selectedPageId: _selectedPageId,
-                    onPageSelected: (id) => setState(() => _selectedPageId = id),
+                    onPageSelected: (id) => setState(() {
+                      _selectedPageId = id;
+                      _categoryFilter = null;
+                    }),
                   ),
                 ),
                 Expanded(
@@ -468,7 +493,10 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                     onProductTap: _addProduct,
                     posPages: posPages,
                     selectedPageId: _selectedPageId,
-                    onPageSelected: (id) => setState(() => _selectedPageId = id),
+                    onPageSelected: (id) => setState(() {
+                      _selectedPageId = id;
+                      _categoryFilter = null;
+                    }),
                   ),
                 ),
                 if (cart.items.isNotEmpty)
@@ -520,48 +548,46 @@ class _CatalogPane extends ConsumerWidget {
 
   bool get _usePageMode => posPages.isNotEmpty && searchQuery.isEmpty && selectedPageId != null;
 
+  List<Category> _barCategories(WidgetRef ref) {
+    if (_usePageMode && selectedPageId != null) {
+      return ref.watch(posPageCategoriesProvider(selectedPageId!)).valueOrNull ?? const [];
+    }
+    final all = categoriesAsync.valueOrNull ?? const <Category>[];
+    return [...all]..sort((a, b) {
+        final order = (a.sortOrder ?? 0).compareTo(b.sortOrder ?? 0);
+        return order != 0 ? order : a.name.compareTo(b.name);
+      });
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final pageProductsAsync = _usePageMode
         ? ref.watch(posPageProductsProvider(selectedPageId!))
         : null;
+    final barCategories = _barCategories(ref);
 
     return Column(
       children: [
         SizedBox(
-          height: 40,
+          height: 44,
           child: Padding(
             padding: const EdgeInsets.fromLTRB(6, 4, 6, 0),
             child: Row(
               children: [
-                if (!_usePageMode)
-                  categoriesAsync.when(
-                    data: (categories) => _CategoryDropdown(
-                      categories: categories,
+                Expanded(
+                  child: categoriesAsync.when(
+                    data: (_) => _CategoryChipBar(
+                      categories: barCategories,
                       selectedId: categoryFilter,
                       onChanged: onCategoryChanged,
                     ),
-                    loading: () => const SizedBox(width: 140, height: 36),
+                    loading: () => const SizedBox.shrink(),
                     error: (_, __) => const SizedBox.shrink(),
-                  )
-                else
-                  Container(
-                    constraints: const BoxConstraints(maxWidth: 180),
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: EposBrand.background,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: EposBrand.divider),
-                    ),
-                    child: Text(
-                      posPages.firstWhere((p) => p.localId == selectedPageId, orElse: () => posPages.first).name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
-                    ),
                   ),
-                if (!_usePageMode || searchQuery.isNotEmpty) const SizedBox(width: 6),
-                Expanded(
+                ),
+                const SizedBox(width: 6),
+                SizedBox(
+                  width: 148,
                   child: TextField(
                     controller: searchController,
                     style: const TextStyle(fontSize: 13),
@@ -645,11 +671,16 @@ class _CatalogPane extends ConsumerWidget {
     );
   }
 
+  List<Product> _applyCategoryFilter(List<Product> products) {
+    if (categoryFilter == null) return products;
+    return products.where((p) => p.categoryId == categoryFilter).toList();
+  }
+
   Widget _buildGrid(WidgetRef ref, AsyncValue<List<Product>>? pageProductsAsync) {
     if (_usePageMode && pageProductsAsync != null) {
       return pageProductsAsync.when(
         data: (list) => PosProductGrid(
-          products: list,
+          products: _applyCategoryFilter(list),
           symbol: symbol,
           trackInventory: trackInventory,
           crossAxisCount: crossAxisCount,
@@ -662,10 +693,7 @@ class _CatalogPane extends ConsumerWidget {
 
     return productsAsync.when(
       data: (products) {
-        var list = products.where((Product p) => p.isActive).toList();
-        if (categoryFilter != null) {
-          list = list.where((Product p) => p.categoryId == categoryFilter).toList();
-        }
+        final list = _applyCategoryFilter(products.where((Product p) => p.isActive).toList());
         return PosProductGrid(
           products: list,
           symbol: symbol,
@@ -680,67 +708,93 @@ class _CatalogPane extends ConsumerWidget {
   }
 }
 
-class _CategoryDropdown extends StatelessWidget {
+class _CategoryChipBar extends StatelessWidget {
   final List<Category> categories;
   final String? selectedId;
   final ValueChanged<String?> onChanged;
 
-  const _CategoryDropdown({
+  const _CategoryChipBar({
     required this.categories,
     required this.selectedId,
     required this.onChanged,
   });
 
-  String _label() {
-    if (selectedId == null) return 'Todos los artículos';
-    for (final c in categories) {
-      if (c.localId == selectedId) return c.name;
-    }
-    return 'Todos los artículos';
+  Color? _categoryColor(String? hex) {
+    if (hex == null || hex.isEmpty) return null;
+    final value = int.tryParse(hex.replaceFirst('#', ''), radix: 16);
+    if (value == null) return null;
+    return Color(0xFF000000 | value);
   }
 
   @override
   Widget build(BuildContext context) {
-    return PopupMenuButton<String?>(
-      initialValue: selectedId,
-      tooltip: 'Categoría',
-      onSelected: onChanged,
-      child: Container(
-        constraints: const BoxConstraints(maxWidth: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        decoration: BoxDecoration(
-          color: EposBrand.background,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: EposBrand.divider),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Flexible(
-              child: Text(
-                _label(),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
-              ),
+    if (categories.isEmpty) return const SizedBox.shrink();
+
+    return ListView.separated(
+      scrollDirection: Axis.horizontal,
+      itemCount: categories.length + 1,
+      separatorBuilder: (_, __) => const SizedBox(width: 4),
+      itemBuilder: (_, index) {
+        if (index == 0) {
+          return _CategoryChip(
+            label: 'Todos',
+            selected: selectedId == null,
+            accent: EposBrand.orange,
+            onTap: () => onChanged(null),
+          );
+        }
+        final category = categories[index - 1];
+        final accent = _categoryColor(category.color) ?? EposBrand.navy;
+        return _CategoryChip(
+          label: category.name,
+          selected: selectedId == category.localId,
+          accent: accent,
+          onTap: () => onChanged(category.localId),
+        );
+      },
+    );
+  }
+}
+
+class _CategoryChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final Color accent;
+  final VoidCallback onTap;
+
+  const _CategoryChip({
+    required this.label,
+    required this.selected,
+    required this.accent,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: selected ? accent : EposBrand.surface,
+      borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: selected ? accent : EposBrand.divider),
+          ),
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: selected ? Colors.white : EposBrand.textPrimary,
             ),
-            const SizedBox(width: 4),
-            const Icon(Icons.expand_more, size: 18, color: EposBrand.textSecondary),
-          ],
-        ),
-      ),
-      itemBuilder: (ctx) => [
-        const PopupMenuItem<String?>(
-          value: null,
-          child: Text('Todos los artículos'),
-        ),
-        ...categories.map(
-          (c) => PopupMenuItem<String?>(
-            value: c.localId,
-            child: Text(c.name),
           ),
         ),
-      ],
+      ),
     );
   }
 }
