@@ -103,7 +103,9 @@ class _ConnectEn1ScreenState extends ConsumerState<ConnectEn1Screen> {
       // Siguiente: cajero local si hace falta; si ya hay setup → PIN vía splash/startup.
       context.go('/onboarding');
     } catch (e) {
-      final message = e is En1ProvisioningException ? e.message : e.toString();
+      final message = e is En1ProvisioningException
+          ? e.userMessage
+          : 'No se pudo conectar con EasyNodeOne. Intenta de nuevo.';
       if (!mounted) return;
       setState(() {
         _busy = false;

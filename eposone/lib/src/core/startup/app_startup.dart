@@ -36,6 +36,7 @@ final appStartupProvider = FutureProvider<AppStartupState>((ref) async {
   final openRegister = await cashRepo.getOpenRegister();
 
   await DeviceRegistry.getOrCreateUuid();
+  await ProvisioningStore.migrateIfNeeded();
 
   // Hito 1: dispositivo ya provisionado en EN1 → omitir wizard de plataforma.
   final provisioned = await ProvisioningStore.isProvisioned();

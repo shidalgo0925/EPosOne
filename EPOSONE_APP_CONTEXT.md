@@ -128,16 +128,11 @@ Ruta: `eposone/lib/src/features/platform/`
 | Device UUID + “Este dispositivo” | ✅ | Muestra jerarquía si provisionado |
 | Skip wizard si provisionado | ✅ | Arranque → onboarding o PIN |
 | Sync catálogo/ventas | 🔶 Stub | **Hito 2** — no implementar aún |
+| Renovación de token | ⏸ | Diferida hasta que EN1 defina política |
 | POS Core | 🔒 | Sin cambios |
 
-**Flujo Hito 1 (instalación limpia + EN1):**
-
-```
-Splash → Welcome → Conectar EN1 → Registrar → Guardar token/IDs
-      → Onboarding cajero (si falta) → PIN → Caja → Vender
-```
-
-**Cierre Hito 1 (integración):** cuando EN1 publique las APIs y una tablet quede registrada automáticamente.
+**Hito 1 lado EPosOne: CERRADO / CONGELADO** (contrato + cliente + errores + store versionado).  
+Integración real comienza cuando EN1 publique las APIs.
 
 ### 5.3 Stubs / pendientes de producto
 

@@ -30,7 +30,11 @@ class En1ProvisioningRepository {
   }) async {
     final code = activationCode.trim();
     if (code.isEmpty) {
-      throw En1ProvisioningException('Código de activación requerido');
+      throw En1ProvisioningException(
+        userMessage: 'Código de activación requerido.',
+        technicalDetail: 'Empty activationCode',
+        kind: En1ProvisioningErrorKind.validation,
+      );
     }
 
     await ProvisioningStore.saveApiUrlDraft(apiBaseUrl);
@@ -55,17 +59,31 @@ class En1ProvisioningRepository {
       await PlatformPrefs.completeOnboarding(PlatformMode.platform);
       return config;
     } catch (e) {
-      final message = e is En1ProvisioningException ? e.message : e.toString();
-      await ProvisioningStore.setStatus(ConnectionStatus.error, errorMessage: message);
+      if (e is En1ProvisioningException) {
+        await ProvisioningStore.setStatus(
+          ConnectionStatus.error,
+          errorMessage: e.userMessage,
+        );
+      } else {
+        await ProvisioningStore.setStatus(
+          ConnectionStatus.error,
+          errorMessage: 'No se pudo conectar con EasyNodeOne. Intenta de nuevo.',
+        );
+      }
       rethrow;
     }
   }
 
   /// Refresca configuración desde EN1 usando el token guardado.
+  /// No implementa renovación de token dedicada (pendiente definición EN1).
   Future<ProvisioningConfig> refreshConfig() async {
     final current = await ProvisioningStore.loadConfig();
     if (current == null) {
-      throw En1ProvisioningException('Dispositivo no provisionado');
+      throw En1ProvisioningException(
+        userMessage: 'Dispositivo no provisionado.',
+        technicalDetail: 'refreshConfig without local config',
+        kind: En1ProvisioningErrorKind.validation,
+      );
     }
     await ProvisioningStore.setStatus(ConnectionStatus.registering);
     try {
@@ -77,8 +95,17 @@ class En1ProvisioningRepository {
       await ProvisioningStore.saveConfig(updated);
       return updated;
     } catch (e) {
-      final message = e is En1ProvisioningException ? e.message : e.toString();
-      await ProvisioningStore.setStatus(ConnectionStatus.error, errorMessage: message);
+      if (e is En1ProvisioningException) {
+        await ProvisioningStore.setStatus(
+          ConnectionStatus.error,
+          errorMessage: e.userMessage,
+        );
+      } else {
+        await ProvisioningStore.setStatus(
+          ConnectionStatus.error,
+          errorMessage: 'No se pudo actualizar la configuración desde EN1.',
+        );
+      }
       rethrow;
     }
   }
