@@ -2,10 +2,11 @@
 
 ## Producto comercial · Plataforma Cloud EasyTech · Go-to-market Panamá
 
-**Versión:** 3.2 — **ACTIVO**  
-**Fecha:** 9 de julio de 2026  
-**Base:** `master` @ **`db1433a`** + capa Plataforma (local)  
+**Versión:** 3.3 — **ACTIVO**  
+**Fecha:** 10 de julio de 2026  
+**Base:** `master` @ **`2e5197f`** — Hito 1 provisioning cliente congelado  
 **Contexto de app:** [`EPOSONE_APP_CONTEXT.md`](EPOSONE_APP_CONTEXT.md)  
+**Integración EN1:** [`Doc/EPOSONE_EN1_INTEGRATION_LOG.md`](Doc/EPOSONE_EN1_INTEGRATION_LOG.md) · Contrato Hito 1: [`Doc/EPOSONE_EN1_HITO1_PROVISIONING_CONTRACT.md`](Doc/EPOSONE_EN1_HITO1_PROVISIONING_CONTRACT.md)  
 **Documentos relacionados:** [`EPOSONE_MASTER_PLAN_V2.md`](EPOSONE_MASTER_PLAN_V2.md) · [`EPOSONE_vs_LOYVERSE.md`](EPOSONE_vs_LOYVERSE.md) · [`EPOSONE_ARCHITECTURE_REVIEW.md`](EPOSONE_ARCHITECTURE_REVIEW.md)
 
 **Objetivo:** Convertir EPOSOne de TPV funcional (~96% paridad Loyverse) en **producto comercial vendible** en Panamá, como **app independiente** del ecosistema EasyNodeOne.
@@ -15,6 +16,8 @@
 > **POS Core Protegido:** ventas, caja, cobro, tickets, productos, impresión y UX del cajero **no se modifican** salvo bugs. Toda evolución (Onboarding, Device, Sync, EN1) vive en `features/platform/`.
 
 > **Principio rector:** EN1 es el cerebro; EPosOne es un nodo operativo. Los POS **nunca** se comunican entre sí. Sync por **eventos**. Nunca bloquear una venta por falta de internet.
+
+> **Hito 1 (Provisioning) — lado EPosOne: CERRADO / CONGELADO** (`2e5197f`). Integración real cuando EN1 publique las APIs del contrato v0.1.
 
 ---
 
@@ -32,10 +35,12 @@
 | Catálogo demo Istmo | ✅ ~110 productos, 11 categorías, páginas Comida/Bar |
 | Imágenes producto (ItsBrew) | ✅ 73 assets; 110/110 con imagen en TPV |
 | QA V3.1 en curso | 🔶 Checklist parcial (restaurante Istmo) |
-| Capa Plataforma (wizard + device) | ✅ Fase 1 en código (pendiente commit) |
-| Conector EN1 live | ❌ Pendiente |
+| Hito 1 Provisioning (cliente APK) | ✅ **Cerrado / congelado** (`2e5197f`) |
+| APIs EN1 register/config | 🟡 Pendiente CODITO |
+| Integración Hito 1 punta a punta | 🔴 No probada |
+| Sync inteligente (Hito 2) | ❌ Stub — no iniciar hasta validar Hito 1 |
 
-**Lo que falta no son más pantallas de TPV.** Falta cerrar capa Plataforma (EN1 live), certificación, FE legal, release comercial y pilotos. Ver [`EPOSONE_APP_CONTEXT.md`](EPOSONE_APP_CONTEXT.md).
+**Lo que falta no son más pantallas de TPV.** Falta que EN1 publique provisioning, integrar tablet limpia, luego sync (Hito 2), QA y piloto. Ver [`EPOSONE_APP_CONTEXT.md`](EPOSONE_APP_CONTEXT.md).
 
 ### 0.1 Avance sprint Istmo (commit `db1433a`)
 
@@ -53,17 +58,25 @@ Trabajo completado y pusheado a `master`:
 
 **Pendiente QA formal:** checklist V3.1 firmado con hallazgos en `Doc/` (local).
 
-### 0.2 Capa Plataforma — fase 1 (jul 2026)
+### 0.2 Hito 1 — Provisioning cliente EPosOne (cerrado / congelado)
 
-Agregado **alrededor** del POS Core (sin modificar ventas/caja/cobro):
+Commits: `b42f642` (cliente) · `2e5197f` (contrato completo + errores UX + store versionado).
 
 | Entrega | Detalle |
 |---------|---------|
-| **Wizard Bienvenido** | `/platform/welcome` — Crear negocio **o** Conectar EasyNodeOne |
-| **Device** | UUID estable + pantalla Configuración → Este dispositivo |
-| **Prefs** | Wizard una sola vez; installs ya setup saltan el welcome |
-| **Stubs** | Sync / Provisioning (no-op Local; EN1 live después) |
+| **Wizard** | Crear negocio **o** Conectar EasyNodeOne |
+| **Conectar EN1** | URL + código → `POST /api/v1/devices/register` |
+| **Contrato v0.1** | Request/response, HTTP 200/4xx/5xx, formato `error`, ejemplos JSON |
+| **Persistencia** | Token + IDs jerarquía; `schemaVersion` + gancho `migrateIfNeeded` |
+| **Errores UX** | Sin red, timeout, servidor, código inválido, no autorizado + log técnico |
+| **Skip wizard** | Si ya provisionado → onboarding/PIN |
+| **Renovación token** | ⏸ Diferida — define EN1 primero |
+| **Sync catálogo/ventas** | Stub (Hito 2) |
 | **Core** | 🔒 Sin cambios en `features/pos/` |
+
+**Documentos:** [`Doc/EPOSONE_EN1_HITO1_PROVISIONING_CONTRACT.md`](Doc/EPOSONE_EN1_HITO1_PROVISIONING_CONTRACT.md) · [`Doc/EPOSONE_EN1_INTEGRATION_LOG.md`](Doc/EPOSONE_EN1_INTEGRATION_LOG.md)
+
+**Siguiente:** EN1 publica APIs → prueba tablet limpia → ✅ integración Hito 1 → recién entonces Hito 2 (sync).
 
 ---
 
@@ -663,7 +676,7 @@ gantt
     V3.8 GTM Panamá          :v38, after v37, 14d
 ```
 
-**Sprint inmediato:** capa Plataforma alrededor del POS Core (wizard + device) sin tocar ventas · V3.1 QA Istmo en paralelo.
+**Sprint inmediato:** EN1 publica APIs Hito 1 → integración tablet limpia · EPosOne cliente **congelado** · no iniciar Hito 2 sync hasta validar provisioning · V3.1 QA Istmo en paralelo.
 
 ---
 
@@ -687,21 +700,23 @@ lib/src/features/platform/
 Una sola APK. Modos: **Local** · **Plataforma** · **Vincular EN1**.  
 El cajero no debe sentir que está “dentro del ERP”.
 
-### Entregado (capa Plataforma — fase 1)
+### Entregado — Hito 1 Provisioning (EPosOne cerrado / congelado)
 
 | Módulo | Estado |
 |--------|--------|
-| Wizard Bienvenido (Crear negocio / Conectar EN1) | ✅ |
-| Device UUID + pantalla “Este dispositivo” | ✅ |
-| PlatformPrefs (wizard una sola vez; migrate installs existentes) | ✅ |
-| Sync / Provisioning stubs | ✅ (sin live EN1) |
+| Wizard Bienvenido + Conectar EN1 | ✅ |
+| Cliente API register/config (contrato v0.1) | ✅ |
+| Persistencia token + IDs + `schemaVersion` | ✅ |
+| Errores UX + log técnico | ✅ |
+| Sync catálogo/ventas | 🔶 Stub (Hito 2) |
+| Renovación de token | ⏸ Define EN1 |
 | POS Core | 🔒 Sin cambios |
 
 ### Siguiente (sin tocar Core)
 
-1. Conector EN1 live (registro dispositivo + descarga Empresa→Sucursal→POS)
-2. Sync fino catálogo/clientes cuando modo = Plataforma
-3. Vincular negocio Local → EN1 sin reinstalar
+1. **Integración Hito 1:** EN1 APIs live + tablet limpia registrada automáticamente  
+2. **Hito 2:** sync fino catálogo/clientes (solo tras ✅ Hito 1)  
+3. Vincular negocio Local → EN1 sin reinstalar  
 
 ---
 
@@ -712,9 +727,10 @@ El cajero no debe sentir que está “dentro del ERP”.
 | `895ae1a` | Cierre V2: L9 EN1 stub + L10 premium |
 | `074668a` | Master Plan V3.0 — roadmap comercial |
 | `db1433a` | Catálogo Istmo, imágenes ItsBrew, chips categoría POS, QA fixes |
+| `b42f642` | Hito 1: cliente provisioning + Core Protegido |
+| `2e5197f` | Hito 1: contrato completo, errores UX, store versionado — **congelado** |
 
 ---
 
-*Documento vivo — versión 3.2 · EasyTech Services · EPOSOne · **Roadmap comercial activo jul 2026***  
-*Contexto de app:* [`EPOSONE_APP_CONTEXT.md`](EPOSONE_APP_CONTEXT.md)
-*Contexto de app:* [`EPOSONE_APP_CONTEXT.md`](EPOSONE_APP_CONTEXT.md)
+*Documento vivo — versión 3.3 · EasyTech Services · EPOSOne · **Roadmap comercial activo jul 2026***  
+*Contexto de app:* [`EPOSONE_APP_CONTEXT.md`](EPOSONE_APP_CONTEXT.md) · *Bitácora integración:* [`Doc/EPOSONE_EN1_INTEGRATION_LOG.md`](Doc/EPOSONE_EN1_INTEGRATION_LOG.md)
