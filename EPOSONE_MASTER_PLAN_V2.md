@@ -532,18 +532,20 @@ Al completar **Prioridades 4–5** (L8 + L9):
 
 **Roadmap L1–L10 en app:** ✅ cerrado (jun 2026).
 
-**Roadmap activo:** [`EPOSONE_MASTER_PLAN_V3.md`](EPOSONE_MASTER_PLAN_V3.md) — producto comercial, plataforma EN1, FE Panamá, pilotos y GTM.
+**Roadmap activo:** [`EPOSONE_MASTER_PLAN_V3.md`](EPOSONE_MASTER_PLAN_V3.md) · **Contexto app:** [`EPOSONE_APP_CONTEXT.md`](EPOSONE_APP_CONTEXT.md)
 
 ### Resumen V3
 
 | Fase | Enfoque |
 |------|---------|
-| V3.1 | Certificación operativa (QA tablet) |
-| V3.2 | Arquitectura comercial (Local / Cloud / Business) |
-| V3.3 | Plataforma Cloud EasyTech (EN1 + colas + eFacturapty) |
+| V3.1 | Certificación operativa (QA tablet — piloto Istmo) |
+| V3.2 | Arquitectura comercial + ADR · **POS Core Protegido** · capa Plataforma |
+| V3.3 | Plataforma EN1 event-driven (motores sync + eFacturapty) |
 | V3.4 | FE Panamá sobre infraestructura V3.3 |
 | V3.5–V3.8 | Dashboard EN1, release, pilotos, lanzamiento PA |
 | V3.9 | Roadmap 2027 (post-clientes activos) |
+
+> **Arquitectura:** EPosOne = app · EN1 = plataforma · **una APK** · sync por **eventos** · Core de ventas **protegido**.
 
 ### Commits de referencia
 
@@ -553,6 +555,8 @@ Al completar **Prioridades 4–5** (L8 + L9):
 | `26a510d` | L3 modificadores/páginas, L6 propinas, L7 inventario |
 | `247b99e` | L8 FE DGI scaffolding |
 | `895ae1a` | L9 EN1 sync + L10 premium + Master Plan V2.1 |
+| `074668a` | Master Plan V3.0 |
+| `db1433a` | Catálogo Istmo, imágenes, UX POS |
 
 ---
 

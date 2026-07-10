@@ -2,45 +2,227 @@
 
 ## Producto comercial · Plataforma Cloud EasyTech · Go-to-market Panamá
 
-**Versión:** 3.0 — **ACTIVO**  
-**Fecha:** 14 de junio de 2026  
-**Base:** `master` @ **`895ae1a`** — Roadmap V2 (L1–L10 TPV) cerrado  
+**Versión:** 3.2 — **ACTIVO**  
+**Fecha:** 9 de julio de 2026  
+**Base:** `master` @ **`db1433a`** + capa Plataforma (local)  
+**Contexto de app:** [`EPOSONE_APP_CONTEXT.md`](EPOSONE_APP_CONTEXT.md)  
 **Documentos relacionados:** [`EPOSONE_MASTER_PLAN_V2.md`](EPOSONE_MASTER_PLAN_V2.md) · [`EPOSONE_vs_LOYVERSE.md`](EPOSONE_vs_LOYVERSE.md) · [`EPOSONE_ARCHITECTURE_REVIEW.md`](EPOSONE_ARCHITECTURE_REVIEW.md)
 
-**Objetivo:** Convertir EPOSOne de TPV funcional (~96% paridad Loyverse) en **producto comercial vendible** en Panamá, con EN1 como centro de la plataforma cloud.
+**Objetivo:** Convertir EPOSOne de TPV funcional (~96% paridad Loyverse) en **producto comercial vendible** en Panamá, como **app independiente** del ecosistema EasyNodeOne.
 
-> **Decisión arquitectónica clave:** V3.3 (Plataforma Cloud) y V3.4 (FE Panamá) **no son proyectos separados en serie**. La FE diferida **depende de EN1**. EN1 es el hub: cola fiscal, cola sync, API, eFacturapty, dashboard y licenciamiento viven en un solo proyecto de plataforma.
+> **Producto:** EPosOne = aplicación POS · EasyNodeOne = plataforma. **Una sola APK.** Modos Local / Plataforma / Vincular EN1 — no “tres productos”.
+
+> **POS Core Protegido:** ventas, caja, cobro, tickets, productos, impresión y UX del cajero **no se modifican** salvo bugs. Toda evolución (Onboarding, Device, Sync, EN1) vive en `features/platform/`.
+
+> **Principio rector:** EN1 es el cerebro; EPosOne es un nodo operativo. Los POS **nunca** se comunican entre sí. Sync por **eventos**. Nunca bloquear una venta por falta de internet.
 
 ---
 
 ## 0. Punto de partida (post-V2)
 
-| Dimensión | Estado jun 2026 |
+| Dimensión | Estado jul 2026 |
 |-----------|-----------------|
 | Roadmap V2 L1–L10 (app Flutter) | ✅ Cerrado |
 | Paridad TPV Loyverse (operación cajero) | ~**96%** |
-| Producto comercial listo para vender | ~**60%** |
+| Producto comercial listo para vender | ~**65%** |
 | L8 FE DGI | 🔶 Stub (PAC simulado) |
 | L9 EN1 Cloud | 🔶 Stub (cola offline demo) |
 | L10 Premium | 🔶 Base (cupones, puntos, CRM historial) |
-| APK release | ✅ `1.0.0+1` (firma debug, pilotos) |
+| APK release | ✅ `1.0.0+1` — `epos1.apk` (firma debug, pilotos) |
+| Catálogo demo Istmo | ✅ ~110 productos, 11 categorías, páginas Comida/Bar |
+| Imágenes producto (ItsBrew) | ✅ 73 assets; 110/110 con imagen en TPV |
+| QA V3.1 en curso | 🔶 Checklist parcial (restaurante Istmo) |
+| Capa Plataforma (wizard + device) | ✅ Fase 1 en código (pendiente commit) |
+| Conector EN1 live | ❌ Pendiente |
 
-**Lo que falta no son más pantallas de TPV.** Falta certificación, plataforma cloud real, FE legal, release comercial y pilotos.
+**Lo que falta no son más pantallas de TPV.** Falta cerrar capa Plataforma (EN1 live), certificación, FE legal, release comercial y pilotos. Ver [`EPOSONE_APP_CONTEXT.md`](EPOSONE_APP_CONTEXT.md).
+
+### 0.1 Avance sprint Istmo (commit `db1433a`)
+
+Trabajo completado y pusheado a `master`:
+
+| Entrega | Detalle |
+|---------|---------|
+| **Catálogo Istmo** | Menú real PDF: ~110 productos, precios ITBMS incluido, SKUs `IST-*`, seed automático |
+| **Imágenes ItsBrew** | 73 JPG en `assets/catalog/istmo/`; mapeo producto→imagen; instalación local al abrir |
+| **Páginas POS** | Comida (5 categorías) + Bar (6 categorías); modificadores cervezas Istmo y salsas wings |
+| **Onboarding negocio** | Defaults Istmo: `taxIncluded`, sin inventario, orden `dineIn` |
+| **QA fixes** | Recuperar tickets guardados; nav categorías; tickets abiertos visibles en móvil |
+| **UX ventas** | Chips de categoría horizontales antes del buscador (filtro rápido por categoría) |
+| **APK piloto** | `eposone/epos1.apk` — build local, no versionado en git |
+
+**Pendiente QA formal:** checklist V3.1 firmado con hallazgos en `Doc/` (local).
+
+### 0.2 Capa Plataforma — fase 1 (jul 2026)
+
+Agregado **alrededor** del POS Core (sin modificar ventas/caja/cobro):
+
+| Entrega | Detalle |
+|---------|---------|
+| **Wizard Bienvenido** | `/platform/welcome` — Crear negocio **o** Conectar EasyNodeOne |
+| **Device** | UUID estable + pantalla Configuración → Este dispositivo |
+| **Prefs** | Wizard una sola vez; installs ya setup saltan el welcome |
+| **Stubs** | Sync / Provisioning (no-op Local; EN1 live después) |
+| **Core** | 🔒 Sin cambios en `features/pos/` |
 
 ---
 
-## 1. Visión V3 — EN1 como centro
+## 1. Visión V3 — EN1 como cerebro, EPosOne como nodo
+
+### 1.1 Principio arquitectónico
+
+```
+                    EN1
+            (Back Office Central)
+
+        Empresas · Sucursales · Usuarios
+        Catálogo · Inventario · Clientes
+        Precios · Promociones · Impuestos
+        Pedidos · Facturación · Compras
+        Reportes · APIs · IA · Analítica
+                    ▲
+                    │
+             Sincronización
+              (solo eventos)
+                    │
+    ┌───────────────┼───────────────┐
+    │               │               │
+    ▼               ▼               ▼
+
+  POS 1           POS 2           POS 3
+  Offline         Offline         Offline
+```
+
+| Regla | Descripción |
+|-------|-------------|
+| **EN1 = cerebro** | Toda la inteligencia de negocio vive en EN1 |
+| **EPosOne = nodo** | Cada tablet es un terminal operativo autónomo |
+| **Sin P2P** | Los POS **nunca** hablan entre sí |
+| **Sin bloqueo** | Nunca bloquear una venta por falta de internet |
+| **Eventos, no tablas** | No sincronizar tablas completas; sincronizar **eventos** de dominio |
+
+### 1.2 Qué almacena cada POS (mínimo operativo)
+
+Solo lo necesario para **seguir vendiendo sin Internet**:
+
+| Dominio | Datos locales |
+|---------|---------------|
+| **Catálogo** | Productos, categorías, variantes, precios, impuestos |
+| **Comercial** | Promociones vigentes, clientes frecuentes (opcional) |
+| **Seguridad** | Usuarios autorizados |
+| **Operación** | Pedidos, pagos, caja, aperturas, cierres, reembolsos |
+| **Trazabilidad** | Auditoría local, cola de eventos pendientes |
+
+**Nada más.** Sin inventario global, sin analítica, sin multi-sucursal en el dispositivo.
+
+### 1.3 Qué vive únicamente en EN1
+
+| Dominio | Contenido |
+|---------|-----------|
+| **Empresa** | Empresas, sucursales, cajeros, meseros, vendedores, roles |
+| **Comercial** | Clientes, créditos, cuentas por cobrar, pedidos globales |
+| **Fiscal** | Facturación electrónica, cola PAC, CUFE, estados DGI |
+| **Inventario** | Stock central, compras, traslados, ajustes globales |
+| **Analítica** | Dashboard, reportes, KPIs, IA |
+| **Plataforma** | Licenciamiento, APIs, sincronización, bitácora central |
+
+### 1.4 Identidad operativa (obligatoria antes de vender)
+
+Cada operación debe conocer **cinco niveles**. No se vende sin ellos:
+
+```
+Empresa → Sucursal → POS → Caja → Turno
+```
+
+### 1.5 El pedido como centro del sistema
+
+```
+Pedido → Items → Pagos → Factura → Entrega
+```
+
+**Estados del pedido** (configurables por vertical; no todos los negocios usan todos):
+
+```
+BORRADOR → ABIERTO → EN_PREPARACION → LISTO → ENTREGADO → COBRADO → FACTURADO → CERRADO
+```
+
+### 1.6 Modelo de sincronización por eventos
+
+**No sincronizar tablas. Sincronizar eventos.**
+
+Ejemplo:
+
+```json
+{
+  "event": "pedido_creado",
+  "device": "POS-03",
+  "empresa": 1,
+  "sucursal": 2,
+  "pedido": 5487
+}
+```
+
+Eventos de dominio esperados: `pedido_creado`, `pedido_actualizado`, `producto_agregado`, `pago_realizado`, `factura_emitida`, `inventario_movimiento`, `caja_apertura`, `caja_cierre`, etc.
+
+**Flujo offline:**
+
+```
+Pedido → SQLite (Isar) → Cola local → [sin red: espera]
+                                    → [con red: API EN1] → Confirmado → Marcado sincronizado
+```
+
+### 1.7 Conflictos y propiedad de pedidos
+
+| Regla | Comportamiento |
+|-------|----------------|
+| **Un propietario por pedido** | Cada pedido tiene un POS dueño; solo ese POS puede modificarlo |
+| **Consulta cross-POS** | Otro POS puede **consultar** o **solicitar transferencia**, no editar |
+| **Pago en otra caja** | Ej. Mesa 12 atendida por Pedro, cliente paga en Caja 2: `Transferir a Caja` → Caja 2 cobra → pedido sigue siendo de Pedro (cambia cajero, no vendedor) |
+| **Sin edición concurrente** | Nunca permitir editar el mismo pedido desde dos POS |
+
+### 1.8 Inventario en el nodo POS
+
+El POS **no calcula inventario global**. Solo:
+
+```
+Venta → Stock local (descuento) → Evento → EN1 → Stock central
+```
+
+Si EN1 detecta diferencias → genera ajuste → notifica / sincroniza hacia POS.
+
+### 1.9 Motores de sincronización independientes
+
+No un único proceso monolítico. **Motores separados:**
+
+| Motor | Responsabilidad |
+|-------|-----------------|
+| **Catálogo** | Productos, precios, impuestos, promociones |
+| **Comercial** | Pedidos, facturas, clientes, pagos |
+| **Inventario** | Movimientos, ajustes, transferencias |
+| **Caja** | Aperturas, cierres, arqueos |
+| **Auditoría** | Eventos, errores, reintentos, bitácora |
+
+Cada motor tiene su cola, reintentos y política de confirmación EN1.
+
+### 1.10 Diagrama técnico (visión consolidada)
 
 ```mermaid
 flowchart TB
-  subgraph tablet [EPOSOne Tablet]
+  subgraph tablet [EPOSOne — Nodo POS]
     POS[POS Offline-First]
-    FQ[Fiscal Queue]
-    SQ[Sync Queue]
+    EQ[Cola de Eventos]
+    FQ[Cola Fiscal]
+    SQLite[(Isar local)]
   end
 
-  subgraph en1 [EN1 Plataforma Cloud EasyTech]
+  subgraph en1 [EN1 — Cerebro Central]
     API[EN1 API]
+    EV[Procesador de Eventos]
+    MC[Motor Catálogo]
+    MCo[Motor Comercial]
+    MI[Motor Inventario]
+    MCa[Motor Caja]
+    MA[Motor Auditoría]
     FProc[Procesador FE]
     Dash[Dashboard Web]
     Lic[Licenciamiento]
@@ -51,15 +233,22 @@ flowchart TB
     DGI[DGI Panamá]
   end
 
+  POS --> SQLite
+  POS --> EQ
   POS --> FQ
-  POS --> SQ
-  FQ -->|cuando hay red| API
-  SQ -->|cuando hay red| API
+  EQ -->|eventos cuando hay red| API
+  FQ -->|documentos fiscales| API
+  API --> EV
+  EV --> MC
+  EV --> MCo
+  EV --> MI
+  EV --> MCa
+  EV --> MA
   API --> FProc
   FProc --> EF
   EF --> DGI
   DGI -->|CUFE| API
-  API -->|sync| tablet
+  API -->|confirmaciones + catálogo| tablet
   API --> Dash
   Lic --> tablet
 ```
@@ -119,10 +308,10 @@ flowchart TB
 
 ---
 
-## 4. V3.2 — Arquitectura comercial
+## 4. V3.2 — Arquitectura comercial y decisiones EN1
 
 **Duración:** 3–5 días  
-**Objetivo:** Definir oficialmente tres productos sobre la misma app Flutter.
+**Objetivo:** Definir oficialmente tres productos sobre la misma app Flutter **y cerrar las decisiones de arquitectura EN1↔POS** antes de implementar sincronización.
 
 ### EPOSOne Local
 
@@ -133,16 +322,18 @@ flowchart TB
 | FE | Diferida manual / batch |
 | Nube | Sin EN1 |
 | Backup | Responsabilidad del cliente |
+| Sync | Sin cola de eventos (o export manual) |
 
 ### EPOSOne Cloud
 
 | Atributo | Valor |
 |----------|-------|
 | Modelo | Suscripción mensual |
-| Conectividad | Sync cuando hay red |
+| Conectividad | Eventos cuando hay red |
 | FE | Automática vía EN1 → eFacturapty |
 | Nube | EN1 (backup, dashboard) |
 | Backup | EN1 |
+| Sync | Cola de eventos + motores independientes |
 
 ### EPOSOne Business
 
@@ -152,61 +343,95 @@ flowchart TB
 | Alcance | Multi-sucursal |
 | Extra | Analítica avanzada EN1 |
 | FE | Automática por sucursal |
+| Sync | Eventos multi-sucursal; EN1 consolida |
 
 ### Entregables técnicos
 
-- `BusinessConfig` definitivo: flags `licenseTier`, `en1SyncEnabled`, `fiscalMode`, sucursal, tokens
+- `BusinessConfig` definitivo: flags `licenseTier`, `en1SyncEnabled`, `fiscalMode`, `empresaId`, `sucursalId`, `posId`, `cajaId`, tokens
 - UI activación de licencia (Local / Cloud / Business)
 - Documento comercial de precios alineado con flags
+- **ADR (Architecture Decision Record):** modelo eventos vs tablas — **eventos aprobado**
+- Esquema de eventos v1 (JSON schema + catálogo de tipos)
+- Política de propiedad de pedidos y transferencia entre cajas
 
-**Resultado:** Una app, tres modos de licencia. Sin fork de código.
+### Preguntas abiertas — resolver ANTES de V3.3
+
+Estas decisiones bloquean el diseño de sincronización. Deben quedar respondidas en V3.2:
+
+| # | Pregunta | Impacto |
+|---|----------|---------|
+| 1 | ¿El pedido nace **siempre** en EPosOne o también puede crearse en EN1? | Origen de eventos, permisos back-office |
+| 2 | ¿La FE la genera el POS o EN1 emite el documento fiscal tras el evento `pago_realizado`? | Cola fiscal, responsabilidad legal |
+| 3 | ¿El inventario se reserva al **crear** el pedido o solo al **facturar**? | Stock local vs central, restaurantes vs retail |
+| 4 | ¿Las promociones se calculan íntegramente en el POS o EN1 puede recalcular al sincronizar? | Consistencia comercial, conflictos |
+| 5 | ¿Un pedido puede iniciarse en un POS y terminarse en otro, o queda bloqueado al dispositivo creador? | Movilidad, transferencias, propiedad |
+
+**Recomendación:** Resolver estas cinco preguntas primero. A partir de ellas se diseña una sincronización robusta para restaurantes, tiendas, supermercados y ferreterías **sin rehacer arquitectura**.
+
+**Resultado:** Una app, tres modos de licencia. EN1 como cerebro event-driven. Sin fork de código.
 
 ---
 
 ## 5. V3.3 — Plataforma Cloud EasyTech
 
 **Duración:** 4–8 semanas  
-**Objetivo:** EN1 deja de ser stub. EPOSOne deja de depender únicamente de Isar para operaciones cloud.
+**Objetivo:** EN1 deja de ser stub. EPOSOne emite eventos; EN1 procesa y confirma. **Sin comunicación POS↔POS.**
 
-> **Este es el proyecto unificado** que reemplaza la secuencia anterior “FE diferida → EN1 live”. Incluye cola fiscal, cola sync, API EN1, integración eFacturapty, dashboard y licenciamiento.
+> **Este es el proyecto unificado** que reemplaza la secuencia anterior “FE diferida → EN1 live”. Incluye cola fiscal, cola de eventos, API EN1, motores de sync, integración eFacturapty, dashboard y licenciamiento.
 
 ### Componentes de plataforma
 
 ```
 Plataforma Cloud EasyTech (V3.3)
-├── Cola Fiscal      ← FiscalDocument pending + reintentos
-├── Cola Sync        ← SyncOperation universal (ya existe en app)
-├── EN1 API          ← Backend real (staging + producción)
-├── eFacturapty      ← Habilitador FE Panamá
-├── Dashboard        ← Web EN1 (V3.5, no Flutter)
-└── Licenciamiento   ← Local / Cloud / Business
+├── Cola de Eventos   ← Eventos de dominio (reemplaza sync por tablas)
+├── Cola Fiscal       ← FiscalDocument pending + reintentos
+├── EN1 API           ← Backend real (staging + producción)
+├── Procesador Eventos← Routing a motores independientes
+├── Motores Sync      ← Catálogo · Comercial · Inventario · Caja · Auditoría
+├── eFacturapty       ← Habilitador FE Panamá
+├── Dashboard         ← Web EN1 (V3.5, no Flutter)
+└── Licenciamiento    ← Local / Cloud / Business
 ```
 
-### Sincronización — etapas
+### Sincronización — modelo por eventos (no tablas)
 
-| Etapa | Entidades | Dirección |
-|-------|-----------|-----------|
-| **1ª** | Productos, categorías, clientes, ventas | TPV ↔ EN1 |
-| **2ª** | Inventario, caja, turnos | TPV ↔ EN1 |
-| **3ª** | Fiscal (FiscalDocument, CUFE, estados DGI) | TPV → EN1 → eFacturapty → DGI → TPV |
+| Motor | Eventos ejemplo | Dirección principal |
+|-------|-----------------|---------------------|
+| **Catálogo** | `producto_actualizado`, `precio_cambiado`, `promocion_vigente` | EN1 → POS |
+| **Comercial** | `pedido_creado`, `pago_realizado`, `factura_emitida` | POS → EN1 |
+| **Inventario** | `movimiento_stock`, `ajuste_aplicado` | POS → EN1; ajustes EN1 → POS |
+| **Caja** | `caja_apertura`, `caja_cierre`, `arqueo_registrado` | POS → EN1 |
+| **Auditoría** | `evento_error`, `reintento_sync` | Bidireccional |
+
+**Etapas de implementación:**
+
+| Etapa | Alcance | Criterio de done |
+|-------|---------|------------------|
+| **1ª** | Motor Catálogo + identidad POS (empresa/sucursal/POS/caja/turno) | Catálogo EN1 baja a tablet; eventos de confirmación |
+| **2ª** | Motor Comercial + Caja (pedidos, pagos, turnos) | Venta offline → evento → EN1 confirma en staging |
+| **3ª** | Motor Inventario + Fiscal (FE, CUFE, estados DGI) | CUFE real en piloto |
 
 ### App Flutter (adaptaciones sobre scaffolding L8/L9)
 
-- `SyncOperation`: extender kinds (cashMovement, cashRegister, fiscalDocument, inventory)
-- Reintentos automáticos (hasta N intentos) + last-write-wins catálogo
-- Desacoplar cobro de emisión fiscal: venta siempre completa; FE en cola
-- Banner POS: pendientes sync + pendientes FE
+- `SyncOperation` → evolucionar a **cola de eventos** tipada (mantener compatibilidad transitoria)
+- Reintentos automáticos por motor (hasta N intentos) + confirmación idempotente EN1
+- Desacoplar cobro de emisión fiscal: venta siempre completa; FE en cola separada
+- Banner POS: eventos pendientes + documentos fiscales pendientes
 - Adapter live `En1ApiAdapter` (reemplaza stub)
+- Validar identidad operativa antes de cada venta (empresa → turno)
+- Propiedad de pedido + flujo transferencia entre cajas
 
 ### Backend EN1 (nuevo / extendido)
 
-- API REST autenticada por sucursal/token
-- Cola de procesamiento FE
+- API REST autenticada por sucursal/token/dispositivo
+- **Procesador de eventos** con routing a motores
+- Cola de procesamiento FE (post-evento `pago_realizado` o según ADR V3.2)
 - Integración eFacturapty (certificado, XML, CUFE)
-- Almacenamiento cloud (ventas, clientes, catálogo, turnos)
-- Webhook / poll para devolver CUFE a tablets
+- Proyecciones de lectura (ventas, clientes, catálogo, turnos) — EN1 materializa desde eventos
+- Webhook / poll para devolver confirmaciones y CUFE a tablets
+- **Prohibido:** API que permita sync directo POS↔POS
 
-**Resultado:** EPOSOne + EN1 operan como plataforma híbrida offline-first con cloud real.
+**Resultado:** EPOSOne + EN1 operan como plataforma híbrida offline-first, event-driven, con cloud real.
 
 ---
 
@@ -406,10 +631,13 @@ Todo el back-office y BI vive en **EN1 web**.
 | Métrica | Objetivo |
 |---------|----------|
 | Checklist V3.1 | 100% pass, 0 bugs críticos |
+| Catálogo Istmo piloto | 110 productos + imágenes en TPV |
 | Venta offline 8 h | Sin pérdida de datos |
 | Cola FE | 0 ventas bloqueadas por red |
-| Sync EN1 etapa 1 | Productos + clientes + ventas en staging |
+| Cola eventos EN1 etapa 1 | Catálogo + identidad POS en staging |
+| Cola eventos EN1 etapa 2 | Pedidos + pagos confirmados en EN1 |
 | FE etapa 3 | CUFE real en ≥1 venta piloto |
+| ADR V3.2 | 5 preguntas arquitectura respondidas |
 | Pilotos V3.7 | ≥3 negocios, 30 días, 0 críticos abiertos |
 | Play Store | APK firmado en beta o producción |
 
@@ -435,18 +663,58 @@ gantt
     V3.8 GTM Panamá          :v38, after v37, 14d
 ```
 
-**Sprint inmediato:** solo V3.1.
+**Sprint inmediato:** capa Plataforma alrededor del POS Core (wizard + device) sin tocar ventas · V3.1 QA Istmo en paralelo.
 
 ---
 
-## 16. Commits de referencia
+## 16. POS Core Protegido (jul 2026)
+
+**Decisión de producto:** el flujo operativo del cajero es **Core Protegido**.
+
+### No tocar (salvo bugs / mejoras puntuales)
+
+Ventas · Abrir caja · Cobrar · Tickets · Reembolsos · Productos · Clientes · Inventario básico · Impresión · Bluetooth · UX del cajero.
+
+Si hoy puede vender, mañana debe vender **exactamente igual**.
+
+### Extender (módulos nuevos alrededor del Core)
+
+```
+lib/src/features/platform/
+  onboarding / device / sync / provisioning / EN1 connector / LicensePolicy
+```
+
+Una sola APK. Modos: **Local** · **Plataforma** · **Vincular EN1**.  
+El cajero no debe sentir que está “dentro del ERP”.
+
+### Entregado (capa Plataforma — fase 1)
+
+| Módulo | Estado |
+|--------|--------|
+| Wizard Bienvenido (Crear negocio / Conectar EN1) | ✅ |
+| Device UUID + pantalla “Este dispositivo” | ✅ |
+| PlatformPrefs (wizard una sola vez; migrate installs existentes) | ✅ |
+| Sync / Provisioning stubs | ✅ (sin live EN1) |
+| POS Core | 🔒 Sin cambios |
+
+### Siguiente (sin tocar Core)
+
+1. Conector EN1 live (registro dispositivo + descarga Empresa→Sucursal→POS)
+2. Sync fino catálogo/clientes cuando modo = Plataforma
+3. Vincular negocio Local → EN1 sin reinstalar
+
+---
+
+## 17. Commits de referencia
 
 | Commit | Contenido |
 |--------|-----------|
 | `895ae1a` | Cierre V2: L9 EN1 stub + L10 premium |
-| `a55a059` | Master Plan V2.1 |
-| *(V3)* | Master Plan V3.0 — roadmap comercial |
+| `074668a` | Master Plan V3.0 — roadmap comercial |
+| `db1433a` | Catálogo Istmo, imágenes ItsBrew, chips categoría POS, QA fixes |
 
 ---
 
-*Documento vivo — versión 3.0 · EasyTech Services · EPOSOne · **Roadmap comercial activo jun 2026***
+*Documento vivo — versión 3.2 · EasyTech Services · EPOSOne · **Roadmap comercial activo jul 2026***  
+*Contexto de app:* [`EPOSONE_APP_CONTEXT.md`](EPOSONE_APP_CONTEXT.md)
+*Contexto de app:* [`EPOSONE_APP_CONTEXT.md`](EPOSONE_APP_CONTEXT.md)

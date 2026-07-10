@@ -53,6 +53,13 @@ class SettingsScreen extends StatelessWidget {
             onTap: () => context.push('/settings/sync'),
           ),
           ListTile(
+            leading: const Icon(Icons.smartphone_outlined),
+            title: const Text('Este dispositivo'),
+            subtitle: const Text('UUID, modo, versión'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/platform/device'),
+          ),
+          ListTile(
             leading: const Icon(Icons.workspace_premium_outlined),
             title: const Text('Premium'),
             subtitle: const Text('Cupones, fidelización, CRM'),

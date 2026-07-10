@@ -2,11 +2,15 @@
 
 Sistema POS offline-first para pequeños negocios (Panamá). App Flutter en la carpeta `eposone/`.
 
+**Producto independiente** del ecosistema EasyNodeOne · **Una sola APK** · **POS Core Protegido**.
+
 ## Documentación
 
-- [README de la app](eposone/README.md) — instalación, arquitectura y funcionalidades
-- [Revisión de arquitectura](EPOSONE_ARCHITECTURE_REVIEW.md) — auditoría técnica y roadmap
-- [Paridad vs Loyverse](EPOSONE_vs_LOYVERSE.md) — matriz de funcionalidades, gaps y backlog L1–L6
+- **[Contexto de la app (jul 2026)](EPOSONE_APP_CONTEXT.md)** — arquitectura congelada, Core Protegido, capa Plataforma, qué no tocar
+- [Master Plan V3](EPOSONE_MASTER_PLAN_V3.md) — roadmap comercial y EN1
+- [README de la app](eposone/README.md) — instalación y estructura
+- [Revisión de arquitectura](EPOSONE_ARCHITECTURE_REVIEW.md)
+- [Paridad vs Loyverse](EPOSONE_vs_LOYVERSE.md)
 
 ## Inicio rápido
 

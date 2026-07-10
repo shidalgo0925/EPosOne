@@ -37,6 +37,11 @@ import 'package:eposone/src/features/sync/presentation/screens/sync_settings_scr
 import 'package:eposone/src/features/premium/presentation/screens/premium_settings_screen.dart';
 import 'package:eposone/src/features/premium/presentation/screens/coupons_settings_screen.dart';
 import 'package:eposone/src/features/customers/presentation/screens/customer_detail_screen.dart';
+import 'package:eposone/src/features/platform/presentation/screens/platform_welcome_screen.dart';
+import 'package:eposone/src/features/platform/presentation/screens/connect_en1_screen.dart';
+import 'package:eposone/src/features/platform/presentation/screens/device_info_screen.dart';
+
+
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -63,7 +68,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) {
       final session = ref.read(posSessionProvider);
       final path = state.uri.path;
-      const publicRoutes = ['/splash', '/onboarding', '/pin'];
+      const publicRoutes = [
+        '/splash',
+        '/platform/welcome',
+        '/platform/connect',
+        '/onboarding',
+        '/pin',
+      ];
       final isPublic = publicRoutes.contains(path);
 
       if (session == null) {
@@ -89,6 +100,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     },
     routes: [
       GoRoute(path: '/splash', builder: (_, __) => const SplashScreen()),
+      GoRoute(path: '/platform/welcome', builder: (_, __) => const PlatformWelcomeScreen()),
+      GoRoute(path: '/platform/connect', builder: (_, __) => const ConnectEn1Screen()),
+      GoRoute(path: '/platform/device', builder: (_, __) => const DeviceInfoScreen()),
       GoRoute(path: '/onboarding', builder: (_, __) => const OnboardingScreen()),
       GoRoute(path: '/pin', builder: (_, __) => const PinScreen()),
       GoRoute(path: '/cash/open', builder: (_, __) => const CashOpenScreen()),

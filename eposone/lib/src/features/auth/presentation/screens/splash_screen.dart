@@ -37,6 +37,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     if (!mounted) return;
 
     switch (startup.route) {
+      case StartupRoute.platformWelcome:
+        context.go('/platform/welcome');
       case StartupRoute.onboarding:
         context.go('/onboarding');
       case StartupRoute.pin:
