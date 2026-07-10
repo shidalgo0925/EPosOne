@@ -1,9 +1,12 @@
 # EPosOne ↔ EN1 — Contrato Provisioning v0.1 (Hito 1)
 
+> ⚠️ **SUPERSEDED** por [`EPOSONE_EN1_HITO1_PROVISIONING_CONTRACT_EN1-02.md`](EPOSONE_EN1_HITO1_PROVISIONING_CONTRACT_EN1-02.md) (10 jul 2026).  
+> Conservado solo como histórico del delta. El cliente Flutter consume **EN1-02**.
+
 **Fecha:** Julio 2026  
 **Consumidor:** EPosOne APK (`features/platform/`)  
 **Productor:** EN1 API (CODITO)  
-**Estado:** Congelado lado EPosOne — referencia obligatoria para EN1
+**Estado:** Obsoleto — no usar para integración
 
 > **Fuera de este contrato (aún):** renovación de token / refresh. EN1 debe definir duración, refresh vs reauth y políticas de expiración antes de implementarlo en Flutter.
 

@@ -38,9 +38,40 @@ class DeviceRegistry {
       uuid: uuid,
       model: _deviceModel(),
       os: _osLabel(),
+      platform: _platform(),
+      androidVersion: _androidVersion(),
+      deviceName: _deviceName(uuid),
       appVersion: appVersion,
       registeredAt: registeredAt,
     );
+  }
+
+  static String _deviceName(String uuid) {
+    final short = uuid.length >= 8 ? uuid.substring(0, 8) : uuid;
+    return 'EPosOne-$short';
+  }
+
+  static String _platform() {
+    try {
+      if (Platform.isAndroid) return 'android';
+      if (Platform.isIOS) return 'ios';
+      if (Platform.isWindows) return 'windows';
+      return Platform.operatingSystem;
+    } catch (_) {
+      return 'unknown';
+    }
+  }
+
+  static String? _androidVersion() {
+    try {
+      if (!Platform.isAndroid) return null;
+      // Ej. "Android 13 (…)" o raw version string
+      final raw = Platform.operatingSystemVersion.trim();
+      final match = RegExp(r'(\d+(\.\d+)*)').firstMatch(raw);
+      return match?.group(1) ?? raw;
+    } catch (_) {
+      return null;
+    }
   }
 
   static String _deviceModel() {
@@ -67,6 +98,9 @@ class DeviceSnapshot {
   final String uuid;
   final String model;
   final String os;
+  final String platform;
+  final String? androidVersion;
+  final String deviceName;
   final String appVersion;
   final DateTime? registeredAt;
 
@@ -74,6 +108,9 @@ class DeviceSnapshot {
     required this.uuid,
     required this.model,
     required this.os,
+    required this.platform,
+    this.androidVersion,
+    required this.deviceName,
     required this.appVersion,
     this.registeredAt,
   });

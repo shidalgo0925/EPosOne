@@ -6,7 +6,7 @@ import 'package:eposone/src/features/platform/domain/connection_status.dart';
 import 'package:eposone/src/features/platform/domain/platform_mode.dart';
 import 'package:eposone/src/features/platform/domain/provisioning_config.dart';
 
-/// Orquesta el Hito 1: registrar dispositivo, guardar token/IDs, estado de conexión.
+/// Orquesta provisioning EN1-02: registrar dispositivo, guardar token/config, estado.
 ///
 /// Sync de productos/ventas permanece stub (Hito 2).
 class En1ProvisioningRepository {
@@ -23,16 +23,16 @@ class En1ProvisioningRepository {
 
   Future<String?> getLastError() => ProvisioningStore.getLastError();
 
-  /// Registra el dispositivo en EN1 y persiste la configuración local.
+  /// Registra (o reprovisiona) el dispositivo. Solo URL + código de provisioning.
   Future<ProvisioningConfig> provision({
     required String apiBaseUrl,
-    required String activationCode,
+    required String provisioningCode,
   }) async {
-    final code = activationCode.trim();
+    final code = provisioningCode.trim();
     if (code.isEmpty) {
       throw En1ProvisioningException(
-        userMessage: 'Código de activación requerido.',
-        technicalDetail: 'Empty activationCode',
+        userMessage: 'Código de provisioning requerido.',
+        technicalDetail: 'Empty provisioningCode',
         kind: En1ProvisioningErrorKind.validation,
       );
     }
@@ -43,11 +43,13 @@ class En1ProvisioningRepository {
     try {
       final snapshot = await DeviceRegistry.snapshot(appVersion: _appVersion);
       final request = DeviceRegistrationRequest(
-        uuid: snapshot.uuid,
-        model: snapshot.model,
-        os: snapshot.os,
+        deviceUuid: snapshot.uuid,
+        deviceName: snapshot.deviceName,
+        platform: snapshot.platform,
+        deviceModel: snapshot.model,
+        androidVersion: snapshot.androidVersion,
         appVersion: snapshot.appVersion,
-        activationCode: code,
+        provisioningCode: code,
       );
 
       final config = await _api.registerDevice(
@@ -55,6 +57,7 @@ class En1ProvisioningRepository {
         request: request,
       );
 
+      // Reprovision: siempre persiste el nuevo token (el anterior deja de valer).
       await ProvisioningStore.saveConfig(config);
       await PlatformPrefs.completeOnboarding(PlatformMode.platform);
       return config;
@@ -74,8 +77,7 @@ class En1ProvisioningRepository {
     }
   }
 
-  /// Refresca configuración desde EN1 usando el token guardado.
-  /// No implementa renovación de token dedicada (pendiente definición EN1).
+  /// Refresca configuración desde EN1 con el token guardado.
   Future<ProvisioningConfig> refreshConfig() async {
     final current = await ProvisioningStore.loadConfig();
     if (current == null) {
@@ -91,6 +93,7 @@ class En1ProvisioningRepository {
         apiBaseUrl: current.apiBaseUrl,
         accessToken: current.accessToken,
         deviceUuid: current.deviceUuid,
+        previous: current,
       );
       await ProvisioningStore.saveConfig(updated);
       return updated;

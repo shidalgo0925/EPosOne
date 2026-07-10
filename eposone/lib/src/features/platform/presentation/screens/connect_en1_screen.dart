@@ -66,7 +66,7 @@ class _ConnectEn1ScreenState extends ConsumerState<ConnectEn1Screen> {
     try {
       final config = await _repo.provision(
         apiBaseUrl: _urlCtrl.text.trim(),
-        activationCode: _codeCtrl.text.trim(),
+        provisioningCode: _codeCtrl.text.trim(),
       );
 
       // Aplica identidad mínima en BusinessConfig (sin tocar pantallas POS).
@@ -75,12 +75,12 @@ class _ConnectEn1ScreenState extends ConsumerState<ConnectEn1Screen> {
       final current = await configRepo.getConfig();
       await configRepo.saveConfig(
         current.copyWith(
-          businessName: config.empresaName ?? current.businessName,
+          businessName: config.businessName ?? config.empresaName ?? current.businessName,
           en1SyncEnabled: true,
           en1SyncMode: En1SyncMode.live,
           en1ApiUrl: config.apiBaseUrl,
           en1ApiToken: config.accessToken,
-          en1BranchId: config.sucursalId,
+          en1BranchId: config.branchRef,
         ).markAsModified(),
       );
 
@@ -144,8 +144,8 @@ class _ConnectEn1ScreenState extends ConsumerState<ConnectEn1Screen> {
                 children: [
                   const Text(
                     'Registra este dispositivo en la plataforma. '
-                    'Necesitas la URL de EN1 y el código de activación '
-                    'generado en el BackOffice.',
+                    'Solo necesitas la URL de EN1 y el código de provisioning '
+                    'asociado a una Caja (BackOffice).',
                     style: TextStyle(color: EposBrand.textSecondary, fontSize: 14),
                   ),
                   const SizedBox(height: 20),
@@ -175,8 +175,8 @@ class _ConnectEn1ScreenState extends ConsumerState<ConnectEn1Screen> {
                     controller: _codeCtrl,
                     enabled: !_busy,
                     decoration: const InputDecoration(
-                      labelText: 'Código de activación',
-                      hintText: 'Emitido por EN1 para este POS/Caja',
+                      labelText: 'Código de provisioning',
+                      hintText: 'Asociado a una Caja en EasyNodeOne',
                       prefixIcon: Icon(Icons.vpn_key_outlined),
                     ),
                     textCapitalization: TextCapitalization.characters,
@@ -204,7 +204,8 @@ class _ConnectEn1ScreenState extends ConsumerState<ConnectEn1Screen> {
                   ),
                   const SizedBox(height: 16),
                   const Text(
-                    'Contrato cliente v0.1 · POST /api/v1/devices/register\n'
+                    'Contrato EN1-02 · POST /api/v1/devices/register\n'
+                    'Header X-EN1-Provisioning-Code · la jerarquía viene en la respuesta.\n'
                     'La sincronización de productos y ventas se activará en el Hito 2.',
                     style: TextStyle(fontSize: 11, color: EposBrand.textSecondary),
                   ),

@@ -112,14 +112,29 @@ class _DeviceInfoScreenState extends State<DeviceInfoScreen> {
                 _tile('Modo', _modeLabel),
                 if (_config != null) ...[
                   const SizedBox(height: 8),
-                  const Text('Jerarquía provisionada',
+                  const Text('Jerarquía provisionada (EN1-02)',
                       style: TextStyle(fontWeight: FontWeight.w700, color: EposBrand.navy)),
                   const SizedBox(height: 8),
-                  _tile('Empresa', '${_config!.empresaName ?? '—'} (${_config!.empresaId})'),
-                  _tile('Sucursal', '${_config!.sucursalName ?? '—'} (${_config!.sucursalId})'),
-                  _tile('POS', '${_config!.posName ?? '—'} (${_config!.posId})'),
-                  _tile('Caja', '${_config!.cajaName ?? '—'} (${_config!.cajaId})'),
-                  _tile('Device ID EN1', _config!.deviceId, copyable: true),
+                  _tile(
+                    'Empresa',
+                    '${_config!.organizationName ?? _config!.businessName ?? '—'} '
+                    '(${_config!.organizationId})',
+                  ),
+                  _tile(
+                    'Sucursal',
+                    '${_config!.branchName ?? '—'} (${_config!.branchRef})',
+                  ),
+                  _tile('POS', '${_config!.posName ?? '—'} (${_config!.posRef})'),
+                  _tile(
+                    'Caja',
+                    '${_config!.registerName ?? '—'} (${_config!.registerRef})',
+                  ),
+                  _tile('Dispositivo', _config!.deviceName ?? '—'),
+                  _tile('UUID dispositivo', _config!.deviceUuid, copyable: true),
+                  if (_config!.deviceStatus != null)
+                    _tile('Estado dispositivo', _config!.deviceStatus!),
+                  if (_config!.configVersion != null)
+                    _tile('config_version', '${_config!.configVersion}'),
                   _tile('API', _config!.apiBaseUrl),
                   _tile('Provisionado', _config!.provisionedAt.toLocal().toString()),
                 ],

@@ -10,11 +10,12 @@
 
 | Ítem | Estado |
 |------|--------|
-| **Hito 1 Provisioning — cliente EPosOne** | ✅ **CERRADO / CONGELADO** |
-| **Contrato v0.1** | ✅ En repo |
-| **Master Plan V3.3** | ✅ Alineado con el freeze |
-| **Integración punta a punta** | 🔴 Pendiente de EN1 (CODITO) |
-| **Hito 2 Sync** | ⏸ No iniciar hasta validar Hito 1 |
+| **Hito 1 Provisioning — cliente EPosOne** | ✅ Adaptado a **EN1-02** |
+| **Contrato oficial** | ✅ [`Doc/EPOSONE_EN1_HITO1_PROVISIONING_CONTRACT_EN1-02.md`](Doc/EPOSONE_EN1_HITO1_PROVISIONING_CONTRACT_EN1-02.md) |
+| **EN1 APIs DEV** | 🟢 `https://appdev.easynodeone.com` |
+| **Validación / delta** | ✅ Cerrado — EPosOne consume EN1-02 |
+| **Prueba tablet E2E** | 🟡 Lista (1 tablet; no APK a las otras 3) |
+| **Hito 2 Sync** | ⏸ Tras ✅ E2E |
 
 **Commits remotos relevantes (en orden):**
 
@@ -22,12 +23,14 @@
 |--------|-----|
 | `db1433a` | Catálogo Istmo + imágenes + UX POS |
 | `b42f642` | Capa `platform/` + cliente provisioning + Core Protegido |
-| `2e5197f` | Contrato completo, errores UX, store versionado — **freeze Hito 1** |
-| `8ab5176` | Master Plan V3.3 documenta Hito 1 cerrado |
+| `2e5197f` | Contrato v0.1 + errores UX + store — freeze inicial |
+| `8ab5176` | Master Plan V3.3 |
+| `d8bb659` | Contexto snapshot Hito 1 |
+| _(pendiente)_ | Cliente EN1-02 |
 
-**Siguiente acción (bloqueante):** EN1 publica `POST /api/v1/devices/register` + `GET /api/v1/devices/config` según el contrato → probar tablet limpia → recién entonces Hito 2.
+**Siguiente acción:** E2E en **una** tablet limpia — URL `https://appdev.easynodeone.com` + código de Caja → registro → Este dispositivo → reinicio → PIN.
 
-**Fuera de alcance ahora:** FE, CRM, IA, licencias en APK, renovación de token, sync completo, tocar POS Core.
+**Fuera de alcance ahora:** sync, FE, CRM, IA, licencias, POS Core, APK para las otras 3 tablets.
 
 ---
 
@@ -138,27 +141,26 @@ Evolución = **extensión**, no reemplazo del núcleo.
 | QA fixes tickets / categorías | ✅ |
 | APK piloto | `eposone/epos1.apk` (local, no en git) |
 
-### 5.2 Capa Plataforma — Hito 1 Provisioning (cliente) ✅ CONGELADO
+### 5.2 Capa Plataforma — Hito 1 Provisioning (cliente) ✅ EN1-02
 
 Ruta: `eposone/lib/src/features/platform/`  
-Freeze: commits `b42f642` + `2e5197f`
+Contrato: [`Doc/EPOSONE_EN1_HITO1_PROVISIONING_CONTRACT_EN1-02.md`](Doc/EPOSONE_EN1_HITO1_PROVISIONING_CONTRACT_EN1-02.md)
 
 | Módulo | Estado | Notas |
 |--------|--------|-------|
 | Wizard Bienvenido | ✅ | Crear negocio **o** Conectar EasyNodeOne |
-| Conectar EN1 | ✅ | URL + código activación → `POST /api/v1/devices/register` |
-| Cliente API provisioning | ✅ | Contrato v0.1 |
-| Persistencia token + IDs | ✅ | `en1_provisioning_config_v1` + `schemaVersion: 1` |
-| Migración store | ✅ | `migrateIfNeeded()` listo; sin v2 aún |
-| Estado conexión | ✅ | No configurado / Registrando / Conectado / Error |
-| Errores UX + log técnico | ✅ | Red / timeout / servidor / código / auth |
-| Device UUID + “Este dispositivo” | ✅ | Jerarquía si provisionado |
+| Conectar EN1 | ✅ | **Solo** URL + código → header `X-EN1-Provisioning-Code` |
+| Cliente API | ✅ | EN1-02 · body sin refs de jerarquía |
+| Parser 201 + config anidada | ✅ | Guarda token, org, branch, pos, register, device |
+| Persistencia | ✅ | `schemaVersion: 2` · limpia v1 incompatible |
+| Reprovision | ✅ | 201 + nuevo token persistido |
+| Errores UX | ✅ | `{ "error": "string" }` + mensajes amigables |
+| “Este dispositivo” | ✅ | Jerarquía desde config EN1 |
 | Skip wizard si provisionado | ✅ | Arranque → onboarding o PIN |
-| Renovación de token | ⏸ | Diferida — define EN1 primero |
-| Sync catálogo/ventas | 🔶 Stub | **Hito 2** — no implementar aún |
+| Sync catálogo/ventas | 🔶 Stub | **Hito 2** |
 | POS Core | 🔒 | Sin cambios |
 
-**Integración ✅ solo cuando:** EN1 APIs live + tablet limpia queda registrada automáticamente.
+**E2E pendiente:** 1 tablet limpia contra `https://appdev.easynodeone.com`.
 
 ### 5.3 Stubs / pendientes de producto
 
@@ -173,16 +175,16 @@ Freeze: commits `b42f642` + `2e5197f`
 
 ## 6. Qué NO hacer ahora
 
-No desarrollar (hasta cerrar integración Hito 1):
+No desarrollar (hasta cerrar E2E Hito 1 en 1 tablet):
 
 - Licenciamiento / planes / restricciones en APK  
 - Facturación electrónica “de verdad”  
 - CRM, IA, fidelización avanzada  
-- Sync completo (Hito 2) antes de validar provisioning  
-- Features fuera del flujo principal del POS  
-- Renovación de token sin política EN1  
+- Sync completo (Hito 2)  
+- APK para las otras 3 tablets  
+- Campos de Empresa/Sucursal/POS/Caja en el wizard  
 
-**Prioridad:** esperar APIs EN1 → integrar Hito 1 → recién sync fino, **sin tocar el Core**.
+**Prioridad:** E2E una tablet → ✅ → recién sync / multi-tablet.
 
 ---
 
@@ -209,7 +211,7 @@ Cuando crezca → activa EasyNodeOne sin reinstalar ni perder datos.
 | **Plataforma** | `eposone/lib/src/features/platform/` |
 | POS Core (no tocar) | `eposone/lib/src/features/pos/` |
 | Seed Istmo | `eposone/lib/src/core/database/istmo_*.dart` |
-| Contrato Hito 1 | `Doc/EPOSONE_EN1_HITO1_PROVISIONING_CONTRACT.md` |
+| Contrato oficial EN1-02 | `Doc/EPOSONE_EN1_HITO1_PROVISIONING_CONTRACT_EN1-02.md` |
 | Bitácora integración | `Doc/EPOSONE_EN1_INTEGRATION_LOG.md` |
 | Roadmap | `EPOSONE_MASTER_PLAN_V3.md` (v3.3) |
 | Este contexto | `EPOSONE_APP_CONTEXT.md` |
@@ -233,10 +235,10 @@ Cuando crezca → activa EasyNodeOne sin reinstalar ni perder datos.
 
 ## 10. Siguiente paso técnico
 
-1. **EN1 (CODITO):** publicar APIs del contrato v0.1 (`register` + `config`)  
-2. **Integración Hito 1:** tablet limpia → URL + código → dispositivo registrado + jerarquía persistida  
-3. **Hito 2:** sync fino (productos/clientes) — **solo** después de ✅ Hito 1  
-4. Nuevo `epos1.apk` cuando haga falta probar en las 4 tablets  
+1. **E2E 1 tablet:** limpia → URL DEV + código Caja → register → Este dispositivo → reinicio → PIN  
+2. Evidencias (capturas, HTTP, UUID, reprovision, analyze)  
+3. **Hito 2** sync — solo tras ✅ E2E  
+4. APK 4 estaciones — solo tras ✅ E2E
 
 ---
 

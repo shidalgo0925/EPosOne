@@ -35,19 +35,19 @@ class En1ProvisioningException implements Exception {
     this.serverErrorCode,
   });
 
-  /// Compatibilidad: `toString` / catch genérico muestran el mensaje UX.
   @override
   String toString() => userMessage;
 
   String get message => userMessage;
 }
 
-/// Cliente HTTP de provisioning EN1 — contrato v0.1.
+/// Cliente HTTP de provisioning EN1 — contrato EN1-02.
 class En1ProvisioningApi {
   En1ProvisioningApi({HttpClient? httpClient}) : _http = httpClient ?? HttpClient();
 
   final HttpClient _http;
   static const _timeout = Duration(seconds: 25);
+  static const provisioningCodeHeader = 'X-EN1-Provisioning-Code';
 
   Future<ProvisioningConfig> registerDevice({
     required String apiBaseUrl,
@@ -55,29 +55,46 @@ class En1ProvisioningApi {
   }) async {
     final base = _normalizeBase(apiBaseUrl);
     final uri = Uri.parse('$base/api/v1/devices/register');
-    final payload = await _postJson(uri, body: request.toJson());
-    return _parseConfig(payload, apiBaseUrl: base, deviceUuid: request.uuid);
+    final payload = await _postJson(
+      uri,
+      body: request.toJson(),
+      provisioningCode: request.provisioningCode,
+    );
+    return _parseRegisterOrConfig(
+      payload,
+      apiBaseUrl: base,
+      fallbackDeviceUuid: request.deviceUuid,
+    );
   }
 
   Future<ProvisioningConfig> fetchConfig({
     required String apiBaseUrl,
     required String accessToken,
     required String deviceUuid,
+    ProvisioningConfig? previous,
   }) async {
     final base = _normalizeBase(apiBaseUrl);
     final uri = Uri.parse('$base/api/v1/devices/config');
     final payload = await _getJson(uri, bearerToken: accessToken);
-    return _parseConfig(payload, apiBaseUrl: base, deviceUuid: deviceUuid);
+    return _parseRegisterOrConfig(
+      payload,
+      apiBaseUrl: base,
+      fallbackDeviceUuid: deviceUuid,
+      previousToken: previous?.accessToken ?? accessToken,
+      previous: previous,
+    );
   }
 
   Future<Map<String, dynamic>> _postJson(
     Uri uri, {
     required Map<String, dynamic> body,
+    required String provisioningCode,
   }) async {
     try {
       final req = await _http.postUrl(uri).timeout(_timeout);
       req.headers.set(HttpHeaders.contentTypeHeader, 'application/json; charset=utf-8');
       req.headers.set(HttpHeaders.acceptHeader, 'application/json');
+      req.headers.set(provisioningCodeHeader, provisioningCode.trim());
       req.add(utf8.encode(jsonEncode(body)));
       final res = await req.close().timeout(_timeout);
       return _decodeResponse(res, uri);
@@ -105,6 +122,7 @@ class En1ProvisioningApi {
     }
   }
 
+  /// Acepta HTTP 200 y 201 (alta / reprovision EN1-02).
   Future<Map<String, dynamic>> _decodeResponse(HttpClientResponse res, Uri uri) async {
     final text = await res.transform(utf8.decoder).join();
     if (res.statusCode < 200 || res.statusCode >= 300) {
@@ -151,17 +169,7 @@ class En1ProvisioningApi {
       _ => En1ProvisioningErrorKind.unknown,
     };
 
-    // Preferencia por código de negocio del servidor si viene.
-    final kindFromCode = switch (serverCode) {
-      'INVALID_ACTIVATION_CODE' => En1ProvisioningErrorKind.invalidActivationCode,
-      'DEVICE_UNAUTHORIZED' => En1ProvisioningErrorKind.unauthorized,
-      'DEVICE_ALREADY_REGISTERED' => En1ProvisioningErrorKind.conflict,
-      'VALIDATION_ERROR' => En1ProvisioningErrorKind.validation,
-      'NOT_FOUND' => En1ProvisioningErrorKind.notFound,
-      'INTERNAL_ERROR' => En1ProvisioningErrorKind.serverError,
-      _ => null,
-    };
-
+    final kindFromCode = _kindFromServerCode(serverCode);
     final resolvedKind = kindFromCode ?? kind;
     final userMessage = _userMessageFor(resolvedKind, status, serverMsg);
     final ex = En1ProvisioningException(
@@ -175,6 +183,28 @@ class En1ProvisioningApi {
     return ex;
   }
 
+  En1ProvisioningErrorKind? _kindFromServerCode(String? code) {
+    if (code == null || code.isEmpty) return null;
+    final c = code.toLowerCase();
+    if (c.contains('provisioning') && (c.contains('invalid') || c.contains('required') || c.contains('expired'))) {
+      return En1ProvisioningErrorKind.invalidActivationCode;
+    }
+    if (c.contains('activation') || c.contains('code_invalid') || c.contains('invalid_code')) {
+      return En1ProvisioningErrorKind.invalidActivationCode;
+    }
+    return switch (code) {
+      'INVALID_ACTIVATION_CODE' => En1ProvisioningErrorKind.invalidActivationCode,
+      'DEVICE_UNAUTHORIZED' => En1ProvisioningErrorKind.unauthorized,
+      'DEVICE_ALREADY_REGISTERED' => En1ProvisioningErrorKind.conflict,
+      'VALIDATION_ERROR' => En1ProvisioningErrorKind.validation,
+      'NOT_FOUND' => En1ProvisioningErrorKind.notFound,
+      'INTERNAL_ERROR' => En1ProvisioningErrorKind.serverError,
+      'device_uuid_required' => En1ProvisioningErrorKind.validation,
+      'unauthorized' || 'forbidden' => En1ProvisioningErrorKind.unauthorized,
+      _ => null,
+    };
+  }
+
   String _userMessageFor(En1ProvisioningErrorKind kind, int status, String? serverMsg) {
     return switch (kind) {
       En1ProvisioningErrorKind.invalidActivationCode =>
@@ -184,7 +214,7 @@ class En1ProvisioningApi {
       En1ProvisioningErrorKind.conflict =>
         'Este dispositivo ya está registrado. Revisa el estado en el BackOffice EN1.',
       En1ProvisioningErrorKind.validation =>
-        'Datos de registro inválidos. Verifica la URL y el código de activación.',
+        'Datos de registro inválidos. Verifica la URL y el código de provisioning.',
       En1ProvisioningErrorKind.notFound =>
         'Servidor EN1 no disponible o URL incorrecta (recurso no encontrado).',
       En1ProvisioningErrorKind.serverError =>
@@ -246,74 +276,129 @@ class En1ProvisioningApi {
     return ex;
   }
 
+  /// EN1-02: `{ "error": "code_string" }` · también soporta envelope anidado legacy.
   ({String code, String message})? _parseErrorBody(String body) {
     try {
       final decoded = jsonDecode(body);
       if (decoded is! Map<String, dynamic>) return null;
       final err = decoded['error'];
-      if (err is! Map<String, dynamic>) return null;
-      final code = err['code']?.toString() ?? '';
-      final message = err['message']?.toString() ?? '';
-      if (code.isEmpty && message.isEmpty) return null;
-      return (code: code, message: message);
+      if (err is String) {
+        final code = err.trim();
+        if (code.isEmpty) return null;
+        return (code: code, message: code);
+      }
+      if (err is Map<String, dynamic>) {
+        final code = err['code']?.toString() ?? '';
+        final message = err['message']?.toString() ?? '';
+        if (code.isEmpty && message.isEmpty) return null;
+        return (code: code, message: message);
+      }
+      return null;
     } catch (_) {
       return null;
     }
   }
 
-  ProvisioningConfig _parseConfig(
+  /// Parsea response de register (token+device+config) o GET config.
+  ProvisioningConfig _parseRegisterOrConfig(
     Map<String, dynamic> json, {
     required String apiBaseUrl,
-    required String deviceUuid,
+    required String fallbackDeviceUuid,
+    String? previousToken,
+    ProvisioningConfig? previous,
   }) {
-    String req(String a, [String? b]) {
-      final v = (json[a] ?? (b != null ? json[b] : null))?.toString().trim() ?? '';
-      return v;
-    }
+    final token = _str(json['access_token']) ??
+        _str(json['token']) ??
+        previousToken ??
+        previous?.accessToken ??
+        '';
 
-    final token = req('access_token', 'token');
-    final deviceId = req('device_id', 'dispositivo_id');
-    final empresaId = req('empresa_id', 'company_id');
-    final sucursalId = req('sucursal_id', 'branch_id');
-    final posId = req('pos_id', 'punto_venta_id');
-    final cajaId = req('caja_id', 'cash_register_id');
+    final deviceMap = _asMap(json['device']);
+    final configMap = _asMap(json['config']) ??
+        (json.containsKey('organization') || json.containsKey('branch') ? json : null);
+
+    final orgMap = _asMap(configMap?['organization']) ?? _asMap(json['organization']);
+    final branchMap = _asMap(configMap?['branch']) ?? _asMap(json['branch']);
+    final posMap = _asMap(configMap?['pos']) ?? _asMap(json['pos']);
+    final registerMap = _asMap(configMap?['register']) ?? _asMap(json['register']);
+    final configDevice = _asMap(configMap?['device']);
+
+    final deviceUuid = _str(deviceMap?['uuid']) ??
+        _str(configDevice?['uuid']) ??
+        _str(json['device_uuid']) ??
+        fallbackDeviceUuid;
+
+    final organizationId = _str(orgMap?['id']) ??
+        _str(deviceMap?['organization_id']) ??
+        _str(json['organization_id']) ??
+        previous?.organizationId ??
+        '';
+
+    final branchRef = _str(branchMap?['ref']) ??
+        _str(deviceMap?['branch_ref']) ??
+        previous?.branchRef ??
+        '';
+    final posRef = _str(posMap?['ref']) ??
+        _str(deviceMap?['pos_ref']) ??
+        previous?.posRef ??
+        '';
+    final registerRef = _str(registerMap?['ref']) ??
+        _str(deviceMap?['register_ref']) ??
+        previous?.registerRef ??
+        '';
 
     if (token.isEmpty ||
-        deviceId.isEmpty ||
-        empresaId.isEmpty ||
-        sucursalId.isEmpty ||
-        posId.isEmpty ||
-        cajaId.isEmpty) {
+        deviceUuid.isEmpty ||
+        organizationId.isEmpty ||
+        branchRef.isEmpty ||
+        posRef.isEmpty ||
+        registerRef.isEmpty) {
       final ex = En1ProvisioningException(
         userMessage: 'El servidor EN1 devolvió una configuración incompleta.',
-        technicalDetail: 'Missing required IDs/token in response: $json',
+        technicalDetail: 'Missing required fields in EN1-02 response: $json',
         kind: En1ProvisioningErrorKind.validation,
       );
       _logTechnical(ex);
       throw ex;
     }
 
+    final configVersion = (configMap?['config_version'] as num?)?.toInt() ??
+        (json['config_version'] as num?)?.toInt() ??
+        previous?.configVersion;
+
     return ProvisioningConfig(
       apiBaseUrl: apiBaseUrl,
       accessToken: token,
       deviceUuid: deviceUuid,
-      deviceId: deviceId,
-      empresaId: empresaId,
-      sucursalId: sucursalId,
-      posId: posId,
-      cajaId: cajaId,
-      empresaName: _opt(json, 'empresa_name', 'company_name'),
-      sucursalName: _opt(json, 'sucursal_name', 'branch_name'),
-      posName: _opt(json, 'pos_name', 'punto_venta_name'),
-      cajaName: _opt(json, 'caja_name', 'cash_register_name'),
-      provisionedAt: DateTime.now(),
+      deviceName: _str(deviceMap?['name']) ??
+          _str(configDevice?['name']) ??
+          previous?.deviceName,
+      deviceStatus: _str(deviceMap?['status']) ??
+          _str(configDevice?['status']) ??
+          previous?.deviceStatus,
+      organizationId: organizationId,
+      organizationName: _str(orgMap?['name']) ?? previous?.organizationName,
+      branchRef: branchRef,
+      branchName: _str(branchMap?['name']) ?? previous?.branchName,
+      posRef: posRef,
+      posName: _str(posMap?['name']) ?? previous?.posName,
+      registerRef: registerRef,
+      registerName: _str(registerMap?['name']) ?? previous?.registerName,
+      configVersion: configVersion,
+      businessName: _str(configMap?['business_name']) ?? previous?.businessName,
+      currency: _str(configMap?['currency']) ?? previous?.currency,
+      timezone: _str(configMap?['timezone']) ?? previous?.timezone,
+      provisionedAt: previous?.provisionedAt ?? DateTime.now(),
     );
   }
 
-  String? _opt(Map<String, dynamic> json, String a, String b) {
-    final v = (json[a] ?? json[b])?.toString().trim();
-    if (v == null || v.isEmpty) return null;
-    return v;
+  Map<String, dynamic>? _asMap(dynamic v) =>
+      v is Map<String, dynamic> ? v : null;
+
+  String? _str(dynamic v) {
+    if (v == null) return null;
+    final s = v.toString().trim();
+    return s.isEmpty ? null : s;
   }
 
   String _normalizeBase(String url) {
