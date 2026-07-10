@@ -1,9 +1,33 @@
 # EPosOne — Contexto de la App (Julio 2026)
 
 **Documento vivo** · Fuente de verdad de producto para desarrollo  
-**Última actualización:** 9 de julio de 2026  
-**Repo:** `EPosOne` · App Flutter: `eposone/`  
-**Último commit remoto relevante:** `db1433a` (catálogo Istmo) · capa Plataforma pendiente de commit
+**Última actualización:** 10 de julio de 2026  
+**Repo:** `EPosOne` · App Flutter: `eposone/` · Rama: `master` = `origin/master`
+
+---
+
+## Dónde quedamos (snapshot)
+
+| Ítem | Estado |
+|------|--------|
+| **Hito 1 Provisioning — cliente EPosOne** | ✅ **CERRADO / CONGELADO** |
+| **Contrato v0.1** | ✅ En repo |
+| **Master Plan V3.3** | ✅ Alineado con el freeze |
+| **Integración punta a punta** | 🔴 Pendiente de EN1 (CODITO) |
+| **Hito 2 Sync** | ⏸ No iniciar hasta validar Hito 1 |
+
+**Commits remotos relevantes (en orden):**
+
+| Commit | Qué |
+|--------|-----|
+| `db1433a` | Catálogo Istmo + imágenes + UX POS |
+| `b42f642` | Capa `platform/` + cliente provisioning + Core Protegido |
+| `2e5197f` | Contrato completo, errores UX, store versionado — **freeze Hito 1** |
+| `8ab5176` | Master Plan V3.3 documenta Hito 1 cerrado |
+
+**Siguiente acción (bloqueante):** EN1 publica `POST /api/v1/devices/register` + `GET /api/v1/devices/config` según el contrato → probar tablet limpia → recién entonces Hito 2.
+
+**Fuera de alcance ahora:** FE, CRM, IA, licencias en APK, renovación de token, sync completo, tocar POS Core.
 
 ---
 
@@ -114,25 +138,27 @@ Evolución = **extensión**, no reemplazo del núcleo.
 | QA fixes tickets / categorías | ✅ |
 | APK piloto | `eposone/epos1.apk` (local, no en git) |
 
-### 5.2 Capa Plataforma — Hito 1 Provisioning (cliente)
+### 5.2 Capa Plataforma — Hito 1 Provisioning (cliente) ✅ CONGELADO
 
-Ruta: `eposone/lib/src/features/platform/`
+Ruta: `eposone/lib/src/features/platform/`  
+Freeze: commits `b42f642` + `2e5197f`
 
 | Módulo | Estado | Notas |
 |--------|--------|-------|
 | Wizard Bienvenido | ✅ | Crear negocio **o** Conectar EasyNodeOne |
 | Conectar EN1 | ✅ | URL + código activación → `POST /api/v1/devices/register` |
-| Cliente API provisioning | ✅ | Contrato v0.1 (`Doc/EPOSONE_EN1_HITO1_PROVISIONING_CONTRACT.md`) |
-| Persistencia token + IDs | ✅ | SharedPreferences (fuera de Isar/Core) |
+| Cliente API provisioning | ✅ | Contrato v0.1 |
+| Persistencia token + IDs | ✅ | `en1_provisioning_config_v1` + `schemaVersion: 1` |
+| Migración store | ✅ | `migrateIfNeeded()` listo; sin v2 aún |
 | Estado conexión | ✅ | No configurado / Registrando / Conectado / Error |
-| Device UUID + “Este dispositivo” | ✅ | Muestra jerarquía si provisionado |
+| Errores UX + log técnico | ✅ | Red / timeout / servidor / código / auth |
+| Device UUID + “Este dispositivo” | ✅ | Jerarquía si provisionado |
 | Skip wizard si provisionado | ✅ | Arranque → onboarding o PIN |
+| Renovación de token | ⏸ | Diferida — define EN1 primero |
 | Sync catálogo/ventas | 🔶 Stub | **Hito 2** — no implementar aún |
-| Renovación de token | ⏸ | Diferida hasta que EN1 defina política |
 | POS Core | 🔒 | Sin cambios |
 
-**Hito 1 lado EPosOne: CERRADO / CONGELADO** (contrato + cliente + errores + store versionado).  
-Integración real comienza cuando EN1 publique las APIs.
+**Integración ✅ solo cuando:** EN1 APIs live + tablet limpia queda registrada automáticamente.
 
 ### 5.3 Stubs / pendientes de producto
 
@@ -147,14 +173,16 @@ Integración real comienza cuando EN1 publique las APIs.
 
 ## 6. Qué NO hacer ahora
 
-No desarrollar (hasta cerrar flujo operativo plataforma + POS):
+No desarrollar (hasta cerrar integración Hito 1):
 
 - Licenciamiento / planes / restricciones en APK  
 - Facturación electrónica “de verdad”  
 - CRM, IA, fidelización avanzada  
+- Sync completo (Hito 2) antes de validar provisioning  
 - Features fuera del flujo principal del POS  
+- Renovación de token sin política EN1  
 
-**Prioridad:** wizard + registro dispositivo + sync fino Empresa→Sucursal→POS, **sin tocar el Core**.
+**Prioridad:** esperar APIs EN1 → integrar Hito 1 → recién sync fino, **sin tocar el Core**.
 
 ---
 
@@ -176,12 +204,14 @@ Cuando crezca → activa EasyNodeOne sin reinstalar ni perder datos.
 
 | Área | Ruta |
 |------|------|
-| Arranque | `lib/src/core/startup/app_startup.dart` |
-| Router | `lib/src/core/router/app_router.dart` |
-| **Plataforma** | `lib/src/features/platform/` |
-| POS Core (no tocar) | `lib/src/features/pos/` |
-| Seed Istmo | `lib/src/core/database/istmo_*.dart` |
-| Roadmap | `EPOSONE_MASTER_PLAN_V3.md` |
+| Arranque | `eposone/lib/src/core/startup/app_startup.dart` |
+| Router | `eposone/lib/src/core/router/app_router.dart` |
+| **Plataforma** | `eposone/lib/src/features/platform/` |
+| POS Core (no tocar) | `eposone/lib/src/features/pos/` |
+| Seed Istmo | `eposone/lib/src/core/database/istmo_*.dart` |
+| Contrato Hito 1 | `Doc/EPOSONE_EN1_HITO1_PROVISIONING_CONTRACT.md` |
+| Bitácora integración | `Doc/EPOSONE_EN1_INTEGRATION_LOG.md` |
+| Roadmap | `EPOSONE_MASTER_PLAN_V3.md` (v3.3) |
 | Este contexto | `EPOSONE_APP_CONTEXT.md` |
 
 ---
@@ -203,11 +233,11 @@ Cuando crezca → activa EasyNodeOne sin reinstalar ni perder datos.
 
 ## 10. Siguiente paso técnico
 
-1. **Hito 1 integración:** EN1 publica APIs de registro/config; probar tablet limpia punta a punta  
-2. Commit capa `platform/` + contrato + contexto  
-3. **Hito 2:** sync fino (productos/clientes) — solo después de validar Hito 1  
+1. **EN1 (CODITO):** publicar APIs del contrato v0.1 (`register` + `config`)  
+2. **Integración Hito 1:** tablet limpia → URL + código → dispositivo registrado + jerarquía persistida  
+3. **Hito 2:** sync fino (productos/clientes) — **solo** después de ✅ Hito 1  
 4. Nuevo `epos1.apk` cuando haga falta probar en las 4 tablets  
 
 ---
 
-*EasyTech Services · EPosOne · Contexto de app jul 2026*
+*EasyTech Services · EPosOne · Contexto de app 10 jul 2026*
