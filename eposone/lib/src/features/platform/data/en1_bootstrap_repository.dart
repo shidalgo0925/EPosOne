@@ -42,17 +42,23 @@ class En1BootstrapRepository {
   }
 
   /// Ejecuta el flujo completo del contrato Hito 2 v0.1.
-  Future<En1BootstrapResult> runBootstrap() async {
+  /// [apiBaseUrl]/[accessToken] opcionales: fallback si no hay ProvisioningStore.
+  Future<En1BootstrapResult> runBootstrap({
+    String? apiBaseUrl,
+    String? accessToken,
+  }) async {
     final config = await ProvisioningStore.loadConfig();
-    if (config == null || !config.isComplete) {
+    final base = (apiBaseUrl ?? config?.apiBaseUrl ?? '').trim();
+    final token = (accessToken ?? config?.accessToken ?? '').trim();
+    if (base.isEmpty || token.isEmpty) {
       throw En1BootstrapException(
-        'Dispositivo no provisionado. Conecta EasyNodeOne primero.',
+        'Dispositivo no provisionado. Conecta EasyNodeOne o guarda URL + token en EN1 Cloud.',
       );
     }
 
     final products = await _api.fetchProducts(
-      apiBaseUrl: config.apiBaseUrl,
-      accessToken: config.accessToken,
+      apiBaseUrl: base,
+      accessToken: token,
     );
     if (products.isEmpty) {
       throw En1BootstrapException(
@@ -151,7 +157,7 @@ class En1BootstrapRepository {
       final ext = _extFromUrl(remote.imageUrl!);
       final dest = '${imagesDir.path}/${remote.productRef}$ext';
       final ok = await _api.downloadImage(
-        apiBaseUrl: config.apiBaseUrl,
+        apiBaseUrl: base,
         imageUrl: remote.imageUrl!,
         destPath: dest,
       );
@@ -172,8 +178,8 @@ class En1BootstrapRepository {
     var stockUpdated = 0;
     try {
       final balances = await _api.fetchStockBalances(
-        apiBaseUrl: config.apiBaseUrl,
-        accessToken: config.accessToken,
+        apiBaseUrl: base,
+        accessToken: token,
       );
       await _isar.writeTxn(() async {
         for (final b in balances) {

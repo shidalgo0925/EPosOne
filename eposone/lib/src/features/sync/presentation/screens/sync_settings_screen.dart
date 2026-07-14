@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:eposone/src/core/database/database_provider.dart';
 import 'package:eposone/src/core/providers/business_config_provider.dart';
 import 'package:eposone/src/core/theme/eposone_theme.dart';
+import 'package:eposone/src/features/platform/data/en1_bootstrap_repository.dart';
 import 'package:eposone/src/features/products/presentation/providers/product_provider.dart';
 import 'package:eposone/src/features/settings/data/repositories/business_config_repository.dart';
-import 'package:eposone/src/features/sync/data/repositories/sync_repository.dart';
 import 'package:eposone/src/features/sync/domain/entities/en1_sync_mode.dart';
 import 'package:eposone/src/features/sync/domain/entities/sync_entity_kind.dart';
 import 'package:eposone/src/features/sync/presentation/providers/sync_provider.dart';
@@ -100,9 +101,21 @@ class _SyncSettingsScreenState extends ConsumerState<SyncSettingsScreen> {
 
   Future<void> _pullCatalog() async {
     try {
-      await ref.read(syncRepositoryProvider).enqueueCatalogPull();
-      ref.invalidate(syncPendingCountProvider);
-      await _syncNow();
+      final isar = await ref.read(databaseProvider.future);
+      final result = await En1BootstrapRepository(isar: isar).runBootstrap(
+        apiBaseUrl: _urlCtrl.text.trim().isEmpty ? null : _urlCtrl.text.trim(),
+        accessToken: _tokenCtrl.text.trim().isEmpty ? null : _tokenCtrl.text.trim(),
+      );
+      ref.invalidate(productsListProvider);
+      ref.invalidate(categoriesListProvider);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result.message),
+            backgroundColor: Colors.green.shade700,
+          ),
+        );
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
