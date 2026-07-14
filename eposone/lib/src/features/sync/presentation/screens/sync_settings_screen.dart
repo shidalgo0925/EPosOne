@@ -238,7 +238,9 @@ class _SyncSettingsScreenState extends ConsumerState<SyncSettingsScreen> {
                 ),
                 const SizedBox(height: 16),
                 const Text(
-                  'L9 — last-write-wins por updatedAt. Ventas y clientes se encolan al guardar; reintento automático hasta 5 veces.',
+                  'Hito 2: usa «Descargar catálogo EN1» (Bootstrap). '
+                  '«Sincronizar ahora» con modo Live ya hace pull de catálogo; '
+                  'push de ventas/clientes aún no (Hito 3).',
                   style: TextStyle(fontSize: 12, color: EposBrand.textSecondary),
                 ),
               ],

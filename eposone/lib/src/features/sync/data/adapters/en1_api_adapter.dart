@@ -1,6 +1,7 @@
 import 'package:eposone/src/features/customers/domain/entities/customer.dart';
 import 'package:eposone/src/features/products/domain/entities/category.dart';
 import 'package:eposone/src/features/products/domain/entities/product.dart';
+import 'package:eposone/src/features/sync/data/adapters/live_en1_adapter.dart';
 import 'package:eposone/src/features/sync/data/adapters/stub_en1_adapter.dart';
 import 'package:eposone/src/features/sales/domain/entities/sale.dart';
 import 'package:eposone/src/features/sales/domain/entities/sale_item.dart';
@@ -42,7 +43,7 @@ En1ApiAdapter createEn1Adapter(En1SyncMode mode) {
     case En1SyncMode.stub:
       return StubEn1Adapter();
     case En1SyncMode.live:
-      throw UnimplementedError('EN1 API live pendiente de contrato backend');
+      return LiveEn1Adapter();
     case En1SyncMode.none:
       throw StateError('EN1 sync desactivado');
   }
