@@ -2,10 +2,8 @@ import 'package:eposone/src/features/platform/domain/platform_mode.dart';
 
 /// Sync fino de la capa Plataforma.
 ///
-/// - Sin EN1 (modo local): no hace nada.
-/// - Con EN1: descargará Empresa → Sucursal → POS (y catálogo) en fases siguientes.
-///
-/// No modifica pantallas ni lógica del POS Core.
+/// Hito 2 Device Bootstrap vive en [En1BootstrapRepository].
+/// Este stub solo indica estado; no ejecuta pull automáticamente.
 class PlatformSyncStub {
   static Future<PlatformSyncResult> runIfNeeded(PlatformMode mode) async {
     if (mode != PlatformMode.platform) {
@@ -15,10 +13,10 @@ class PlatformSyncStub {
       );
     }
 
-    // Stub: el conector EN1 live se implementa sin tocar el Core.
     return const PlatformSyncResult(
       ran: false,
-      message: 'Conector EN1 pendiente — sync fino no ejecutado',
+      message:
+          'Device Bootstrap Hito 2: ejecutar desde Este dispositivo → Descargar catálogo EN1',
     );
   }
 }

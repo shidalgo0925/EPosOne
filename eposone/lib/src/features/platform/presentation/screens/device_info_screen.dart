@@ -1,24 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:eposone/src/core/database/database_provider.dart';
 import 'package:eposone/src/core/theme/eposone_theme.dart';
 import 'package:eposone/src/features/platform/data/device_registry.dart';
+import 'package:eposone/src/features/platform/data/en1_bootstrap_repository.dart';
+import 'package:eposone/src/features/platform/data/en1_provisioning_api.dart';
 import 'package:eposone/src/features/platform/data/en1_provisioning_repository.dart';
 import 'package:eposone/src/features/platform/data/platform_prefs.dart';
 import 'package:eposone/src/features/platform/domain/connection_status.dart';
 import 'package:eposone/src/features/platform/domain/platform_mode.dart';
 import 'package:eposone/src/features/platform/domain/provisioning_config.dart';
+import 'package:eposone/src/features/products/presentation/providers/product_provider.dart';
 
 const _appVersionLabel = '1.0.0+1';
 
-/// Pantalla "Este dispositivo" — UUID, modo, estado EN1, IDs de jerarquía.
-class DeviceInfoScreen extends StatefulWidget {
+/// Pantalla "Este dispositivo" — UUID, modo, estado EN1, bootstrap Hito 2.
+class DeviceInfoScreen extends ConsumerStatefulWidget {
   const DeviceInfoScreen({super.key});
 
   @override
-  State<DeviceInfoScreen> createState() => _DeviceInfoScreenState();
+  ConsumerState<DeviceInfoScreen> createState() => _DeviceInfoScreenState();
 }
 
-class _DeviceInfoScreenState extends State<DeviceInfoScreen> {
+class _DeviceInfoScreenState extends ConsumerState<DeviceInfoScreen> {
   DeviceSnapshot? _device;
   PlatformMode _mode = PlatformMode.undecided;
   ConnectionStatus _status = ConnectionStatus.notConfigured;
@@ -26,6 +31,9 @@ class _DeviceInfoScreenState extends State<DeviceInfoScreen> {
   String? _error;
   bool _loading = true;
   bool _refreshing = false;
+  bool _bootstrapping = false;
+  bool _bootstrapDone = false;
+  DateTime? _bootstrapAt;
 
   @override
   void initState() {
@@ -40,6 +48,10 @@ class _DeviceInfoScreenState extends State<DeviceInfoScreen> {
     final status = await repo.getStatus();
     final config = await repo.getConfig();
     final error = await repo.getLastError();
+    final isar = await ref.read(databaseProvider.future);
+    final bootRepo = En1BootstrapRepository(isar: isar);
+    final done = await bootRepo.isBootstrapDone();
+    final at = await bootRepo.lastBootstrapAt();
     if (!mounted) return;
     setState(() {
       _device = device;
@@ -47,6 +59,8 @@ class _DeviceInfoScreenState extends State<DeviceInfoScreen> {
       _status = status;
       _config = config;
       _error = error;
+      _bootstrapDone = done;
+      _bootstrapAt = at;
       _loading = false;
     });
   }
@@ -71,6 +85,35 @@ class _DeviceInfoScreenState extends State<DeviceInfoScreen> {
     }
   }
 
+  Future<void> _runBootstrap() async {
+    setState(() => _bootstrapping = true);
+    try {
+      final isar = await ref.read(databaseProvider.future);
+      final result = await En1BootstrapRepository(isar: isar).runBootstrap();
+      ref.invalidate(productsListProvider);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result.message),
+          backgroundColor: Colors.green.shade700,
+        ),
+      );
+      await _load();
+    } catch (e) {
+      final msg = e is En1ProvisioningException
+          ? e.userMessage
+          : e is En1BootstrapException
+              ? e.message
+              : '$e';
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(msg), backgroundColor: Colors.red.shade700),
+      );
+    } finally {
+      if (mounted) setState(() => _bootstrapping = false);
+    }
+  }
+
   String get _modeLabel => switch (_mode) {
         PlatformMode.local => 'Local',
         PlatformMode.platform => 'Plataforma (EN1)',
@@ -85,8 +128,8 @@ class _DeviceInfoScreenState extends State<DeviceInfoScreen> {
         actions: [
           if (_config != null)
             IconButton(
-              tooltip: 'Refrescar desde EN1',
-              onPressed: _refreshing ? null : _refresh,
+              tooltip: 'Refrescar config EN1',
+              onPressed: _refreshing || _bootstrapping ? null : _refresh,
               icon: _refreshing
                   ? const SizedBox(
                       width: 18,
@@ -137,6 +180,36 @@ class _DeviceInfoScreenState extends State<DeviceInfoScreen> {
                     _tile('config_version', '${_config!.configVersion}'),
                   _tile('API', _config!.apiBaseUrl),
                   _tile('Provisionado', _config!.provisionedAt.toLocal().toString()),
+                  const SizedBox(height: 16),
+                  const Text('Hito 2 — Device Bootstrap',
+                      style: TextStyle(fontWeight: FontWeight.w700, color: EposBrand.navy)),
+                  const SizedBox(height: 8),
+                  _tile(
+                    'Catálogo EN1',
+                    _bootstrapDone
+                        ? 'Descargado${_bootstrapAt != null ? ' · ${_bootstrapAt!.toLocal()}' : ''}'
+                        : 'Pendiente (aún puede verse Istmo local)',
+                  ),
+                  const SizedBox(height: 8),
+                  FilledButton.icon(
+                    onPressed: _bootstrapping ? null : _runBootstrap,
+                    icon: _bootstrapping
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          )
+                        : const Icon(Icons.cloud_sync),
+                    label: Text(_bootstrapDone
+                        ? 'Volver a descargar catálogo EN1'
+                        : 'Descargar catálogo EN1'),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Descarga productos, imágenes y saldos desde EN1 (contrato Hito 2). '
+                    'No descuenta stock por ventas todavía.',
+                    style: TextStyle(fontSize: 12, color: EposBrand.textSecondary),
+                  ),
                 ],
                 const SizedBox(height: 12),
                 const Text(

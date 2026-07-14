@@ -10,30 +10,14 @@
 
 | Ítem | Estado |
 |------|--------|
-| **Hito 1 Provisioning EN1-02** | ✅ **CERRADO** · tag **`provisioning-v1.0`** · `0ceac11` |
-| **Handoff cierre Hito 1** | [`Doc/EPOSONE_HITO1_PROVISIONING_HANDOFF_CLOSED.md`](Doc/EPOSONE_HITO1_PROVISIONING_HANDOFF_CLOSED.md) |
+| **Hito 1 Provisioning EN1-02** | ✅ **CERRADO** · tag **`provisioning-v1.0`** |
+| **Hito 2 Device Bootstrap** | 🟡 **GO ABIERTO** — contrato + cliente pull en curso |
+| **Contrato Hito 2** | [`Doc/EPOSONE_EN1_HITO2_DEVICE_BOOTSTRAP_CONTRACT.md`](Doc/EPOSONE_EN1_HITO2_DEVICE_BOOTSTRAP_CONTRACT.md) |
 | **Cliente Provisioning** | 🔒 Congelado |
 | **POS Core** | 🔒 Congelado |
-| **Catálogo en APK** | Istmo **local** (sin pull EN1) |
-| **EN1 productos/inventario Dev** | 🟢 Handoff 13 jul — Itsmo org 5 |
-| **Hito 2 Device Bootstrap** | ⏸ **Siguiente** — nuevo GO / nuevo chat · contrato EN1 primero |
+| **Catálogo** | Istmo local hasta Bootstrap; luego EN1 |
 
-**Referencias:**  
-- Contrato EN1-02: [`Doc/EPOSONE_EN1_HITO1_PROVISIONING_CONTRACT_EN1-02.md`](Doc/EPOSONE_EN1_HITO1_PROVISIONING_CONTRACT_EN1-02.md)  
-- Productos/inventario EN1: [`Doc/EN1_EPOSONE_HANDOFF_2026-07-13_PRODUCTS_INVENTORY.md`](Doc/EN1_EPOSONE_HANDOFF_2026-07-13_PRODUCTS_INVENTORY.md)
-
-**Commits / tags:**
-
-| Ref | Qué |
-|-----|-----|
-| `db1433a` | Catálogo Istmo + imágenes |
-| `b42f642` · `2e5197f` | Provisioning v0.1 |
-| **`0ceac11` / `provisioning-v1.0`** | **EN1-02 — cierre Hito 1** |
-
-**Siguiente acción:** Abrir **Hito 2 — Device Bootstrap (Sync Down)**: EN1 congela contrato → EPosOne consume → E2E tablet (catálogo EN1 + imágenes).  
-No mezclar con fixes de provisioning.
-
-**Fuera de alcance Hito 2 v1:** ventas→stock, transferencias, FE, CRM, IA, multi-tablet.
+**Siguiente acción:** EN1 confirma checklist freeze del contrato Hito 2 (token device → products/stock) · EPosOne prueba botón **Descargar catálogo EN1** en tablet org 5.
 
 ---
 
@@ -203,10 +187,10 @@ Una persona descarga EPosOne y en **&lt; 5 minutos** debe poder:
 
 ## 10. Siguiente paso
 
-1. Completar evidencia Ops de **reinicio → PIN** (si falta)  
-2. **Nuevo chat / GO:** Hito 2 Device Bootstrap — contrato EN1  
-3. Implementar pull APK · E2E · retirar Istmo local solo tras ✅  
+1. EN1: checklist freeze contrato Hito 2 (token device → products/stock + curl org 5)  
+2. Tablet: Este dispositivo → **Descargar catálogo EN1** → verificar ventas con `ib-*`  
+3. E2E Bootstrap → retirar Istmo como fuente activa (assets se quedan hasta decisión)  
 
 ---
 
-*EasyTech Services · EPosOne · Contexto 13 jul 2026 · Hito 1 cerrado*
+*EasyTech Services · EPosOne · Contexto 13 jul 2026 · Hito 2 GO abierto*
