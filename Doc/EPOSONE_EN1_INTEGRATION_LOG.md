@@ -7,35 +7,39 @@ Integración: 🔴 No probado · 🟡 Integrando · 🟢 Funciona · ✅ QA apro
 
 | Hito | EN1 | EPosOne | Integración | Notas |
 |------|-----|---------|-------------|-------|
-| **1 Provisioning** | 🟢 EN1-02 DEV | 🟢 Cliente **EN1-02** | 🟡 E2E 1 tablet | Contrato oficial EN1-02 |
-| **2 Sync down** | 🔴 | 🔴 stub | 🔴 | Tras ✅ E2E Hito 1 |
-| **3 Eventos up** | 🔴 | 🔴 stub | 🔴 | Ventas/caja/inventario |
-| **4 BackOffice ops** | 🟡 | N/A (solo refleja) | 🔴 | |
-| **5 QA 4 tablets** | 🔴 | 🔴 | 🔴 | Solo tras E2E 1 tablet |
+| **1 Provisioning** | 🟢 EN1-02 | 🟢 **Congelado** `provisioning-v1.0` | ✅ **Cerrado** 13 jul | Handoff cierre; reinicio evidencia Ops |
+| **2 Device Bootstrap** | 🟡 APIs productos/stock Dev | 🔴 stub | 🔴 | **Siguiente GO** — contrato primero |
+| **3 Eventos up** | 🔴 | 🔴 stub | 🔴 | Ventas→stock etc. |
+| **4 BackOffice ops** | 🟡 | N/A | 🔴 | |
+| **5 QA 4 tablets** | 🔴 | 🔴 | 🔴 | Tras Bootstrap |
 
-## Hito 1 — EPosOne EN1-02 (10 jul 2026)
+---
 
-| Entrega | Estado |
-|---------|--------|
-| Wizard solo URL + código | 🟢 |
-| Header `X-EN1-Provisioning-Code` | 🟢 |
-| Body sin org/branch/pos/register refs | 🟢 |
-| Parser response anidada + HTTP 201 | 🟢 |
-| Persistencia schema v2 (token, org, branch, pos, register, device, config_version) | 🟢 |
-| Errores `{ "error": "string" }` + UX | 🟢 |
-| Reprovision: nuevo token automático | 🟢 |
-| POS Core intacto | 🔒 |
-| Sync | 🔴 Hito 2 |
-| `flutter analyze` platform | 🟢 No issues found |
+## Hito 1 — CERRADO / CONGELADO (13 jul 2026)
 
+**Tag:** `provisioning-v1.0` · **Commit:** `0ceac11`  
+**Handoff:** [`EPOSONE_HITO1_PROVISIONING_HANDOFF_CLOSED.md`](EPOSONE_HITO1_PROVISIONING_HANDOFF_CLOSED.md)  
 **Contrato:** [`EPOSONE_EN1_HITO1_PROVISIONING_CONTRACT_EN1-02.md`](EPOSONE_EN1_HITO1_PROVISIONING_CONTRACT_EN1-02.md)
 
-## Gate actual — E2E una tablet
+| Criterio | Estado |
+|----------|--------|
+| Register 201 + token + jerarquía + UUID | ✅ |
+| Reinicio → PIN sin wizard | ⏳ Evidencia Ops (no reabrir código) |
+| Reprovision | ○ Opcional — no bloquea cierre |
+| Cliente + POS Core | 🔒 |
 
-1. Instalar APK limpia (clear data).  
-2. URL: `https://appdev.easynodeone.com`  
-3. Código de provisioning de una Caja (BackOffice).  
-4. Registrar → token + config → “Este dispositivo”.  
-5. Reiniciar → omitir wizard → PIN.  
-6. Opcional: reprovision mismo UUID → 201 + nuevo token.  
-7. **No** generar APK para las otras 3 tablets hasta ✅.
+Catálogo en tablet = **Istmo local**. Sin pull EN1.
+
+---
+
+## Hito 2 — Device Bootstrap (próximo GO)
+
+**Objetivo:** tablet provisionada deja de depender del catálogo Istmo local.
+
+**v1 pull:** config · catálogo · precios · maestro inventario · `image_url` · saldos (`on_hand`/`reserved`/`available`).
+
+**Fuera:** ventas→stock, transferencias, compras, FE, CRM, IA.
+
+**Orden:** contrato EN1 congelado → consumo APK → E2E tablet nueva.
+
+Handoff productos/inventario EN1 (referencia): [`EN1_EPOSONE_HANDOFF_2026-07-13_PRODUCTS_INVENTORY.md`](EN1_EPOSONE_HANDOFF_2026-07-13_PRODUCTS_INVENTORY.md)

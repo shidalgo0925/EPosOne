@@ -2,11 +2,13 @@
 
 ## Producto comercial · Plataforma Cloud EasyTech · Go-to-market Panamá
 
-**Versión:** 3.3 — **ACTIVO**  
-**Fecha:** 10 de julio de 2026  
-**Base:** `master` @ **`2e5197f`** — Hito 1 provisioning cliente congelado  
+**Versión:** 3.4 — **ACTIVO**  
+**Fecha:** 13 de julio de 2026  
+**Base:** `master` @ **`0ceac11`** · tag **`provisioning-v1.0`** — Hito 1 Provisioning EN1-02 cerrado  
 **Contexto de app:** [`EPOSONE_APP_CONTEXT.md`](EPOSONE_APP_CONTEXT.md)  
-**Integración EN1:** [`Doc/EPOSONE_EN1_INTEGRATION_LOG.md`](Doc/EPOSONE_EN1_INTEGRATION_LOG.md) · Contrato Hito 1: [`Doc/EPOSONE_EN1_HITO1_PROVISIONING_CONTRACT.md`](Doc/EPOSONE_EN1_HITO1_PROVISIONING_CONTRACT.md)  
+**Integración EN1:** [`Doc/EPOSONE_EN1_INTEGRATION_LOG.md`](Doc/EPOSONE_EN1_INTEGRATION_LOG.md)  
+**Contrato Hito 1:** [`Doc/EPOSONE_EN1_HITO1_PROVISIONING_CONTRACT_EN1-02.md`](Doc/EPOSONE_EN1_HITO1_PROVISIONING_CONTRACT_EN1-02.md)  
+**Cierre Hito 1:** [`Doc/EPOSONE_HITO1_PROVISIONING_HANDOFF_CLOSED.md`](Doc/EPOSONE_HITO1_PROVISIONING_HANDOFF_CLOSED.md)  
 **Documentos relacionados:** [`EPOSONE_MASTER_PLAN_V2.md`](EPOSONE_MASTER_PLAN_V2.md) · [`EPOSONE_vs_LOYVERSE.md`](EPOSONE_vs_LOYVERSE.md) · [`EPOSONE_ARCHITECTURE_REVIEW.md`](EPOSONE_ARCHITECTURE_REVIEW.md)
 
 **Objetivo:** Convertir EPOSOne de TPV funcional (~96% paridad Loyverse) en **producto comercial vendible** en Panamá, como **app independiente** del ecosistema EasyNodeOne.
@@ -17,7 +19,8 @@
 
 > **Principio rector:** EN1 es el cerebro; EPosOne es un nodo operativo. Los POS **nunca** se comunican entre sí. Sync por **eventos**. Nunca bloquear una venta por falta de internet.
 
-> **Hito 1 (Provisioning) — lado EPosOne: CERRADO / CONGELADO** (`2e5197f`). Integración real cuando EN1 publique las APIs del contrato v0.1.
+> **Hito 1 Provisioning EN1-02: CERRADO / CONGELADO** (tag `provisioning-v1.0`, `0ceac11`).  
+> **Siguiente:** Hito 2 Device Bootstrap (Sync Down) — **nuevo GO / nuevo chat**; contrato EN1 primero.
 
 ---
 
@@ -35,12 +38,12 @@
 | Catálogo demo Istmo | ✅ ~110 productos, 11 categorías, páginas Comida/Bar |
 | Imágenes producto (ItsBrew) | ✅ 73 assets; 110/110 con imagen en TPV |
 | QA V3.1 en curso | 🔶 Checklist parcial (restaurante Istmo) |
-| Hito 1 Provisioning (cliente APK) | ✅ **Cerrado / congelado** (`2e5197f`) |
-| APIs EN1 register/config | 🟡 Pendiente CODITO |
-| Integración Hito 1 punta a punta | 🔴 No probada |
-| Sync inteligente (Hito 2) | ❌ Stub — no iniciar hasta validar Hito 1 |
+| Hito 1 Provisioning EN1-02 | ✅ **Cerrado** · tag `provisioning-v1.0` (`0ceac11`) |
+| APIs EN1 register/config | 🟢 DEV live (EN1-02) |
+| Integración Hito 1 E2E | ✅ Cerrada 13 jul (reinicio: evidencia Ops) |
+| Hito 2 Device Bootstrap | ⏸ **Siguiente GO** — contrato primero |
 
-**Lo que falta no son más pantallas de TPV.** Falta que EN1 publique provisioning, integrar tablet limpia, luego sync (Hito 2), QA y piloto. Ver [`EPOSONE_APP_CONTEXT.md`](EPOSONE_APP_CONTEXT.md).
+**Lo que falta no son más pantallas de TPV.** Siguiente: Device Bootstrap (catálogo EN1). Ver [`EPOSONE_APP_CONTEXT.md`](EPOSONE_APP_CONTEXT.md).
 
 ### 0.1 Avance sprint Istmo (commit `db1433a`)
 
@@ -58,25 +61,21 @@ Trabajo completado y pusheado a `master`:
 
 **Pendiente QA formal:** checklist V3.1 firmado con hallazgos en `Doc/` (local).
 
-### 0.2 Hito 1 — Provisioning cliente EPosOne (cerrado / congelado)
+### 0.2 Hito 1 — Provisioning EN1-02 (CERRADO / CONGELADO)
 
-Commits: `b42f642` (cliente) · `2e5197f` (contrato completo + errores UX + store versionado).
+**Tag:** `provisioning-v1.0` · **Commit:** `0ceac11`  
+**Cierre:** [`Doc/EPOSONE_HITO1_PROVISIONING_HANDOFF_CLOSED.md`](Doc/EPOSONE_HITO1_PROVISIONING_HANDOFF_CLOSED.md)
 
 | Entrega | Detalle |
 |---------|---------|
-| **Wizard** | Crear negocio **o** Conectar EasyNodeOne |
-| **Conectar EN1** | URL + código → `POST /api/v1/devices/register` |
-| **Contrato v0.1** | Request/response, HTTP 200/4xx/5xx, formato `error`, ejemplos JSON |
-| **Persistencia** | Token + IDs jerarquía; `schemaVersion` + gancho `migrateIfNeeded` |
-| **Errores UX** | Sin red, timeout, servidor, código inválido, no autorizado + log técnico |
-| **Skip wizard** | Si ya provisionado → onboarding/PIN |
-| **Renovación token** | ⏸ Diferida — define EN1 primero |
-| **Sync catálogo/ventas** | Stub (Hito 2) |
-| **Core** | 🔒 Sin cambios en `features/pos/` |
+| **Contrato** | EN1-02 oficial (código por Caja; header `X-EN1-Provisioning-Code`) |
+| **Wizard** | Solo URL + código |
+| **HTTP** | 201 register/reprovision · parser anidado · errores string |
+| **Store** | `schemaVersion: 2` |
+| **Catálogo tablet** | Istmo local (sin pull EN1) |
+| **Core** | 🔒 |
 
-**Documentos:** [`Doc/EPOSONE_EN1_HITO1_PROVISIONING_CONTRACT.md`](Doc/EPOSONE_EN1_HITO1_PROVISIONING_CONTRACT.md) · [`Doc/EPOSONE_EN1_INTEGRATION_LOG.md`](Doc/EPOSONE_EN1_INTEGRATION_LOG.md)
-
-**Siguiente:** EN1 publica APIs → prueba tablet limpia → ✅ integración Hito 1 → recién entonces Hito 2 (sync).
+**Siguiente:** Hito 2 Device Bootstrap — nuevo GO. No tocar cliente provisioning.
 
 ---
 
@@ -676,7 +675,7 @@ gantt
     V3.8 GTM Panamá          :v38, after v37, 14d
 ```
 
-**Sprint inmediato:** EN1 publica APIs Hito 1 → integración tablet limpia · EPosOne cliente **congelado** · no iniciar Hito 2 sync hasta validar provisioning · V3.1 QA Istmo en paralelo.
+**Sprint inmediato:** Hito 1 **cerrado** (`provisioning-v1.0`) · abrir **Hito 2 Device Bootstrap** (contrato EN1 primero) · Istmo local permanece hasta E2E Bootstrap · V3.1 QA Istmo en paralelo.
 
 ---
 
@@ -700,37 +699,36 @@ lib/src/features/platform/
 Una sola APK. Modos: **Local** · **Plataforma** · **Vincular EN1**.  
 El cajero no debe sentir que está “dentro del ERP”.
 
-### Entregado — Hito 1 Provisioning (EPosOne cerrado / congelado)
+### Entregado — Hito 1 Provisioning EN1-02 (cerrado)
 
 | Módulo | Estado |
 |--------|--------|
-| Wizard Bienvenido + Conectar EN1 | ✅ |
-| Cliente API register/config (contrato v0.1) | ✅ |
-| Persistencia token + IDs + `schemaVersion` | ✅ |
-| Errores UX + log técnico | ✅ |
-| Sync catálogo/ventas | 🔶 Stub (Hito 2) |
-| Renovación de token | ⏸ Define EN1 |
-| POS Core | 🔒 Sin cambios |
+| Wizard URL + código Caja | ✅ |
+| Cliente EN1-02 (201, parser, store v2) | ✅ · tag `provisioning-v1.0` |
+| Catálogo Istmo local (sin sync EN1) | ✅ vigente hasta Hito 2 |
+| Sync / Device Bootstrap | ⏸ **Hito 2 — próximo GO** |
+| POS Core | 🔒 |
 
-### Siguiente (sin tocar Core)
+### Siguiente (sin tocar Core ni cliente provisioning)
 
-1. **Integración Hito 1:** EN1 APIs live + tablet limpia registrada automáticamente  
-2. **Hito 2:** sync fino catálogo/clientes (solo tras ✅ Hito 1)  
-3. Vincular negocio Local → EN1 sin reinstalar  
+1. **Hito 2 Device Bootstrap:** contrato EN1 → pull catálogo/imágenes/saldos → E2E tablet  
+2. Quitar dependencia Istmo local solo tras ✅ Bootstrap  
+3. Luego eventos venta→stock, multi-tablet, etc.  
 
 ---
 
 ## 17. Commits de referencia
 
-| Commit | Contenido |
-|--------|-----------|
+| Commit / tag | Contenido |
+|--------------|-----------|
 | `895ae1a` | Cierre V2: L9 EN1 stub + L10 premium |
 | `074668a` | Master Plan V3.0 — roadmap comercial |
-| `db1433a` | Catálogo Istmo, imágenes ItsBrew, chips categoría POS, QA fixes |
+| `db1433a` | Catálogo Istmo, imágenes ItsBrew, chips categoría POS |
 | `b42f642` | Hito 1: cliente provisioning + Core Protegido |
-| `2e5197f` | Hito 1: contrato completo, errores UX, store versionado — **congelado** |
+| `2e5197f` | Hito 1: contrato v0.1 + errores UX + store |
+| **`0ceac11` / `provisioning-v1.0`** | **EN1-02 cliente — cierre Hito 1** |
 
 ---
 
-*Documento vivo — versión 3.3 · EasyTech Services · EPOSOne · **Roadmap comercial activo jul 2026***  
-*Contexto de app:* [`EPOSONE_APP_CONTEXT.md`](EPOSONE_APP_CONTEXT.md) · *Bitácora integración:* [`Doc/EPOSONE_EN1_INTEGRATION_LOG.md`](Doc/EPOSONE_EN1_INTEGRATION_LOG.md)
+*Documento vivo — versión 3.4 · EasyTech Services · EPOSOne · **Hito 1 cerrado · Hito 2 siguiente** jul 2026*  
+*Contexto:* [`EPOSONE_APP_CONTEXT.md`](EPOSONE_APP_CONTEXT.md) · *Cierre Hito 1:* [`Doc/EPOSONE_HITO1_PROVISIONING_HANDOFF_CLOSED.md`](Doc/EPOSONE_HITO1_PROVISIONING_HANDOFF_CLOSED.md)
