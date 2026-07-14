@@ -238,9 +238,8 @@ class _SyncSettingsScreenState extends ConsumerState<SyncSettingsScreen> {
                 ),
                 const SizedBox(height: 16),
                 const Text(
-                  'Hito 2: usa «Descargar catálogo EN1» (Bootstrap). '
-                  '«Sincronizar ahora» con modo Live ya hace pull de catálogo; '
-                  'push de ventas/clientes aún no (Hito 3).',
+                  'Hito 2: «Descargar catálogo EN1» llama GET /api/v1/devices/bootstrap '
+                  'con Device Token (no BackOffice). Push ventas = Hito 3.',
                   style: TextStyle(fontSize: 12, color: EposBrand.textSecondary),
                 ),
               ],

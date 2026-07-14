@@ -1,4 +1,4 @@
-/// DTOs Device Bootstrap Hito 2 (contrato v0.1).
+/// DTOs Device Bootstrap Hito 2 — `GET /api/v1/devices/bootstrap`.
 class En1RemoteProduct {
   final String productRef;
   final String name;
@@ -17,6 +17,8 @@ class En1RemoteProduct {
   final String? uom;
   final String? purchaseUom;
   final double? packFactor;
+  /// Stock embebido en el ítem (si bootstrap lo incluye por producto).
+  final double? stockAvailable;
 
   const En1RemoteProduct({
     required this.productRef,
@@ -36,6 +38,7 @@ class En1RemoteProduct {
     this.uom,
     this.purchaseUom,
     this.packFactor,
+    this.stockAvailable,
   });
 
   bool get isActive {
@@ -60,6 +63,16 @@ class En1RemoteProduct {
     final name = s(json['name']) ?? ref;
     final price = n(json['unit_price'] ?? json['price']) ?? 0;
 
+    String? category;
+    final catRaw = json['category'];
+    if (catRaw is String) {
+      category = s(catRaw);
+    } else if (catRaw is Map) {
+      category = s(catRaw['name'] ?? catRaw['ref'] ?? catRaw['category_name']);
+    } else {
+      category = s(json['category_name']);
+    }
+
     return En1RemoteProduct(
       productRef: ref,
       name: name,
@@ -70,7 +83,7 @@ class En1RemoteProduct {
       currency: s(json['currency']),
       costPrice: n(json['cost_price'] ?? json['cost']),
       barcode: s(json['barcode']),
-      category: s(json['category'] ?? json['category_name']),
+      category: category,
       imageUrl: s(json['image_url'] ?? json['imageUrl']),
       tracksInventory: json['tracks_inventory'] == true ||
           json['tracks_inventory'] == 1 ||
@@ -80,6 +93,7 @@ class En1RemoteProduct {
       uom: s(json['uom']),
       purchaseUom: s(json['purchase_uom']),
       packFactor: n(json['pack_factor']),
+      stockAvailable: n(json['available'] ?? json['on_hand'] ?? json['stock']),
     );
   }
 }
@@ -122,6 +136,21 @@ class En1RemoteStockBalance {
       warehouseRef: s(json['warehouse_ref'] ?? json['warehouse'] ?? json['bodega']),
     );
   }
+}
+
+/// Payload único de `GET /api/v1/devices/bootstrap`.
+class En1BootstrapPayload {
+  final Map<String, dynamic>? config;
+  final List<En1RemoteProduct> products;
+  final List<En1RemoteStockBalance> stockBalances;
+  final Map<String, dynamic> raw;
+
+  const En1BootstrapPayload({
+    this.config,
+    required this.products,
+    required this.stockBalances,
+    this.raw = const {},
+  });
 }
 
 class En1BootstrapResult {

@@ -17,7 +17,7 @@
 | **POS Core** | 🔒 Congelado |
 | **Catálogo** | Istmo local hasta Bootstrap; luego EN1 |
 
-**Siguiente acción:** EN1 confirma checklist freeze del contrato Hito 2 (token device → products/stock) · EPosOne prueba botón **Descargar catálogo EN1** en tablet org 5.
+**Siguiente acción:** Reinstalar APK → **Descargar catálogo EN1** → debe llamar `GET /api/v1/devices/bootstrap` (Device Token). No usar `/api/eposone/products`.
 
 ---
 

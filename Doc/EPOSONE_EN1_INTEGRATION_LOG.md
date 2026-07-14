@@ -32,17 +32,10 @@ Tag `provisioning-v1.0` · [`EPOSONE_HITO1_PROVISIONING_HANDOFF_CLOSED.md`](EPOS
 | Entrega | Estado |
 |---------|--------|
 | Contrato draft en repo | 🟢 |
-| `En1BootstrapApi` / `Repository` | 🟢 |
-| Botón “Descargar catálogo EN1” en Este dispositivo | 🟢 |
+| `En1BootstrapApi` / `Repository` | 🟢 **`GET /api/v1/devices/bootstrap`** (no BO) |
+| Botón “Descargar catálogo EN1” | 🟢 EN1 Cloud + Este dispositivo |
 | Desactivar productos `istmo_*` tras bootstrap | 🟢 |
 | Meta uom/pack/max en prefs | 🟢 |
-| Validar auth device token vs `/api/eposone/*` | ⏳ EN1 |
-| E2E tablet org 5 | ⏳ |
+| E2E tablet org 5 | ⏳ Probar tras fix endpoint |
 
-### Pendiente EN1 (checklist freeze)
-
-- [ ] Device token autoriza products + stock-balances  
-- [ ] Envelope JSON real (curl org 5)  
-- [ ] Confirmar match stock↔product_ref  
-
-**No hacer en Hito 2:** ventas→stock, transferencias, FE, CRM, IA, tocar Core, borrar assets Istmo del APK.
+**Importante:** `/api/eposone/products` = BackOffice → 401 con Device Token. Contrato oficial = `/api/v1/devices/bootstrap`.

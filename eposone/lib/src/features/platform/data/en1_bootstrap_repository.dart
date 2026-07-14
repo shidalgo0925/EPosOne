@@ -9,12 +9,13 @@ import 'package:eposone/src/core/entities/sync_entity.dart';
 import 'package:eposone/src/features/platform/data/en1_bootstrap_api.dart';
 import 'package:eposone/src/features/platform/data/provisioning_store.dart';
 import 'package:eposone/src/features/platform/domain/en1_bootstrap_models.dart';
+import 'package:eposone/src/features/platform/domain/provisioning_config.dart';
 import 'package:eposone/src/features/products/domain/entities/category.dart';
 import 'package:eposone/src/features/products/domain/entities/product.dart';
 
-/// Device Bootstrap Hito 2: pull catálogo + imágenes + stock desde EN1.
+/// Device Bootstrap Hito 2: `GET /api/v1/devices/bootstrap` + persistencia local.
 ///
-/// No toca pantallas del POS Core; escribe en Isar y prefs de plataforma.
+/// No toca pantallas del POS Core; no usa `/api/eposone/*` (BackOffice).
 class En1BootstrapRepository {
   En1BootstrapRepository({
     required Isar isar,
@@ -28,6 +29,7 @@ class En1BootstrapRepository {
   static const _prefsDoneKey = 'en1_bootstrap_done_v1';
   static const _prefsMetaKey = 'en1_bootstrap_product_meta_v1';
   static const _prefsAtKey = 'en1_bootstrap_completed_at_v1';
+  static const _prefsConfigKey = 'en1_bootstrap_config_json_v1';
 
   Future<bool> isBootstrapDone() async {
     final prefs = await SharedPreferences.getInstance();
@@ -41,29 +43,38 @@ class En1BootstrapRepository {
     return DateTime.tryParse(raw);
   }
 
-  /// Ejecuta el flujo completo del contrato Hito 2 v0.1.
-  /// [apiBaseUrl]/[accessToken] opcionales: fallback si no hay ProvisioningStore.
+  /// Device Token del register + Base URL del provisioning.
   Future<En1BootstrapResult> runBootstrap({
     String? apiBaseUrl,
     String? accessToken,
   }) async {
-    final config = await ProvisioningStore.loadConfig();
-    final base = (apiBaseUrl ?? config?.apiBaseUrl ?? '').trim();
-    final token = (accessToken ?? config?.accessToken ?? '').trim();
+    final provisioned = await ProvisioningStore.loadConfig();
+    final base = (apiBaseUrl ?? provisioned?.apiBaseUrl ?? '').trim();
+    final token = (accessToken ?? provisioned?.accessToken ?? '').trim();
     if (base.isEmpty || token.isEmpty) {
       throw En1BootstrapException(
-        'Dispositivo no provisionado. Conecta EasyNodeOne o guarda URL + token en EN1 Cloud.',
+        'Dispositivo no provisionado. Conecta EasyNodeOne (Device Token requerido).',
       );
     }
 
-    final products = await _api.fetchProducts(
+    final payload = await _api.fetchBootstrap(
       apiBaseUrl: base,
       accessToken: token,
     );
+    final products = payload.products;
     if (products.isEmpty) {
       throw En1BootstrapException(
-        'EN1 no devolvió productos. Verifica org Itsmo (appdev) y permisos del token.',
+        'EN1 bootstrap no devolvió productos. Verifica Device Token y org Itsmo (org 5).',
       );
+    }
+
+    // Config del bootstrap (opcional)
+    if (payload.config != null && provisioned != null) {
+      await _mergeBootstrapConfig(provisioned, payload.config!, base);
+    }
+    final prefsEarly = await SharedPreferences.getInstance();
+    if (payload.config != null) {
+      await prefsEarly.setString(_prefsConfigKey, jsonEncode(payload.config));
     }
 
     final docs = await getApplicationDocumentsDirectory();
@@ -77,8 +88,15 @@ class En1BootstrapRepository {
     var imageOk = 0;
     var imageFail = 0;
     final meta = <String, Map<String, dynamic>>{};
+    final stockByRef = <String, double>{
+      for (final b in payload.stockBalances) b.productRef: b.available,
+    };
+    for (final p in products) {
+      if (p.stockAvailable != null) {
+        stockByRef.putIfAbsent(p.productRef, () => p.stockAvailable!);
+      }
+    }
 
-    // Categorías
     final uniqueCats = products
         .map((p) => p.category?.trim())
         .whereType<String>()
@@ -108,7 +126,6 @@ class En1BootstrapRepository {
       }
     });
 
-    // Productos
     await _isar.writeTxn(() async {
       for (final remote in products) {
         final catId = remote.category != null ? categoryByName[remote.category!]?.localId : null;
@@ -128,6 +145,7 @@ class En1BootstrapRepository {
           'currency': remote.currency,
         };
 
+        final stock = stockByRef[remote.productRef] ?? existing?.stock ?? 0;
         final now = DateTime.now();
         final product = Product(
           localId: localId,
@@ -141,7 +159,7 @@ class En1BootstrapRepository {
           description: remote.description,
           price: remote.unitPrice,
           cost: remote.costPrice,
-          stock: existing?.stock ?? 0,
+          stock: stock,
           categoryId: catId,
           imagePath: existing?.imagePath,
           isActive: remote.isActive,
@@ -151,7 +169,6 @@ class En1BootstrapRepository {
       }
     });
 
-    // Imágenes (fuera de txn pesada)
     for (final remote in products) {
       if (remote.imageUrl == null || remote.imageUrl!.isEmpty) continue;
       final ext = _extFromUrl(remote.imageUrl!);
@@ -164,7 +181,8 @@ class En1BootstrapRepository {
       if (ok) {
         imageOk++;
         await _isar.writeTxn(() async {
-          final p = await _isar.products.filter().localIdEqualTo('en1_${remote.productRef}').findFirst();
+          final p =
+              await _isar.products.filter().localIdEqualTo('en1_${remote.productRef}').findFirst();
           if (p != null) {
             await _isar.products.put(p.copyWith(imagePath: dest, updatedAt: DateTime.now()));
           }
@@ -174,44 +192,13 @@ class En1BootstrapRepository {
       }
     }
 
-    // Stock
-    var stockUpdated = 0;
-    try {
-      final balances = await _api.fetchStockBalances(
-        apiBaseUrl: base,
-        accessToken: token,
-      );
-      await _isar.writeTxn(() async {
-        for (final b in balances) {
-          final p = await _isar.products
-                  .filter()
-                  .localIdEqualTo('en1_${b.productRef}')
-                  .findFirst() ??
-              await _isar.products.filter().skuEqualTo(b.productRef).findFirst();
-          if (p == null) continue;
-          await _isar.products.put(
-            p.copyWith(stock: b.available, updatedAt: DateTime.now()),
-          );
-          stockUpdated++;
-        }
-      });
-    } catch (e) {
-      debugPrint('[EN1 Bootstrap] stock-balances opcional falló: $e');
-    }
-
-    // Desactivar seed Istmo local (ya no es fuente activa)
+    // Desactivar seed Istmo local
     await _isar.writeTxn(() async {
       final istmo = await _isar.products.filter().localIdStartsWith('istmo_').findAll();
       for (final p in istmo) {
         if (p.isActive) {
           await _isar.products.put(p.copyWith(isActive: false, updatedAt: DateTime.now()));
         }
-      }
-      final istmoCats =
-          await _isar.categorys.filter().localIdStartsWith('istmo_').findAll();
-      for (final c in istmoCats) {
-        // categorías sin soft-delete de activo; se dejan
-        debugPrint('[EN1 Bootstrap] categoría Istmo retenida: ${c.localId}');
       }
     });
 
@@ -221,6 +208,7 @@ class En1BootstrapRepository {
     await prefs.setString(_prefsAtKey, completedAt.toIso8601String());
     await prefs.setString(_prefsMetaKey, jsonEncode(meta));
 
+    final stockUpdated = stockByRef.length;
     final result = En1BootstrapResult(
       productsUpserted: products.length,
       categoriesUpserted: categoryCount,
@@ -229,10 +217,58 @@ class En1BootstrapRepository {
       imageFailures: imageFail,
       completedAt: completedAt,
       message:
-          'Catálogo EN1: ${products.length} productos · $imageOk imágenes · $stockUpdated saldos',
+          'Bootstrap EN1: ${products.length} productos · $imageOk imágenes · $stockUpdated saldos',
     );
     debugPrint('[EN1 Bootstrap] ${result.message}');
     return result;
+  }
+
+  Future<void> _mergeBootstrapConfig(
+    ProvisioningConfig current,
+    Map<String, dynamic> cfg,
+    String apiBaseUrl,
+  ) async {
+    try {
+      // Reutiliza parser de register/config si la forma es compatible.
+      // Aquí solo actualizamos nombres/currency ligeros vía ProvisioningConfig copy.
+      final org = cfg['organization'];
+      final branch = cfg['branch'];
+      final pos = cfg['pos'];
+      final register = cfg['register'];
+      final businessName = cfg['business_name']?.toString();
+
+      String? orgId;
+      String? orgName;
+      if (org is Map) {
+        orgId = org['id']?.toString();
+        orgName = org['name']?.toString();
+      }
+      final branchRef = branch is Map ? branch['ref']?.toString() : null;
+      final branchName = branch is Map ? branch['name']?.toString() : null;
+      final posRef = pos is Map ? pos['ref']?.toString() : null;
+      final posName = pos is Map ? pos['name']?.toString() : null;
+      final registerRef = register is Map ? register['ref']?.toString() : null;
+      final registerName = register is Map ? register['name']?.toString() : null;
+
+      final updated = current.copyWith(
+        apiBaseUrl: apiBaseUrl,
+        organizationId: orgId ?? current.organizationId,
+        organizationName: orgName ?? current.organizationName,
+        branchRef: branchRef ?? current.branchRef,
+        branchName: branchName ?? current.branchName,
+        posRef: posRef ?? current.posRef,
+        posName: posName ?? current.posName,
+        registerRef: registerRef ?? current.registerRef,
+        registerName: registerName ?? current.registerName,
+        businessName: businessName ?? current.businessName,
+        currency: cfg['currency']?.toString() ?? current.currency,
+        timezone: cfg['timezone']?.toString() ?? current.timezone,
+        configVersion: (cfg['config_version'] as num?)?.toInt() ?? current.configVersion,
+      );
+      await ProvisioningStore.saveConfig(updated);
+    } catch (e) {
+      debugPrint('[EN1 Bootstrap] merge config skipped: $e');
+    }
   }
 
   String _slug(String name) => name
