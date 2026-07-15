@@ -72,46 +72,51 @@ const OpenTicketSchema = CollectionSchema(
       name: r'label',
       type: IsarType.string,
     ),
-    r'localId': PropertySchema(
+    r'linkedOrderLocalId': PropertySchema(
       id: 11,
+      name: r'linkedOrderLocalId',
+      type: IsarType.string,
+    ),
+    r'localId': PropertySchema(
+      id: 12,
       name: r'localId',
       type: IsarType.string,
     ),
     r'orderType': PropertySchema(
-      id: 12,
+      id: 13,
       name: r'orderType',
       type: IsarType.byte,
       enumMap: _OpenTicketorderTypeEnumValueMap,
     ),
     r'predefinedSlotId': PropertySchema(
-      id: 13,
+      id: 14,
       name: r'predefinedSlotId',
       type: IsarType.string,
     ),
     r'savedAt': PropertySchema(
-      id: 14,
+      id: 15,
       name: r'savedAt',
       type: IsarType.dateTime,
     ),
     r'serverId': PropertySchema(
-      id: 15,
+      id: 16,
       name: r'serverId',
       type: IsarType.string,
     ),
     r'status': PropertySchema(
-      id: 16,
+      id: 17,
       name: r'status',
       type: IsarType.byte,
       enumMap: _OpenTicketstatusEnumValueMap,
     ),
     r'syncStatus': PropertySchema(
-      id: 17,
+      id: 18,
       name: r'syncStatus',
       type: IsarType.byte,
       enumMap: _OpenTicketsyncStatusEnumValueMap,
     ),
     r'updatedAt': PropertySchema(
-      id: 18,
+      id: 19,
       name: r'updatedAt',
       type: IsarType.dateTime,
     )
@@ -166,6 +171,12 @@ int _openTicketEstimateSize(
       bytesCount += 3 + value.length * 3;
     }
   }
+  {
+    final value = object.linkedOrderLocalId;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   bytesCount += 3 + object.localId.length * 3;
   {
     final value = object.predefinedSlotId;
@@ -199,14 +210,15 @@ void _openTicketSerialize(
   writer.writeBool(offsets[8], object.isPendingSync);
   writer.writeBool(offsets[9], object.isSynced);
   writer.writeString(offsets[10], object.label);
-  writer.writeString(offsets[11], object.localId);
-  writer.writeByte(offsets[12], object.orderType.index);
-  writer.writeString(offsets[13], object.predefinedSlotId);
-  writer.writeDateTime(offsets[14], object.savedAt);
-  writer.writeString(offsets[15], object.serverId);
-  writer.writeByte(offsets[16], object.status.index);
-  writer.writeByte(offsets[17], object.syncStatus.index);
-  writer.writeDateTime(offsets[18], object.updatedAt);
+  writer.writeString(offsets[11], object.linkedOrderLocalId);
+  writer.writeString(offsets[12], object.localId);
+  writer.writeByte(offsets[13], object.orderType.index);
+  writer.writeString(offsets[14], object.predefinedSlotId);
+  writer.writeDateTime(offsets[15], object.savedAt);
+  writer.writeString(offsets[16], object.serverId);
+  writer.writeByte(offsets[17], object.status.index);
+  writer.writeByte(offsets[18], object.syncStatus.index);
+  writer.writeDateTime(offsets[19], object.updatedAt);
 }
 
 OpenTicket _openTicketDeserialize(
@@ -224,19 +236,20 @@ OpenTicket _openTicketDeserialize(
     deletedAt: reader.readDateTimeOrNull(offsets[5]),
     discountPercent: reader.readDoubleOrNull(offsets[6]),
     label: reader.readStringOrNull(offsets[10]),
-    localId: reader.readString(offsets[11]),
+    linkedOrderLocalId: reader.readStringOrNull(offsets[11]),
+    localId: reader.readString(offsets[12]),
     orderType:
-        _OpenTicketorderTypeValueEnumMap[reader.readByteOrNull(offsets[12])] ??
+        _OpenTicketorderTypeValueEnumMap[reader.readByteOrNull(offsets[13])] ??
             OrderType.generic,
-    predefinedSlotId: reader.readStringOrNull(offsets[13]),
-    savedAt: reader.readDateTime(offsets[14]),
-    serverId: reader.readStringOrNull(offsets[15]),
-    status: _OpenTicketstatusValueEnumMap[reader.readByteOrNull(offsets[16])] ??
+    predefinedSlotId: reader.readStringOrNull(offsets[14]),
+    savedAt: reader.readDateTime(offsets[15]),
+    serverId: reader.readStringOrNull(offsets[16]),
+    status: _OpenTicketstatusValueEnumMap[reader.readByteOrNull(offsets[17])] ??
         OpenTicketStatus.open,
     syncStatus:
-        _OpenTicketsyncStatusValueEnumMap[reader.readByteOrNull(offsets[17])] ??
+        _OpenTicketsyncStatusValueEnumMap[reader.readByteOrNull(offsets[18])] ??
             SyncStatus.pending,
-    updatedAt: reader.readDateTime(offsets[18]),
+    updatedAt: reader.readDateTime(offsets[19]),
   );
   return object;
 }
@@ -271,24 +284,26 @@ P _openTicketDeserializeProp<P>(
     case 10:
       return (reader.readStringOrNull(offset)) as P;
     case 11:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 12:
+      return (reader.readString(offset)) as P;
+    case 13:
       return (_OpenTicketorderTypeValueEnumMap[reader.readByteOrNull(offset)] ??
           OrderType.generic) as P;
-    case 13:
-      return (reader.readStringOrNull(offset)) as P;
     case 14:
-      return (reader.readDateTime(offset)) as P;
-    case 15:
       return (reader.readStringOrNull(offset)) as P;
+    case 15:
+      return (reader.readDateTime(offset)) as P;
     case 16:
+      return (reader.readStringOrNull(offset)) as P;
+    case 17:
       return (_OpenTicketstatusValueEnumMap[reader.readByteOrNull(offset)] ??
           OpenTicketStatus.open) as P;
-    case 17:
+    case 18:
       return (_OpenTicketsyncStatusValueEnumMap[
               reader.readByteOrNull(offset)] ??
           SyncStatus.pending) as P;
-    case 18:
+    case 19:
       return (reader.readDateTime(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -1469,6 +1484,160 @@ extension OpenTicketQueryFilter
     });
   }
 
+  QueryBuilder<OpenTicket, OpenTicket, QAfterFilterCondition>
+      linkedOrderLocalIdIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'linkedOrderLocalId',
+      ));
+    });
+  }
+
+  QueryBuilder<OpenTicket, OpenTicket, QAfterFilterCondition>
+      linkedOrderLocalIdIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'linkedOrderLocalId',
+      ));
+    });
+  }
+
+  QueryBuilder<OpenTicket, OpenTicket, QAfterFilterCondition>
+      linkedOrderLocalIdEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'linkedOrderLocalId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OpenTicket, OpenTicket, QAfterFilterCondition>
+      linkedOrderLocalIdGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'linkedOrderLocalId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OpenTicket, OpenTicket, QAfterFilterCondition>
+      linkedOrderLocalIdLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'linkedOrderLocalId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OpenTicket, OpenTicket, QAfterFilterCondition>
+      linkedOrderLocalIdBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'linkedOrderLocalId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OpenTicket, OpenTicket, QAfterFilterCondition>
+      linkedOrderLocalIdStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'linkedOrderLocalId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OpenTicket, OpenTicket, QAfterFilterCondition>
+      linkedOrderLocalIdEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'linkedOrderLocalId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OpenTicket, OpenTicket, QAfterFilterCondition>
+      linkedOrderLocalIdContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'linkedOrderLocalId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OpenTicket, OpenTicket, QAfterFilterCondition>
+      linkedOrderLocalIdMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'linkedOrderLocalId',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OpenTicket, OpenTicket, QAfterFilterCondition>
+      linkedOrderLocalIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'linkedOrderLocalId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<OpenTicket, OpenTicket, QAfterFilterCondition>
+      linkedOrderLocalIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'linkedOrderLocalId',
+        value: '',
+      ));
+    });
+  }
+
   QueryBuilder<OpenTicket, OpenTicket, QAfterFilterCondition> localIdEqualTo(
     String value, {
     bool caseSensitive = true,
@@ -2319,6 +2488,20 @@ extension OpenTicketQuerySortBy
     });
   }
 
+  QueryBuilder<OpenTicket, OpenTicket, QAfterSortBy>
+      sortByLinkedOrderLocalId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'linkedOrderLocalId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<OpenTicket, OpenTicket, QAfterSortBy>
+      sortByLinkedOrderLocalIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'linkedOrderLocalId', Sort.desc);
+    });
+  }
+
   QueryBuilder<OpenTicket, OpenTicket, QAfterSortBy> sortByLocalId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'localId', Sort.asc);
@@ -2565,6 +2748,20 @@ extension OpenTicketQuerySortThenBy
     });
   }
 
+  QueryBuilder<OpenTicket, OpenTicket, QAfterSortBy>
+      thenByLinkedOrderLocalId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'linkedOrderLocalId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<OpenTicket, OpenTicket, QAfterSortBy>
+      thenByLinkedOrderLocalIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'linkedOrderLocalId', Sort.desc);
+    });
+  }
+
   QueryBuilder<OpenTicket, OpenTicket, QAfterSortBy> thenByLocalId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'localId', Sort.asc);
@@ -2737,6 +2934,14 @@ extension OpenTicketQueryWhereDistinct
     });
   }
 
+  QueryBuilder<OpenTicket, OpenTicket, QDistinct> distinctByLinkedOrderLocalId(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'linkedOrderLocalId',
+          caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<OpenTicket, OpenTicket, QDistinct> distinctByLocalId(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -2862,6 +3067,13 @@ extension OpenTicketQueryProperty
   QueryBuilder<OpenTicket, String?, QQueryOperations> labelProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'label');
+    });
+  }
+
+  QueryBuilder<OpenTicket, String?, QQueryOperations>
+      linkedOrderLocalIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'linkedOrderLocalId');
     });
   }
 

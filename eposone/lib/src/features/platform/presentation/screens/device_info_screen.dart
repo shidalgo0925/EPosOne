@@ -5,13 +5,14 @@ import 'package:eposone/src/core/database/database_provider.dart';
 import 'package:eposone/src/core/theme/eposone_theme.dart';
 import 'package:eposone/src/features/platform/data/device_registry.dart';
 import 'package:eposone/src/features/platform/data/en1_bootstrap_repository.dart';
-import 'package:eposone/src/features/platform/data/en1_provisioning_api.dart';
 import 'package:eposone/src/features/platform/data/en1_provisioning_repository.dart';
 import 'package:eposone/src/features/platform/data/platform_prefs.dart';
 import 'package:eposone/src/features/platform/domain/connection_status.dart';
 import 'package:eposone/src/features/platform/domain/platform_mode.dart';
 import 'package:eposone/src/features/platform/domain/provisioning_config.dart';
+import 'package:eposone/src/features/pos/presentation/providers/pos_page_provider.dart';
 import 'package:eposone/src/features/products/presentation/providers/product_provider.dart';
+import 'package:eposone/src/features/sync/presentation/providers/sync_provider.dart';
 
 const _appVersionLabel = '1.0.0+1';
 
@@ -34,6 +35,8 @@ class _DeviceInfoScreenState extends ConsumerState<DeviceInfoScreen> {
   bool _bootstrapping = false;
   bool _bootstrapDone = false;
   DateTime? _bootstrapAt;
+  String? _progressLabel;
+  double? _progressFraction;
 
   @override
   void initState() {
@@ -86,11 +89,27 @@ class _DeviceInfoScreenState extends ConsumerState<DeviceInfoScreen> {
   }
 
   Future<void> _runBootstrap() async {
-    setState(() => _bootstrapping = true);
+    setState(() {
+      _bootstrapping = true;
+      _progressLabel = 'Iniciando descarga…';
+      _progressFraction = null;
+    });
     try {
       final isar = await ref.read(databaseProvider.future);
-      final result = await En1BootstrapRepository(isar: isar).runBootstrap();
+      final result = await En1BootstrapRepository(isar: isar).runBootstrap(
+        onProgress: (p) {
+          if (!mounted) return;
+          setState(() {
+            _progressLabel = p.label;
+            _progressFraction = p.fraction;
+          });
+        },
+      );
       ref.invalidate(productsListProvider);
+      ref.invalidate(categoriesListProvider);
+      ref.invalidate(posPagesListProvider);
+      ref.invalidate(posPagesEnabledProvider);
+      ref.invalidate(syncOperationsProvider);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -100,17 +119,19 @@ class _DeviceInfoScreenState extends ConsumerState<DeviceInfoScreen> {
       );
       await _load();
     } catch (e) {
-      final msg = e is En1ProvisioningException
-          ? e.userMessage
-          : e is En1BootstrapException
-              ? e.message
-              : '$e';
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(msg), backgroundColor: Colors.red.shade700),
+        SnackBar(content: Text('$e'), backgroundColor: Colors.red.shade700),
       );
+      ref.invalidate(syncOperationsProvider);
     } finally {
-      if (mounted) setState(() => _bootstrapping = false);
+      if (mounted) {
+        setState(() {
+          _bootstrapping = false;
+          _progressLabel = null;
+          _progressFraction = null;
+        });
+      }
     }
   }
 
@@ -204,10 +225,19 @@ class _DeviceInfoScreenState extends ConsumerState<DeviceInfoScreen> {
                         ? 'Volver a descargar catálogo EN1'
                         : 'Descargar catálogo EN1'),
                   ),
+                  if (_progressLabel != null) ...[
+                    const SizedBox(height: 12),
+                    LinearProgressIndicator(value: _progressFraction),
+                    const SizedBox(height: 8),
+                    Text(
+                      _progressLabel!,
+                      style: const TextStyle(fontSize: 12, color: EposBrand.textSecondary),
+                    ),
+                  ],
                   const SizedBox(height: 8),
                   const Text(
                     'Descarga productos, imágenes y saldos desde EN1 (contrato Hito 2). '
-                    'No descuenta stock por ventas todavía.',
+                    'Configura el menú POS para vender. No descuenta stock por ventas todavía.',
                     style: TextStyle(fontSize: 12, color: EposBrand.textSecondary),
                   ),
                 ],

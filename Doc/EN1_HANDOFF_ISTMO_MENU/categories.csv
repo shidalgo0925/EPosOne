@@ -1,0 +1,12 @@
+﻿category_ref,name,sort_order
+entradas,Entradas,1
+platos,Platos Fuertes,2
+pizzas,Pizzas,3
+acomp,Acompañamientos,4
+postres,Postres,5
+cerv_istmo,Cervezas Istmo,6
+cocteles,Cócteles,7
+vinos,Vinos y Espumantes,8
+licores,Licores,9
+cerv,Cervezas,10
+bebidas,Bebidas,11

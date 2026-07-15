@@ -266,6 +266,7 @@ const _SyncOperationentityKindEnumValueMap = {
   'cashMovement': 2,
   'cashRegister': 3,
   'catalogPull': 4,
+  'order': 5,
 };
 const _SyncOperationentityKindValueEnumMap = {
   0: SyncEntityKind.sale,
@@ -273,6 +274,7 @@ const _SyncOperationentityKindValueEnumMap = {
   2: SyncEntityKind.cashMovement,
   3: SyncEntityKind.cashRegister,
   4: SyncEntityKind.catalogPull,
+  5: SyncEntityKind.order,
 };
 const _SyncOperationoperationStatusEnumValueMap = {
   'pending': 0,

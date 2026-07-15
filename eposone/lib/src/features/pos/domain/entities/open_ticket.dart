@@ -23,6 +23,9 @@ class OpenTicket extends SyncEntity {
   @enumerated
   final OrderType orderType;
 
+  /// Pedido Order Domain (Hito 3) vinculado a este ticket local.
+  final String? linkedOrderLocalId;
+
   const OpenTicket({
     required super.localId,
     super.serverId,
@@ -40,6 +43,7 @@ class OpenTicket extends SyncEntity {
     required this.savedAt,
     this.status = OpenTicketStatus.open,
     this.orderType = OrderType.generic,
+    this.linkedOrderLocalId,
   });
 
   @override
@@ -72,6 +76,8 @@ class OpenTicket extends SyncEntity {
     DateTime? savedAt,
     OpenTicketStatus? status,
     OrderType? orderType,
+    String? linkedOrderLocalId,
+    bool clearLinkedOrder = false,
   }) =>
       OpenTicket(
         localId: localId ?? this.localId,
@@ -90,6 +96,8 @@ class OpenTicket extends SyncEntity {
         savedAt: savedAt ?? this.savedAt,
         status: status ?? this.status,
         orderType: orderType ?? this.orderType,
+        linkedOrderLocalId:
+            clearLinkedOrder ? null : (linkedOrderLocalId ?? this.linkedOrderLocalId),
       );
 
   factory OpenTicket.create({

@@ -2,13 +2,15 @@
 
 ## Producto comercial · Plataforma Cloud EasyTech · Go-to-market Panamá
 
-**Versión:** 3.4 — **ACTIVO**  
-**Fecha:** 13 de julio de 2026  
+**Versión:** 3.6 — **ACTIVO**  
+**Fecha:** 14 de julio de 2026  
 **Base:** `master` @ **`0ceac11`** · tag **`provisioning-v1.0`** — Hito 1 Provisioning EN1-02 cerrado  
 **Contexto de app:** [`EPOSONE_APP_CONTEXT.md`](EPOSONE_APP_CONTEXT.md)  
+**Roadmap hitos EN1+EPosOne:** [`Doc/EPOSONE_EN1_ROADMAP_V5.md`](Doc/EPOSONE_EN1_ROADMAP_V5.md) *(V5 — fuente de hitos 1–7)*  
 **Integración EN1:** [`Doc/EPOSONE_EN1_INTEGRATION_LOG.md`](Doc/EPOSONE_EN1_INTEGRATION_LOG.md)  
 **Contrato Hito 1:** [`Doc/EPOSONE_EN1_HITO1_PROVISIONING_CONTRACT_EN1-02.md`](Doc/EPOSONE_EN1_HITO1_PROVISIONING_CONTRACT_EN1-02.md)  
 **Cierre Hito 1:** [`Doc/EPOSONE_HITO1_PROVISIONING_HANDOFF_CLOSED.md`](Doc/EPOSONE_HITO1_PROVISIONING_HANDOFF_CLOSED.md)  
+**Decisión Operación vs Admin (aprobada):** [`Doc/EPOSONE_EN1_DECISION_OPERATION_VS_ADMIN.md`](Doc/EPOSONE_EN1_DECISION_OPERATION_VS_ADMIN.md)  
 **Documentos relacionados:** [`EPOSONE_MASTER_PLAN_V2.md`](EPOSONE_MASTER_PLAN_V2.md) · [`EPOSONE_vs_LOYVERSE.md`](EPOSONE_vs_LOYVERSE.md) · [`EPOSONE_ARCHITECTURE_REVIEW.md`](EPOSONE_ARCHITECTURE_REVIEW.md)
 
 **Objetivo:** Convertir EPOSOne de TPV funcional (~96% paridad Loyverse) en **producto comercial vendible** en Panamá, como **app independiente** del ecosistema EasyNodeOne.
@@ -17,10 +19,12 @@
 
 > **POS Core Protegido:** ventas, caja, cobro, tickets, productos, impresión y UX del cajero **no se modifican** salvo bugs. Toda evolución (Onboarding, Device, Sync, EN1) vive en `features/platform/`.
 
-> **Principio rector:** EN1 es el cerebro; EPosOne es un nodo operativo. Los POS **nunca** se comunican entre sí. Sync por **eventos**. Nunca bloquear una venta por falta de internet.
+> **Principio rector:** EN1 es el cerebro; EPosOne es un nodo operativo. Los POS **nunca** se comunican entre sí. Sync por **eventos**. Nunca bloquear una venta por falta de internet. El **Pedido** es el corazón (no la Venta).
 
-> **Hito 1 Provisioning EN1-02: CERRADO / CONGELADO** (tag `provisioning-v1.0`, `0ceac11`).  
-> **Siguiente:** Hito 2 Device Bootstrap (Sync Down) — **nuevo GO / nuevo chat**; contrato EN1 primero.
+> **Operación vs Administración (aprobado 14 jul):** EPosOne ejecuta; EN1 administra. Un solo EPosOne · modos org · inventario oficial EN1.
+
+> **Hitos V5:** H1 ✅ · H2 ✅ · **H3 Order Domain EN1 ✅** (`eposone-order-domain-v1.0`) · **Hito 3B Operación APK 🟢 GO P2** · 3.5 Validación ⏸ · H5–7 ⏸.  
+> **P2:** [`Doc/EPOSONE_EN1_HITO3B_ORDER_OPERATION_GO.md`](Doc/EPOSONE_EN1_HITO3B_ORDER_OPERATION_GO.md) — consumir contrato HTTP; no inventar reglas.
 
 ---
 
@@ -40,10 +44,14 @@
 | QA V3.1 en curso | 🔶 Checklist parcial (restaurante Istmo) |
 | Hito 1 Provisioning EN1-02 | ✅ **Cerrado** · tag `provisioning-v1.0` (`0ceac11`) |
 | APIs EN1 register/config | 🟢 DEV live (EN1-02) |
-| Integración Hito 1 E2E | ✅ Cerrada 13 jul (reinicio: evidencia Ops) |
-| Hito 2 Device Bootstrap | ⏸ **Siguiente GO** — contrato primero |
+| Integración Hito 1 E2E | ✅ Cerrada 13 jul |
+| Hito 2 Device Bootstrap | ✅ **Cerrado** |
+| Decisión Operación vs Admin | ✅ Aprobada 14 jul |
+| Roadmap V5 (hitos) | ✅ [`Doc/EPOSONE_EN1_ROADMAP_V5.md`](Doc/EPOSONE_EN1_ROADMAP_V5.md) |
+| Hito 3 Order Domain EN1 | ✅ tag `eposone-order-domain-v1.0` |
+| Hito 3B Operación Pedido (P2) | 🟢 **GO** · [`Doc/EPOSONE_EN1_HITO3B_ORDER_OPERATION_GO.md`](Doc/EPOSONE_EN1_HITO3B_ORDER_OPERATION_GO.md) |
 
-**Lo que falta no son más pantallas de TPV.** Siguiente: Device Bootstrap (catálogo EN1). Ver [`EPOSONE_APP_CONTEXT.md`](EPOSONE_APP_CONTEXT.md).
+**Siguiente:** P2 implementa Pedido sobre contrato HTTP · luego E2E · Hito 3.5.
 
 ### 0.1 Avance sprint Istmo (commit `db1433a`)
 
@@ -194,13 +202,34 @@ Pedido → SQLite (Isar) → Cola local → [sin red: espera]
 
 ### 1.8 Inventario en el nodo POS
 
-El POS **no calcula inventario global**. Solo:
+**Fuente oficial = EN1.** El POS **no** calcula Kardex ni actualiza tablas de inventario oficiales.
 
 ```
-Venta → Stock local (descuento) → Evento → EN1 → Stock central
+Venta / evento operativo → Cola local → EN1 → Stock central + Kardex
+                                              ↓
+                                    POS consulta stock de referencia
 ```
 
-Si EN1 detecta diferencias → genera ajuste → notifica / sincroniza hacia POS.
+| POS puede | POS no puede (estándar) |
+|-----------|-------------------------|
+| Consultar disponibilidad de referencia | Ajustes / conteos / transferencias / compras |
+| Generar eventos (`pedido.cobrado`, ajuste rápido*) | Escribir Kardex local como verdad |
+
+\* Ajuste rápido solo en modo **Solo POS**, con autorización y auditoría vía evento a EN1. Ver [`Doc/EPOSONE_EN1_DECISION_OPERATION_VS_ADMIN.md`](Doc/EPOSONE_EN1_DECISION_OPERATION_VS_ADMIN.md).
+
+### 1.8bis Operación vs Administración (aprobado)
+
+Un solo EPosOne · un solo EN1 · **no** Lite/Pro.
+
+| Escenario | Admin en POS |
+|-----------|--------------|
+| Solo POS (food truck) | Administración **básica** (producto, precio, ajuste rápido, cliente) |
+| POS + BackOffice | POS opera; EN1 administra |
+| Corporativo | POS casi solo operación |
+
+Capacidades = **modo de organización** (EN1 / setup) × **rol** (Operador / Encargado / Administrador).
+
+---
 
 ### 1.9 Motores de sincronización independientes
 
@@ -675,7 +704,7 @@ gantt
     V3.8 GTM Panamá          :v38, after v37, 14d
 ```
 
-**Sprint inmediato:** Hito 1 **cerrado** (`provisioning-v1.0`) · abrir **Hito 2 Device Bootstrap** (contrato EN1 primero) · Istmo local permanece hasta E2E Bootstrap · V3.1 QA Istmo en paralelo.
+**Sprint inmediato:** cerrar E2E **Hito 2** Bootstrap · congelar contrato **Hito 3 Pedido** (brief P1/P2) · no reabrir provisioning · V3.1 QA Istmo en paralelo.
 
 ---
 
@@ -705,15 +734,18 @@ El cajero no debe sentir que está “dentro del ERP”.
 |--------|--------|
 | Wizard URL + código Caja | ✅ |
 | Cliente EN1-02 (201, parser, store v2) | ✅ · tag `provisioning-v1.0` |
-| Catálogo Istmo local (sin sync EN1) | ✅ vigente hasta Hito 2 |
-| Sync / Device Bootstrap | ⏸ **Hito 2 — próximo GO** |
+| Catálogo Istmo local (sin sync EN1) | ✅ fallback hasta Bootstrap E2E |
+| Sync / Device Bootstrap | 🟡 **Hito 2 — cerrar E2E** |
 | POS Core | 🔒 |
+| Decisión Operación vs Admin | ✅ 14 jul |
+| Hito 3 Pedido | ⏸ Brief · contrato GO |
 
 ### Siguiente (sin tocar Core ni cliente provisioning)
 
-1. **Hito 2 Device Bootstrap:** contrato EN1 → pull catálogo/imágenes/saldos → E2E tablet  
-2. Quitar dependencia Istmo local solo tras ✅ Bootstrap  
-3. Luego eventos venta→stock, multi-tablet, etc.  
+1. Cerrar E2E **Hito 2** Device Bootstrap  
+2. Congelar contrato **Hito 3** — Operación del Pedido (eventos) — brief P1/P2  
+3. Implementar Hito 3; inventario oficial EN1 / Kardex en hitos posteriores  
+4. Admin básica Solo-POS = roadmap post-Hito 3 (capacidades × modo org)  
 
 ---
 
@@ -730,5 +762,6 @@ El cajero no debe sentir que está “dentro del ERP”.
 
 ---
 
-*Documento vivo — versión 3.4 · EasyTech Services · EPOSOne · **Hito 1 cerrado · Hito 2 siguiente** jul 2026*  
+*Documento vivo — versión 3.6 · EasyTech · **Roadmap V5** · H1–H2 ✅ · H3 arquitectura*  
+*Roadmap hitos:* [`Doc/EPOSONE_EN1_ROADMAP_V5.md`](Doc/EPOSONE_EN1_ROADMAP_V5.md) · *Decisión:* [`Doc/EPOSONE_EN1_DECISION_OPERATION_VS_ADMIN.md`](Doc/EPOSONE_EN1_DECISION_OPERATION_VS_ADMIN.md)  
 *Contexto:* [`EPOSONE_APP_CONTEXT.md`](EPOSONE_APP_CONTEXT.md) · *Cierre Hito 1:* [`Doc/EPOSONE_HITO1_PROVISIONING_HANDOFF_CLOSED.md`](Doc/EPOSONE_HITO1_PROVISIONING_HANDOFF_CLOSED.md)

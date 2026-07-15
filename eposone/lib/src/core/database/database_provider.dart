@@ -24,6 +24,10 @@ import 'package:eposone/src/features/inventory/domain/entities/stock_adjustment.
 import 'package:eposone/src/features/fiscal/domain/entities/fiscal_document.dart';
 import 'package:eposone/src/features/sync/domain/entities/sync_operation.dart';
 import 'package:eposone/src/features/premium/domain/entities/coupon.dart';
+import 'package:eposone/src/features/orders/domain/entities/order.dart';
+import 'package:eposone/src/features/orders/domain/entities/order_item.dart';
+import 'package:eposone/src/features/orders/domain/entities/order_payment.dart';
+import 'package:eposone/src/features/orders/domain/entities/order_event.dart';
 
 part 'database_provider.g.dart';
 
@@ -59,6 +63,10 @@ class Database extends _$Database {
         FiscalDocumentSchema,
         SyncOperationSchema,
         CouponSchema,
+        OrderSchema,
+        OrderItemSchema,
+        OrderPaymentSchema,
+        OrderEventSchema,
       ],
       directory: dir.path,
       inspector: true,

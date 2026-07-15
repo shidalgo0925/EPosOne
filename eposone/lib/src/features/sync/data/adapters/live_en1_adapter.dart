@@ -21,7 +21,8 @@ class LiveEn1Adapter implements En1ApiAdapter {
     required List<SaleItem> items,
   }) async {
     throw StateError(
-      'Push de ventas a EN1 aún no está en Hito 2. Usa Descargar catálogo EN1.',
+      'Push Venta (Sale) diferido. Hito 3 usa Pedidos EN1 (/api/v1/orders*). '
+      'Configuración → Pedidos EN1 · no «Subir · Venta» del POS Core.',
     );
   }
 

@@ -86,6 +86,7 @@ class OpenTicketRepository {
             orderType: orderType ?? cart.orderType,
             savedAt: now,
             updatedAt: now,
+            linkedOrderLocalId: existing.linkedOrderLocalId,
           )
         : OpenTicket.create(
             label: label,
@@ -119,6 +120,20 @@ class OpenTicketRepository {
     });
 
     return ticket;
+  }
+
+  Future<OpenTicket> linkOrder({
+    required String ticketId,
+    required String orderLocalId,
+  }) async {
+    final ticket = await getById(ticketId);
+    if (ticket == null) throw StateError('Ticket no encontrado');
+    final updated = ticket.copyWith(
+      linkedOrderLocalId: orderLocalId,
+      updatedAt: DateTime.now(),
+    );
+    await _isar.writeTxn(() => _isar.openTickets.put(updated));
+    return updated;
   }
 
   Future<OpenTicket> moveToSlot({

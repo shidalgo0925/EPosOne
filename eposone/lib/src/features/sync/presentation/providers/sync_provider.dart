@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:eposone/src/core/providers/business_config_provider.dart';
+import 'package:eposone/src/features/platform/domain/en1_bootstrap_models.dart';
 import 'package:eposone/src/features/sync/data/repositories/sync_repository.dart';
 import 'package:eposone/src/features/sync/domain/entities/sync_operation.dart';
 
@@ -14,14 +15,17 @@ final syncOperationsProvider = FutureProvider<List<SyncOperation>>((ref) async {
 
 final syncRunningProvider = StateProvider<bool>((ref) => false);
 
-final runSyncCycleProvider = Provider<Future<SyncRunResult> Function()>((ref) {
-  return () async {
+final runSyncCycleProvider =
+    Provider<Future<SyncRunResult> Function({En1BootstrapProgressCallback? onProgress})>((ref) {
+  return ({En1BootstrapProgressCallback? onProgress}) async {
     if (ref.read(syncRunningProvider)) {
       throw StateError('Sincronización en curso');
     }
     ref.read(syncRunningProvider.notifier).state = true;
     try {
-      final result = await ref.read(syncRepositoryProvider).runSyncCycle();
+      final result = await ref.read(syncRepositoryProvider).runSyncCycle(
+            onProgress: onProgress,
+          );
       ref.invalidate(syncPendingCountProvider);
       ref.invalidate(syncOperationsProvider);
       ref.invalidate(businessConfigAsyncProvider);

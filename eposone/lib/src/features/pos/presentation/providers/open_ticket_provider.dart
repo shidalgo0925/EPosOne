@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:eposone/src/core/session/pos_session.dart';
+import 'package:eposone/src/features/orders/presentation/providers/order_providers.dart';
 import 'package:eposone/src/features/pos/data/repositories/open_ticket_repository.dart';
 import 'package:eposone/src/features/pos/data/repositories/predefined_ticket_repository.dart';
 import 'package:eposone/src/features/pos/domain/entities/open_ticket.dart';
@@ -9,6 +10,7 @@ import 'package:eposone/src/features/pos/domain/entities/predefined_ticket.dart'
 import 'package:eposone/src/features/pos/presentation/providers/cart_provider.dart';
 import 'package:eposone/src/features/products/data/repositories/product_repository.dart';
 import 'package:eposone/src/features/products/domain/modifier_codec.dart';
+import 'package:eposone/src/features/sync/presentation/providers/sync_provider.dart';
 
 final openTicketsListProvider = FutureProvider<List<OpenTicket>>((ref) async {
   final repo = ref.watch(openTicketRepositoryProvider);
@@ -54,16 +56,16 @@ class OpenTicketActions {
   final Ref _ref;
   OpenTicketActions(this._ref);
 
-  Future<void> saveCurrentCart(SaveOpenTicketParams params) async {
+  Future<OpenTicket> saveCurrentCart(SaveOpenTicketParams params) async {
     final cart = _ref.read(cartProvider);
     if (cart.items.isEmpty) {
-      throw StateError('El ticket está vacío');
+      throw StateError('El pedido está vacío');
     }
 
     final session = _ref.read(posSessionProvider);
     final repo = _ref.read(openTicketRepositoryProvider);
 
-    await repo.saveFromCart(
+    final ticket = await repo.saveFromCart(
       cart: cart,
       openTicketId: cart.openTicketId,
       label: params.label,
@@ -76,6 +78,7 @@ class OpenTicketActions {
 
     _ref.read(cartProvider.notifier).clear();
     _invalidate();
+    return ticket;
   }
 
   Future<void> restoreTicket(String ticketId) async {
@@ -148,11 +151,27 @@ class OpenTicketActions {
 
   Future<void> deleteTicket(String ticketId) async {
     final repo = _ref.read(openTicketRepositoryProvider);
+    final ticket = await repo.getById(ticketId);
+    final linkedOrderId = ticket?.linkedOrderLocalId;
+
     await repo.deleteTicket(ticketId);
 
     final cart = _ref.read(cartProvider);
     if (cart.openTicketId == ticketId) {
       _ref.read(cartProvider.notifier).clear();
+    }
+
+    if (linkedOrderId != null && linkedOrderId.isNotEmpty) {
+      try {
+        await _ref.read(orderServiceProvider).voidOrder(
+              orderLocalId: linkedOrderId,
+              reason: 'ticket_deleted',
+              syncNow: true,
+            );
+        _ref.invalidate(syncPendingCountProvider);
+        _ref.invalidate(syncOperationsProvider);
+        _ref.invalidate(localOrdersProvider);
+      } catch (_) {}
     }
 
     _invalidate();

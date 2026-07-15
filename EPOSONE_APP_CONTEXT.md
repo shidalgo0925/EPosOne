@@ -130,23 +130,33 @@ Evolución = **extensión**, no reemplazo del núcleo.
 
 Tag `provisioning-v1.0`. Ver handoff de cierre.
 
-### 5.3 Hito 2 Device Bootstrap ⏸
+### 5.3 Hito 2 Device Bootstrap ✅
 
-Pull: config · catálogo · precios · uom/pack/min/max · imágenes · saldos.  
-Sin ventas→stock. Contrato EN1 primero.
+Cerrado · congelado. Ver Roadmap V5.
 
-### 5.4 Stubs / no ahora
+### 5.4 Hito 3–7 (Roadmap V5)
 
-FE · CRM · IA · licencias · transferencias · multi-tablet.
+Fuente: [`Doc/EPOSONE_EN1_ROADMAP_V5.md`](Doc/EPOSONE_EN1_ROADMAP_V5.md)  
+GO P2: [`Doc/EPOSONE_EN1_HITO3B_ORDER_OPERATION_GO.md`](Doc/EPOSONE_EN1_HITO3B_ORDER_OPERATION_GO.md)
+
+| Hito | Estado |
+|------|--------|
+| 3 Order Domain EN1 | ✅ Contrato HTTP congelado |
+| **3B Operación Pedido (P2)** | 🟢 **GO** |
+| 3.5 Validación operativa | ⏸ |
+| 5–7 Inventario / Caja / FE | ⏸ |
+
+### 5.5 Stubs / no ahora
+
+Inventario · FE · KDS · CxC · ampliar contrato Orders · P1 features nuevas (solo soporte).
 
 ---
 
 ## 6. Qué NO hacer ahora
 
-- Reabrir cliente provisioning (salvo bug reinicio documentado)  
-- Empezar Hito 2 sin contrato congelado EN1  
-- Borrar Istmo local antes del E2E Bootstrap  
-- FE / CRM / IA / sync ventas→stock  
+- Reabrir Provisioning / Bootstrap / modificar contrato Orders  
+- Inventario / FE / caja avanzada en 3B  
+- Pedir cambios a EN1 salvo bug (P1 soporte)  
 
 ---
 
@@ -156,7 +166,7 @@ Una persona descarga EPosOne y en **&lt; 5 minutos** debe poder:
 
 1. Crear negocio **o** conectar EN1  
 2. Registrar el dispositivo  
-3. (Hito 2) Descargar catálogo EN1  
+3. Descargar catálogo EN1  
 4. Abrir caja y vender  
 
 ---
@@ -165,32 +175,29 @@ Una persona descarga EPosOne y en **&lt; 5 minutos** debe poder:
 
 | Área | Ruta |
 |------|------|
-| Plataforma | `eposone/lib/src/features/platform/` |
-| POS Core | `eposone/lib/src/features/pos/` 🔒 |
-| Cierre Hito 1 | `Doc/EPOSONE_HITO1_PROVISIONING_HANDOFF_CLOSED.md` |
-| Contrato EN1-02 | `Doc/EPOSONE_EN1_HITO1_PROVISIONING_CONTRACT_EN1-02.md` |
+| Roadmap V5 | `Doc/EPOSONE_EN1_ROADMAP_V5.md` |
+| GO Hito 3B P2 | `Doc/EPOSONE_EN1_HITO3B_ORDER_OPERATION_GO.md` |
+| Contrato Orders (EN1) | `docs/EN1_EPOSONE_HITO3_ORDER_HTTP_CONTRACT.md` *(repo EN1)* |
 | Bitácora | `Doc/EPOSONE_EN1_INTEGRATION_LOG.md` |
-| Roadmap | `EPOSONE_MASTER_PLAN_V3.md` (v3.4) |
 
 ---
 
 ## 9. Principios inalterables
 
 1. EPosOne independiente · EN1 plataforma  
-2. Una sola APK · un dominio  
-3. POS = operación (y futura licencia) · dispositivo = recurso  
-4. UX cajero &gt; infra · Core Protegido  
-5. Nunca bloquear venta por red · sin P2P entre POS  
-6. **Un hito · un contrato · un cierre · un GO**
+2. Una sola APK · Pedido = corazón  
+3. Eventos · Ownership · inventario oficial EN1  
+4. Core Protegido · offline-first  
+5. **Un hito · un contrato · un cierre · un GO**  
 
 ---
 
 ## 10. Siguiente paso
 
-1. EN1: checklist freeze contrato Hito 2 (token device → products/stock + curl org 5)  
-2. Tablet: Este dispositivo → **Descargar catálogo EN1** → verificar ventas con `ib-*`  
-3. E2E Bootstrap → retirar Istmo como fuente activa (assets se quedan hasta decisión)  
+1. **P2:** Hito 3B — Pedido offline + sync `/api/v1/orders*`  
+2. E2E con P1 (soporte)  
+3. Hito 3.5 validación → luego Inventario  
 
 ---
 
-*EasyTech Services · EPosOne · Contexto 13 jul 2026 · Hito 2 GO abierto*
+*EasyTech · Contexto 14 jul 2026 · Hito 3B GO*

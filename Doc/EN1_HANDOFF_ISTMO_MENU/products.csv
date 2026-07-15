@@ -1,0 +1,111 @@
+﻿product_ref,sku,name,description,category,category_ref,unit_price,currency,tax_included,image_file,tracks_inventory
+ceviche,IST-ceviche,Ceviche de Pescado,"Coronado con encurtido y vegetales, chips de plátano",Entradas,entradas,8.56,USD,True,images/ceviche.jpg,False
+nachos_media,IST-nachos_media,Nachos — Media orden,"Queso cheddar, mozzarella, frijol, pico de gallo, sour cream, guacamole, jalapeño",Entradas,entradas,8.56,USD,True,images/nachos_media.jpg,False
+nachos_full,IST-nachos_full,Nachos — Orden completa,,Entradas,entradas,14.98,USD,True,images/nachos_full.jpg,False
+nachos_extra,IST-nachos_extra,Extras de Nachos (pulled pork o pollo),,Entradas,entradas,4.28,USD,True,images/nachos_extra.jpg,False
+aranitas,IST-aranitas,Arañitas Fritas,,Entradas,entradas,12.84,USD,True,images/aranitas.jpg,False
+ensalada_istmo,IST-ensalada_istmo,Ensalada Istmo,,Entradas,entradas,8.56,USD,True,images/ensalada_istmo.jpg,False
+papas_trufadas,IST-papas_trufadas,Papas Trufadas,,Entradas,entradas,8.56,USD,True,images/papas_trufadas.jpg,False
+empanada_pollo,IST-empanada_pollo,Empanada de Pollo (7 uds),,Entradas,entradas,8.56,USD,True,images/empanada_pollo.jpg,False
+istmo_wings,IST-istmo_wings,Istmo Wings,"Asadas o apanadas, salsas a elección",Entradas,entradas,13.38,USD,True,images/istmo_wings.jpg,False
+chicharrones,IST-chicharrones,Chicharrones,,Entradas,entradas,13.38,USD,True,images/chicharrones.jpg,False
+patacon,IST-patacon,Patacón Istmo,,Entradas,entradas,10.7,USD,True,images/patacon.jpg,False
+taconhambre,IST-taconhambre,Taconhambre,,Entradas,entradas,9.63,USD,True,images/taconhambre.jpg,False
+wrap_pollo,IST-wrap_pollo,Wrap de Pollo,,Platos Fuertes,platos,12.84,USD,True,images/wrap_pollo.jpg,False
+wrap_pork,IST-wrap_pork,Wrap de Pulled Pork,,Platos Fuertes,platos,12.84,USD,True,images/wrap_pork.jpg,False
+tenders,IST-tenders,Tenders de Pollo,,Platos Fuertes,platos,12.84,USD,True,images/tenders.jpg,False
+istmo_burger,IST-istmo_burger,Istmo Burger,"6oz angus, tocino, mozzarella, BBQ",Platos Fuertes,platos,14.98,USD,True,images/istmo_burger.jpg,False
+cheddar_bacon,IST-cheddar_bacon,Clásica Cheddar Bacon,,Platos Fuertes,platos,14.98,USD,True,images/cheddar_bacon.jpg,False
+pulled_burger,IST-pulled_burger,Pulled Pork Burger,,Platos Fuertes,platos,13.38,USD,True,images/pulled_burger.jpg,False
+quesadillas,IST-quesadillas,Quesadillas Istmo,,Platos Fuertes,platos,14.98,USD,True,images/quesadillas.jpg,False
+pizza_margarita,IST-pizza_margarita,Pizza Margarita,,Pizzas,pizzas,10.7,USD,True,images/pizza_margarita.jpg,False
+pizza_pepperoni,IST-pizza_pepperoni,Pizza Pepperoni,,Pizzas,pizzas,12.84,USD,True,images/pizza_pepperoni.jpg,False
+pizza_feta_miel,IST-pizza_feta_miel,Pizza Feta Miel,,Pizzas,pizzas,12.84,USD,True,images/pizza_feta_miel.jpg,False
+pizza_vegetales,IST-pizza_vegetales,Pizza Vegetales,,Pizzas,pizzas,10.7,USD,True,images/pizza_vegetales.jpg,False
+combo_pizza,IST-combo_pizza,Combo Pizza Personal,"2 pizzas personal + 2 bebidas (limonada, soda, agua o jugo)",Pizzas,pizzas,17.12,USD,True,images/combo_pizza.jpg,False
+papas_fritas,IST-papas_fritas,Papas Fritas,,Acompañamientos,acomp,4.28,USD,True,images/papas_fritas.jpg,False
+anillos_cebolla,IST-anillos_cebolla,Anillos de Cebolla,,Acompañamientos,acomp,5.35,USD,True,images/anillos_cebolla.jpg,False
+papas_casa,IST-papas_casa,Papas de la Casa,,Acompañamientos,acomp,5.35,USD,True,images/papas_casa.jpg,False
+mini_cesar,IST-mini_cesar,Mini Ensalada César,,Acompañamientos,acomp,6.42,USD,True,images/mini_cesar.jpg,False
+flan,IST-flan,Flan de la Casa,,Postres,postres,5.35,USD,True,images/flan.jpg,False
+churristmo,IST-churristmo,Churristmo,Churros con sirope de chocolate y helado de vainilla,Postres,postres,6.96,USD,True,images/churristmo.jpg,False
+cerveza_colon,IST-cerveza_colon,Colón Lager,4.1% · IBU 14 · Panameña pura,Cervezas Istmo,cerv_istmo,3.75,USD,True,images/cerveza_colon.jpg,False
+cerveza_chiriqui,IST-cerveza_chiriqui,Chiriquí Red Ale,5.6% · IBU 28,Cervezas Istmo,cerv_istmo,3.75,USD,True,images/cerveza_chiriqui.jpg,False
+cerveza_cocle,IST-cerveza_cocle,Coclé Caribbean Dunkel Weiss,4.9% · IBU 12,Cervezas Istmo,cerv_istmo,3.75,USD,True,images/cerveza_cocle.jpg,False
+cerveza_darien,IST-cerveza_darien,Darién IPA,5.9% · IBU 54,Cervezas Istmo,cerv_istmo,3.75,USD,True,images/cerveza_darien.jpg,False
+cerveza_bocas,IST-cerveza_bocas,Bocas Wheat Beer,4.9% · IBU 13,Cervezas Istmo,cerv_istmo,3.75,USD,True,images/cerveza_bocas.jpg,False
+coct_margarita,IST-coct_margarita,"Margarita (limón, fresa, maracuyá)",,Cócteles,cocteles,7.49,USD,True,images/coct_margarita.jpg,False
+coct_mojito,IST-coct_mojito,"Mojito (limón, maracuyá)",,Cócteles,cocteles,8.56,USD,True,images/coct_mojito.jpg,False
+coct_aperol,IST-coct_aperol,Aperol Spritz,,Cócteles,cocteles,8.56,USD,True,images/coct_aperol.jpg,False
+coct_caipirinha,IST-coct_caipirinha,Caipirinha,,Cócteles,cocteles,8.56,USD,True,images/coct_caipirinha.jpg,False
+coct_cosmo,IST-coct_cosmo,Cosmopolitan,,Cócteles,cocteles,8.56,USD,True,images/coct_cosmo.jpg,False
+coct_mule,IST-coct_mule,Moscow Mule,,Cócteles,cocteles,9.63,USD,True,images/coct_mule.jpg,False
+coct_negroni,IST-coct_negroni,Negroni,,Cócteles,cocteles,8.56,USD,True,images/coct_negroni.jpg,False
+coct_whiskey_sour,IST-coct_whiskey_sour,Whiskey Sour,,Cócteles,cocteles,8.56,USD,True,images/coct_whiskey_sour.jpg,False
+coct_gin_tonic,IST-coct_gin_tonic,Gin Tonic (Gordon's),,Cócteles,cocteles,8.56,USD,True,images/coct_gin_tonic.jpg,False
+coct_sangria_copa,IST-coct_sangria_copa,Sangría — Copa,,Cócteles,cocteles,6.42,USD,True,images/coct_sangria_copa.jpg,False
+coct_sangria_bot,IST-coct_sangria_bot,Sangría — Botellón,,Cócteles,cocteles,25.68,USD,True,images/coct_sangria_bot.jpg,False
+coct_pina,IST-coct_pina,Piña Colada,,Cócteles,cocteles,9.1,USD,True,images/coct_pina.jpg,False
+coct_cuello,IST-coct_cuello,Cuello Blanco,,Cócteles,cocteles,9.63,USD,True,images/coct_cuello.jpg,False
+coct_cacao,IST-coct_cacao,Cacao Curacao,,Cócteles,cocteles,8.56,USD,True,images/coct_cacao.jpg,False
+coct_dark_storm,IST-coct_dark_storm,Dark Storm,,Cócteles,cocteles,9.63,USD,True,images/coct_dark_storm.jpg,False
+coct_angel,IST-coct_angel,Angel de Piña,,Cócteles,cocteles,8.56,USD,True,images/coct_angel.jpg,False
+vino_tinto_bot,IST-vino_tinto_bot,Vino Tinto Tarapacá Merlot — Botella,,Vinos y Espumantes,vinos,28.89,USD,True,images/vino_tinto_bot.jpg,False
+vino_tinto_copa,IST-vino_tinto_copa,Vino Tinto Tarapacá Merlot — Copa,,Vinos y Espumantes,vinos,6.42,USD,True,images/vino_tinto_copa.jpg,False
+vino_blanco_bot,IST-vino_blanco_bot,Vino Blanco Sauvignon Blanc — Botella,,Vinos y Espumantes,vinos,25.68,USD,True,images/vino_blanco_bot.jpg,False
+vino_blanco_copa,IST-vino_blanco_copa,Vino Blanco Sauvignon Blanc — Copa,,Vinos y Espumantes,vinos,5.35,USD,True,images/vino_blanco_copa.jpg,False
+espumante_bot,IST-espumante_bot,Espumante Mionetto — Botella,,Vinos y Espumantes,vinos,38.52,USD,True,images/espumante_bot.jpg,False
+espumante_copa,IST-espumante_copa,Espumante Mionetto — Copa,,Vinos y Espumantes,vinos,6.42,USD,True,images/espumante_copa.jpg,False
+punti_bot,IST-punti_bot,Punti Ferrer País Brut — Botella,,Vinos y Espumantes,vinos,38.52,USD,True,images/punti_bot.jpg,False
+punti_copa,IST-punti_copa,Punti Ferrer País Brut — Copa,,Vinos y Espumantes,vinos,6.42,USD,True,images/punti_copa.jpg,False
+teq_dj_silver_tr,IST-teq_dj_silver_tr,Don Julio Silver — Trago,,Licores,licores,10.7,USD,True,images/teq_dj_silver_tr.jpg,False
+teq_dj_silver_bot,IST-teq_dj_silver_bot,Don Julio Silver — Botella,,Licores,licores,107.0,USD,True,images/teq_dj_silver_bot.jpg,False
+teq_dj_anejo_tr,IST-teq_dj_anejo_tr,Don Julio Añejo — Trago,,Licores,licores,10.7,USD,True,images/teq_dj_anejo_tr.jpg,False
+teq_dj_anejo_bot,IST-teq_dj_anejo_bot,Don Julio Añejo — Botella,,Licores,licores,117.7,USD,True,images/teq_dj_anejo_bot.jpg,False
+teq_dj_70_tr,IST-teq_dj_70_tr,Don Julio 70 — Trago,,Licores,licores,10.7,USD,True,images/teq_dj_70_tr.jpg,False
+teq_dj_70_bot,IST-teq_dj_70_bot,Don Julio 70 — Botella,,Licores,licores,160.5,USD,True,images/teq_dj_70_bot.jpg,False
+teq_dj_repo_tr,IST-teq_dj_repo_tr,Don Julio Reposado — Trago,,Licores,licores,10.7,USD,True,images/teq_dj_repo_tr.jpg,False
+teq_dj_repo_bot,IST-teq_dj_repo_bot,Don Julio Reposado — Botella,,Licores,licores,133.75,USD,True,images/teq_dj_repo_bot.jpg,False
+teq_cuervo_tr,IST-teq_cuervo_tr,Jose Cuervo Reposado — Trago,,Licores,licores,5.35,USD,True,images/teq_cuervo_tr.jpg,False
+teq_cuervo_bot,IST-teq_cuervo_bot,Jose Cuervo Reposado — Botella,,Licores,licores,64.2,USD,True,images/teq_cuervo_bot.jpg,False
+vod_titos_tr,IST-vod_titos_tr,Tito's Vodka — Trago,,Licores,licores,7.49,USD,True,images/vod_titos_tr.jpg,False
+vod_titos_bot,IST-vod_titos_bot,Tito's Vodka — Botella,,Licores,licores,85.6,USD,True,images/vod_titos_bot.jpg,False
+vod_absolut_tr,IST-vod_absolut_tr,Absolut — Trago,,Licores,licores,5.35,USD,True,images/vod_absolut_tr.jpg,False
+vod_absolut_bot,IST-vod_absolut_bot,Absolut — Botella,,Licores,licores,37.45,USD,True,images/vod_absolut_bot.jpg,False
+vod_ketel_tr,IST-vod_ketel_tr,Ketel One — Trago,,Licores,licores,10.7,USD,True,images/vod_ketel_tr.jpg,False
+vod_smirnoff_tr,IST-vod_smirnoff_tr,Smirnoff — Trago,,Licores,licores,5.35,USD,True,images/vod_smirnoff_tr.jpg,False
+whis_jack_tr,IST-whis_jack_tr,Jack Daniels — Trago,,Licores,licores,8.56,USD,True,images/whis_jack_tr.jpg,False
+whis_jack_bot,IST-whis_jack_bot,Jack Daniels — Botella,,Licores,licores,85.6,USD,True,images/whis_jack_bot.jpg,False
+whis_kurayoshi_tr,IST-whis_kurayoshi_tr,The Kurayoshi — Trago,,Licores,licores,10.7,USD,True,images/whis_kurayoshi_tr.jpg,False
+whis_kurayoshi_bot,IST-whis_kurayoshi_bot,The Kurayoshi — Botella,,Licores,licores,107.0,USD,True,images/whis_kurayoshi_bot.jpg,False
+whis_monkey_tr,IST-whis_monkey_tr,Monkey Shoulder — Trago,,Licores,licores,8.56,USD,True,images/whis_monkey_tr.jpg,False
+whis_buchanans_tr,IST-whis_buchanans_tr,Buchanan's 12 — Trago,,Licores,licores,16.05,USD,True,images/whis_buchanans_tr.jpg,False
+whis_oldpar_tr,IST-whis_oldpar_tr,Old Parr — Trago,,Licores,licores,9.63,USD,True,images/whis_oldpar_tr.jpg,False
+whis_singleton12_tr,IST-whis_singleton12_tr,Singleton 12 — Trago,,Licores,licores,7.49,USD,True,images/whis_singleton12_tr.jpg,False
+whis_singleton18_tr,IST-whis_singleton18_tr,Singleton 18 — Trago,,Licores,licores,10.7,USD,True,images/whis_singleton18_tr.jpg,False
+ron_zacapa_tr,IST-ron_zacapa_tr,Zacapa — Trago,,Licores,licores,10.7,USD,True,images/ron_zacapa_tr.jpg,False
+ron_zacapa_bot,IST-ron_zacapa_bot,Zacapa — Botella,,Licores,licores,128.4,USD,True,images/ron_zacapa_bot.jpg,False
+ron_abuelo7_tr,IST-ron_abuelo7_tr,Ron Abuelo 7 Años — Trago,,Licores,licores,7.49,USD,True,images/ron_abuelo7_tr.jpg,False
+ron_abuelo7_bot,IST-ron_abuelo7_bot,Ron Abuelo 7 Años — Botella,,Licores,licores,69.55,USD,True,images/ron_abuelo7_bot.jpg,False
+ron_abuelo_an_tr,IST-ron_abuelo_an_tr,Ron Abuelo Añejo — Trago,,Licores,licores,5.35,USD,True,images/ron_abuelo_an_tr.jpg,False
+ron_abuelo_an_bot,IST-ron_abuelo_an_bot,Ron Abuelo Añejo — Botella,,Licores,licores,64.2,USD,True,images/ron_abuelo_an_bot.jpg,False
+ron_diplo_tr,IST-ron_diplo_tr,Ron Diplomatico — Trago,,Licores,licores,11.77,USD,True,images/ron_diplo_tr.jpg,False
+ron_diplo_bot,IST-ron_diplo_bot,Ron Diplomatico — Botella,,Licores,licores,80.25,USD,True,images/ron_diplo_bot.jpg,False
+gin_sevilla_tr,IST-gin_sevilla_tr,Tanqueray Sevilla — Trago,,Licores,licores,10.7,USD,True,images/gin_sevilla_tr.jpg,False
+gin_sevilla_bot,IST-gin_sevilla_bot,Tanqueray Sevilla — Botella,,Licores,licores,90.95,USD,True,images/gin_sevilla_bot.jpg,False
+gin_london_tr,IST-gin_london_tr,Tanqueray London — Trago,,Licores,licores,8.56,USD,True,images/gin_london_tr.jpg,False
+gin_london_bot,IST-gin_london_bot,Tanqueray London — Botella,,Licores,licores,80.25,USD,True,images/gin_london_bot.jpg,False
+gin_ten_tr,IST-gin_ten_tr,Tanqueray Ten — Trago,,Licores,licores,12.84,USD,True,images/gin_ten_tr.jpg,False
+gin_ten_bot,IST-gin_ten_bot,Tanqueray Ten — Botella,,Licores,licores,90.95,USD,True,images/gin_ten_bot.jpg,False
+gin_hendricks_tr,IST-gin_hendricks_tr,Hendrick's — Trago,,Licores,licores,10.7,USD,True,images/gin_hendricks_tr.jpg,False
+mezcal_siete,IST-mezcal_siete,Siete Misterios Mezcal — Trago,,Licores,licores,7.49,USD,True,images/mezcal_siete.jpg,False
+cerveza_balboa,IST-cerveza_balboa,Balboa Manga Larga,,Cervezas,cerv,5.35,USD,True,images/cerveza_balboa.jpg,False
+cerveza_corona,IST-cerveza_corona,Corona Extra,,Cervezas,cerv,4.82,USD,True,images/cerveza_corona.jpg,False
+cerveza_erdinger,IST-cerveza_erdinger,Erdinger Weissbier,,Cervezas,cerv,8.83,USD,True,images/cerveza_erdinger.jpg,False
+cerveza_corona0,IST-cerveza_corona0,Corona 0%,,Cervezas,cerv,4.82,USD,True,images/cerveza_corona0.jpg,False
+beb_perrier,IST-beb_perrier,Perrier,,Bebidas,bebidas,3.21,USD,True,images/beb_perrier.jpg,False
+beb_agua,IST-beb_agua,Botella de Agua,,Bebidas,bebidas,4.28,USD,True,images/beb_agua.jpg,False
+beb_limonada,IST-beb_limonada,Limonada Clásica o Fresa,,Bebidas,bebidas,3.21,USD,True,images/beb_limonada.jpg,False
+beb_limonada_coco,IST-beb_limonada_coco,Limonada de Coco,,Bebidas,bebidas,4.28,USD,True,images/beb_limonada_coco.jpg,False
+beb_amapola,IST-beb_amapola,Amapola,,Bebidas,bebidas,4.82,USD,True,images/beb_amapola.jpg,False
+beb_soda_art,IST-beb_soda_art,Soda Artesanal,,Bebidas,bebidas,7.49,USD,True,images/beb_soda_art.jpg,False

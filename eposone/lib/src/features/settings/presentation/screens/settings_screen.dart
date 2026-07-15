@@ -53,6 +53,13 @@ class SettingsScreen extends StatelessWidget {
             onTap: () => context.push('/settings/sync'),
           ),
           ListTile(
+            leading: const Icon(Icons.restaurant_menu_outlined),
+            title: const Text('Pedidos EN1'),
+            subtitle: const Text('Hito 3B · Pedido offline + sync'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/settings/orders'),
+          ),
+          ListTile(
             leading: const Icon(Icons.smartphone_outlined),
             title: const Text('Este dispositivo'),
             subtitle: const Text('UUID, modo, versión'),

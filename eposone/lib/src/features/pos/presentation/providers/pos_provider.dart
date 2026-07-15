@@ -13,8 +13,8 @@ import 'package:eposone/src/features/pos/data/repositories/open_ticket_repositor
 import 'package:eposone/src/features/pos/presentation/providers/open_ticket_provider.dart';
 import 'package:eposone/src/features/fiscal/data/repositories/fiscal_repository.dart';
 import 'package:eposone/src/features/fiscal/presentation/providers/fiscal_provider.dart';
-import 'package:eposone/src/features/sync/data/repositories/sync_repository.dart';
-import 'package:eposone/src/features/sync/domain/entities/sync_entity_kind.dart';
+import 'package:eposone/src/features/orders/data/order_service.dart';
+import 'package:eposone/src/features/orders/presentation/providers/order_providers.dart';
 import 'package:eposone/src/features/sync/presentation/providers/sync_provider.dart';
 import 'package:eposone/src/features/customers/data/repositories/customer_repository.dart';
 import 'package:eposone/src/features/premium/data/repositories/coupon_repository.dart';
@@ -210,12 +210,67 @@ final completeSaleProvider = Provider<Future<Sale?> Function({List<CartItem>? it
       }
     }
 
+    // Hito 3B.1: cobro POS → Order Domain (reutiliza pedido del ticket si existe).
     if (config.isEn1SyncReady) {
       try {
-        await ref.read(syncRepositoryProvider).enqueuePush(SyncEntityKind.sale, saved.localId);
+        String en1ProductRef(String localId, String? serverId) {
+          if (serverId != null && serverId.trim().isNotEmpty) return serverId.trim();
+          if (localId.startsWith('en1_')) return localId.substring(4);
+          return localId;
+        }
+
+        String methodCode(PaymentMethod m) => switch (m) {
+              PaymentMethod.cash => 'cash',
+              PaymentMethod.card => 'card',
+              PaymentMethod.transfer => 'transfer',
+              PaymentMethod.yappy => 'yappy',
+              PaymentMethod.other => 'other',
+            };
+
+        String? linkedOrderId;
+        if (cart.openTicketId != null) {
+          linkedOrderId = (await ref
+                  .read(openTicketRepositoryProvider)
+                  .getById(cart.openTicketId!))
+              ?.linkedOrderLocalId;
+        }
+
+        await ref.read(orderServiceProvider).createPaidOrderFromPosSale(
+              localNumber: saved.receiptNumber ?? saved.localId,
+              lines: itemsToSell
+                  .map(
+                    (item) => PosOrderLineInput(
+                      productLocalId: item.product.localId,
+                      productRef: en1ProductRef(item.product.localId, item.product.serverId),
+                      productName: item.displayName,
+                      quantity: item.quantity,
+                      unitPrice: item.unitPrice,
+                      discount: item.discount,
+                      notes: item.modifiersJson.isEmpty ? null : item.modifiersJson,
+                    ),
+                  )
+                  .toList(),
+              methodCode: methodCode(checkout.paymentMethod),
+              paymentAmount: amountPaid,
+              subtotal: totals.subtotal,
+              taxAmount: totals.taxAmount,
+              discount: totals.discount,
+              tipAmount: tip,
+              total: saleTotal,
+              config: config,
+              customerId: checkout.customerId ?? cart.customerId,
+              cashierId: session.cashierId,
+              tableRef: openTicketLabel,
+              notes: notes,
+              currency: config.currency,
+              existingOrderLocalId: linkedOrderId,
+            );
         ref.invalidate(syncPendingCountProvider);
-        ref.read(runSyncCycleProvider)();
-      } catch (_) {}
+        ref.invalidate(syncOperationsProvider);
+        ref.invalidate(localOrdersProvider);
+      } catch (_) {
+        // Venta local OK; pedido EN1 queda para reintento desde Pedidos / Sync.
+      }
     }
 
     if (cart.appliedCouponId != null) {

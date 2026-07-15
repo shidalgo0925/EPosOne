@@ -42,8 +42,38 @@ class En1RemoteProduct {
   });
 
   bool get isActive {
-    final s = (status ?? 'active').toLowerCase();
-    return s == 'active' || s == 'enabled' || s == 'ok' || s == '1' || s == 'true';
+    final s = (status ?? '').toLowerCase().trim();
+    if (s.isEmpty) return true;
+    // EN1 BO (ES/EN)
+    const active = {
+      'active',
+      'activo',
+      'enabled',
+      'habilitado',
+      'ok',
+      '1',
+      'true',
+      'published',
+      'disponible',
+      'on',
+    };
+    if (active.contains(s)) return true;
+    const inactive = {
+      'inactive',
+      'inactivo',
+      'disabled',
+      'deshabilitado',
+      'deleted',
+      'eliminado',
+      'archived',
+      'archivado',
+      'off',
+      '0',
+      'false',
+      'no',
+    };
+    if (inactive.contains(s)) return false;
+    return true;
   }
 
   factory En1RemoteProduct.fromJson(Map<String, dynamic> json) {
@@ -172,3 +202,25 @@ class En1BootstrapResult {
     required this.message,
   });
 }
+
+/// Progreso observable durante Device Bootstrap (UI / sync).
+class En1BootstrapProgress {
+  final String phase;
+  final String label;
+  final int current;
+  final int total;
+
+  const En1BootstrapProgress({
+    required this.phase,
+    required this.label,
+    this.current = 0,
+    this.total = 0,
+  });
+
+  double? get fraction {
+    if (total <= 0) return null;
+    return (current / total).clamp(0.0, 1.0);
+  }
+}
+
+typedef En1BootstrapProgressCallback = void Function(En1BootstrapProgress progress);

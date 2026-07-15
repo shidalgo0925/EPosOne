@@ -22,7 +22,9 @@ import 'package:eposone/src/features/pos/presentation/widgets/modifier_picker_sh
 import 'package:eposone/src/features/pos/presentation/providers/pos_page_provider.dart';
 import 'package:eposone/src/features/pos/domain/entities/pos_page.dart';
 import 'package:eposone/src/features/inventory/presentation/providers/inventory_provider.dart';
+import 'package:eposone/src/features/sync/presentation/providers/en1_connection_status.dart';
 import 'package:eposone/src/features/sync/presentation/providers/sync_provider.dart';
+import 'package:eposone/src/features/sync/presentation/widgets/en1_status_chip.dart';
 import 'package:eposone/src/core/theme/eposone_theme.dart';
 
 class PosScreen extends ConsumerStatefulWidget {
@@ -301,6 +303,11 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                 ],
               ),
         actions: [
+          // Hito 3B.1: auto-sync 30s + indicador EN1
+          Builder(builder: (_) {
+            ref.watch(en1AutoSyncKeeperProvider);
+            return const En1StatusChip(compact: true);
+          }),
           IconButton(
             icon: const Icon(Icons.qr_code_scanner, size: 22),
             tooltip: 'Escanear código',
@@ -310,7 +317,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
             const OpenTicketsButton(),
             IconButton(
               icon: const Icon(Icons.save_outlined, size: 22),
-              tooltip: 'Guardar ticket',
+              tooltip: 'Guardar pedido',
               onPressed: cart.items.isEmpty
                   ? null
                   : () async {
@@ -630,9 +637,10 @@ class _CatalogPane extends ConsumerWidget {
         Expanded(
           child: _buildGrid(ref, pageProductsAsync),
         ),
-        if (_usePageMode && posPages.length >= 2)
+        // Páginas (Comida/Bar): visibles siempre que existan, también en tablet 10".
+        if (posPages.isNotEmpty && onPageSelected != null)
           Container(
-            height: 36,
+            height: 40,
             decoration: BoxDecoration(
               color: EposBrand.background,
               border: Border(top: BorderSide(color: EposBrand.divider)),
@@ -644,20 +652,24 @@ class _CatalogPane extends ConsumerWidget {
               separatorBuilder: (_, __) => const SizedBox(width: 4),
               itemBuilder: (_, i) {
                 final page = posPages[i];
-                final selected = page.localId == selectedPageId;
+                final selected = page.localId == selectedPageId && searchQuery.isEmpty;
                 return Material(
                   color: selected ? EposBrand.orange : EposBrand.surface,
                   borderRadius: BorderRadius.circular(6),
                   child: InkWell(
-                    onTap: () => onPageSelected?.call(page.localId),
+                    onTap: () {
+                      // Al elegir página se limpia búsqueda para ver el catálogo de esa página.
+                      if (searchQuery.isNotEmpty) onSearchChanged('');
+                      onPageSelected?.call(page.localId);
+                    },
                     borderRadius: BorderRadius.circular(6),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                       child: Text(
                         page.name.toUpperCase(),
                         style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
                           color: selected ? Colors.white : EposBrand.navy,
                         ),
                       ),

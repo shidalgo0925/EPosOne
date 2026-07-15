@@ -40,6 +40,7 @@ import 'package:eposone/src/features/customers/presentation/screens/customer_det
 import 'package:eposone/src/features/platform/presentation/screens/platform_welcome_screen.dart';
 import 'package:eposone/src/features/platform/presentation/screens/connect_en1_screen.dart';
 import 'package:eposone/src/features/platform/presentation/screens/device_info_screen.dart';
+import 'package:eposone/src/features/orders/presentation/screens/order_operation_screen.dart';
 
 
 
@@ -180,6 +181,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/settings/fiscal/documents', builder: (_, __) => const FiscalDocumentsScreen()),
       GoRoute(path: '/settings/sync', builder: (_, __) => const SyncSettingsScreen()),
       GoRoute(path: '/settings/sync/history', builder: (_, __) => const SyncHistoryScreen()),
+      GoRoute(path: '/settings/orders', builder: (_, __) => const OrderOperationScreen()),
       GoRoute(path: '/settings/premium', builder: (_, __) => const PremiumSettingsScreen()),
       GoRoute(path: '/settings/premium/coupons', builder: (_, __) => const CouponsSettingsScreen()),
     ],

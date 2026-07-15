@@ -4,6 +4,8 @@ enum SyncEntityKind {
   cashMovement,
   cashRegister,
   catalogPull,
+  /// Pedido Hito 3B — HTTP diferido hasta contrato en Doc/
+  order,
 }
 
 enum SyncDirection {
@@ -24,6 +26,7 @@ String syncEntityKindLabel(SyncEntityKind kind) => switch (kind) {
       SyncEntityKind.cashMovement => 'Movimiento caja',
       SyncEntityKind.cashRegister => 'Turno caja',
       SyncEntityKind.catalogPull => 'Catálogo EN1',
+      SyncEntityKind.order => 'Pedido EN1',
     };
 
 String syncDirectionLabel(SyncDirection direction) => switch (direction) {
