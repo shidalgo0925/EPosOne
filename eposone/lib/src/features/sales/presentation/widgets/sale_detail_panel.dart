@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:eposone/src/core/providers/business_config_provider.dart';
 import 'package:eposone/src/core/printing/receipt_document_service.dart';
+import 'package:eposone/src/core/time/en1_date_time_service.dart';
+import 'package:eposone/src/features/customers/presentation/providers/customer_provider.dart';
 import 'package:eposone/src/features/pos/domain/entities/order_type.dart';
 import 'package:eposone/src/features/pos/presentation/providers/pos_provider.dart';
 import 'package:eposone/src/features/sales/domain/entities/sale.dart';
@@ -81,7 +82,7 @@ class SaleDetailPanel extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 20),
-              _InfoRow(label: 'Fecha', value: DateFormat('dd/MM/yyyy HH:mm').format(sale.saleDate)),
+              _InfoRow(label: 'Fecha', value: En1DateTimeService.formatLocal(sale.saleDate)),
               _InfoRow(label: 'Metodo de pago', value: paymentMethodLabel(sale.paymentMethod)),
                 if (sale.cashierName != null) _InfoRow(label: 'Cajero', value: sale.cashierName!),
                 if (sale.orderType != OrderType.generic)
@@ -168,19 +169,39 @@ class SaleDetailActionsMenu extends ConsumerWidget {
           final symbol = config?.currencySymbol ?? 'B/.';
           if (!context.mounted) return;
           if (value == 'print') {
+            String? cName;
+            String? cDoc;
+            if (sale.customerId != null) {
+              final c = await ref
+                  .read(customerByIdProvider(sale.customerId!).future);
+              cName = c?.name;
+              cDoc = c?.document;
+            }
             await ReceiptDocumentService.printSale(
               context: context,
               config: config,
               sale: sale,
               items: items,
               symbol: symbol,
+              customerName: cName,
+              customerDocument: cDoc,
             );
           } else {
+            String? cName;
+            String? cDoc;
+            if (sale.customerId != null) {
+              final c = await ref
+                  .read(customerByIdProvider(sale.customerId!).future);
+              cName = c?.name;
+              cDoc = c?.document;
+            }
             await ReceiptDocumentService.shareSalePdf(
               sale: sale,
               config: config,
               items: items,
               symbol: symbol,
+              customerName: cName,
+              customerDocument: cDoc,
             );
           }
         }
@@ -392,7 +413,7 @@ class _SaleItemRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  '$symbol${(item.quantity * item.unitPrice).toStringAsFixed(2)}',
+                  '$symbol${item.total.toStringAsFixed(2)}',
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
                 if (item.discount > 0)

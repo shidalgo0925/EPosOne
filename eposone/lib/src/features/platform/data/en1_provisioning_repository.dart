@@ -1,4 +1,5 @@
 import 'package:eposone/src/features/platform/data/device_registry.dart';
+import 'package:eposone/src/features/platform/data/en1_cashier_catalog_store.dart';
 import 'package:eposone/src/features/platform/data/en1_provisioning_api.dart';
 import 'package:eposone/src/features/platform/data/platform_prefs.dart';
 import 'package:eposone/src/features/platform/data/provisioning_store.dart';
@@ -114,6 +115,7 @@ class En1ProvisioningRepository {
   }
 
   Future<void> disconnect() async {
+    await En1CashierCatalogStore.clearAll();
     await ProvisioningStore.clearConfig();
   }
 }

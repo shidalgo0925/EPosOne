@@ -36,13 +36,45 @@ class CashRegisterRepository {
     return _isar.cashRegisters.filter().localIdEqualTo(localId).findFirst();
   }
 
-  Future<void> saveRegister(CashRegister register) => _isar.writeTxn(() => _isar.cashRegisters.put(register));
+  Future<void> saveRegister(CashRegister register) =>
+      _isar.writeTxn(() => _isar.cashRegisters.put(register));
 
-  Future<void> openRegister(double openingAmount, {String? openedBy, String? notes}) async {
+  Future<CashRegister> openRegister(
+    double openingAmount, {
+    String? openedBy,
+    String? notes,
+    String? cashierId,
+    int? cashierContactId,
+  }) async {
     final existing = await getOpenRegister();
     if (existing != null) throw Exception('Ya hay una caja abierta');
-    final register = CashRegister.create(openingAmount: openingAmount, openedBy: openedBy, notes: notes);
+    final register = CashRegister.create(
+      openingAmount: openingAmount,
+      openedBy: openedBy,
+      notes: notes,
+      openedByCashierId: cashierId,
+      openedByCashierContactId: cashierContactId,
+      currentCashierName: openedBy,
+    );
     await saveRegister(register);
+    return register;
+  }
+
+  /// Reasigna el cajero actual del turno abierto (cambio de cajero).
+  Future<CashRegister?> assignCurrentCashier({
+    required String cashierId,
+    required String cashierName,
+    int? cashierContactId,
+  }) async {
+    final open = await getOpenRegister();
+    if (open == null) return null;
+    final updated = open.assignCurrentCashier(
+      cashierId: cashierId,
+      cashierName: cashierName,
+      cashierContactId: cashierContactId,
+    );
+    await saveRegister(updated);
+    return updated;
   }
 
   Future<void> closeRegister({

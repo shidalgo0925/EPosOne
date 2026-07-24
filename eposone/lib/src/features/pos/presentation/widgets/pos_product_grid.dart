@@ -27,12 +27,13 @@ class PosProductGrid extends StatelessWidget {
     }
 
     return GridView.builder(
-      padding: const EdgeInsets.fromLTRB(6, 4, 6, 6),
+      padding: const EdgeInsets.fromLTRB(4, 2, 4, 4),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: crossAxisCount,
-        childAspectRatio: 1.0,
-        crossAxisSpacing: 4,
-        mainAxisSpacing: 4,
+        // >1 → tiles más bajos → más filas visibles.
+        childAspectRatio: 1.12,
+        crossAxisSpacing: 3,
+        mainAxisSpacing: 3,
       ),
       itemCount: products.length,
       itemBuilder: (_, i) => _ProductTile(
@@ -67,7 +68,8 @@ class _ProductTile extends StatelessWidget {
     Color(0xFFC62828),
   ];
 
-  Color _tileColor(String name) => _fallbackColors[name.hashCode.abs() % _fallbackColors.length];
+  Color _tileColor(String name) =>
+      _fallbackColors[name.hashCode.abs() % _fallbackColors.length];
 
   @override
   Widget build(BuildContext context) {
@@ -134,8 +136,7 @@ class _ProductTile extends StatelessWidget {
                   ),
                 ),
               ),
-            if (out)
-              Container(color: Colors.white.withValues(alpha: 0.45)),
+            if (out) Container(color: Colors.white.withValues(alpha: 0.45)),
             Positioned(
               top: 4,
               right: 4,
@@ -147,7 +148,10 @@ class _ProductTile extends StatelessWidget {
                 ),
                 child: Text(
                   '$symbol${product.price.toStringAsFixed(2)}',
-                  style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold),
                 ),
               ),
             ),

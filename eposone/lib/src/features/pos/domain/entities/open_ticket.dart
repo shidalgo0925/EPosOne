@@ -51,12 +51,16 @@ class OpenTicket extends SyncEntity {
       copyWith(syncStatus: SyncStatus.modified, updatedAt: DateTime.now());
 
   @override
-  OpenTicket markAsSynced(String serverId) =>
-      copyWith(serverId: serverId, syncStatus: SyncStatus.synced, updatedAt: DateTime.now());
+  OpenTicket markAsSynced(String serverId) => copyWith(
+      serverId: serverId,
+      syncStatus: SyncStatus.synced,
+      updatedAt: DateTime.now());
 
   @override
-  OpenTicket markAsDeleted() =>
-      copyWith(deletedAt: DateTime.now(), syncStatus: SyncStatus.modified, updatedAt: DateTime.now());
+  OpenTicket markAsDeleted() => copyWith(
+      deletedAt: DateTime.now(),
+      syncStatus: SyncStatus.modified,
+      updatedAt: DateTime.now());
 
   OpenTicket copyWith({
     String? localId,
@@ -88,7 +92,9 @@ class OpenTicket extends SyncEntity {
         deletedAt: deletedAt ?? this.deletedAt,
         label: label ?? this.label,
         comment: comment ?? this.comment,
-        predefinedSlotId: clearPredefinedSlot ? null : (predefinedSlotId ?? this.predefinedSlotId),
+        predefinedSlotId: clearPredefinedSlot
+            ? null
+            : (predefinedSlotId ?? this.predefinedSlotId),
         customerId: customerId ?? this.customerId,
         cashierId: cashierId ?? this.cashierId,
         cashRegisterId: cashRegisterId ?? this.cashRegisterId,
@@ -96,8 +102,9 @@ class OpenTicket extends SyncEntity {
         savedAt: savedAt ?? this.savedAt,
         status: status ?? this.status,
         orderType: orderType ?? this.orderType,
-        linkedOrderLocalId:
-            clearLinkedOrder ? null : (linkedOrderLocalId ?? this.linkedOrderLocalId),
+        linkedOrderLocalId: clearLinkedOrder
+            ? null
+            : (linkedOrderLocalId ?? this.linkedOrderLocalId),
       );
 
   factory OpenTicket.create({

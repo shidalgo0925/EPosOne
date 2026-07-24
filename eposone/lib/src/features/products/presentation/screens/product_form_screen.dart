@@ -7,6 +7,7 @@ import 'package:eposone/src/core/utils/product_image_storage.dart';
 import 'package:eposone/src/core/theme/eposone_theme.dart';
 import 'package:eposone/src/features/products/domain/entities/product.dart';
 import 'package:eposone/src/features/products/domain/entities/category.dart';
+import 'package:eposone/src/features/fiscal/domain/fiscal_category.dart';
 import 'package:eposone/src/features/products/presentation/providers/product_provider.dart';
 import 'package:eposone/src/features/products/presentation/providers/modifier_provider.dart';
 import 'package:eposone/src/features/products/data/repositories/modifier_repository.dart';
@@ -34,6 +35,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
   String? _imagePath;
   bool _isActive = true;
   bool _allowDecimalQty = false;
+  String _fiscalCategoryCode = FiscalCategory.defaultCode;
 
   bool _isLoading = false;
   bool _isEdit = false;
@@ -64,6 +66,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
       _imagePath = product.imagePath;
       _isActive = product.isActive;
       _allowDecimalQty = product.allowDecimalQty;
+      _fiscalCategoryCode = product.fiscalCategoryCode;
       final linked = await ref.read(modifierRepositoryProvider).getLinkedGroupIds(product.localId);
       _selectedModifierGroupIds
         ..clear()
@@ -220,6 +223,31 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                       data: (categories) => _buildCategoryDropdown(categories),
                       loading: () => const LinearProgressIndicator(),
                       error: (_, __) => const Text('Error cargando categorías'),
+                    ),
+                    const SizedBox(height: 16),
+
+                    DropdownButtonFormField<String>(
+                      value: _fiscalCategoryCode,
+                      decoration: const InputDecoration(
+                        labelText: 'Categoría fiscal (ITBMS)',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.account_balance_outlined),
+                      ),
+                      items: FiscalCategory.catalog
+                          .map(
+                            (c) => DropdownMenuItem(
+                              value: c.code,
+                              child: Text(
+                                '${c.name} (${c.baseRatePercent.toStringAsFixed(0)}%)',
+                              ),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (v) {
+                        if (v != null) {
+                          setState(() => _fiscalCategoryCode = v);
+                        }
+                      },
                     ),
                     const SizedBox(height: 16),
 
@@ -509,6 +537,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
           isActive: _isActive,
           allowDecimalQty: _allowDecimalQty,
           minStockAlert: minStock,
+          fiscalCategoryCode: _fiscalCategoryCode,
           updatedAt: DateTime.now(),
         ).markAsModified();
       } else {
@@ -523,6 +552,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
           categoryId: _selectedCategoryId,
           allowDecimalQty: _allowDecimalQty,
           minStockAlert: minStock,
+          fiscalCategoryCode: _fiscalCategoryCode,
         ).copyWith(imagePath: _imagePath);
       }
 

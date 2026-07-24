@@ -1,16 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:eposone/src/core/providers/business_config_provider.dart';
 import 'package:eposone/src/core/theme/eposone_theme.dart';
+import 'package:eposone/src/features/commercial_engine/commercial_engine.dart';
 import 'package:eposone/src/features/orders/data/order_sync_diag.dart';
+import 'package:eposone/src/features/orders/domain/entities/order.dart';
 import 'package:eposone/src/features/orders/presentation/providers/order_providers.dart';
+import 'package:eposone/src/features/orders/presentation/widgets/multi_tender_payment_dialog.dart';
+import 'package:eposone/src/features/sync/presentation/providers/sync_provider.dart';
 
 /// Operación Pedido Hito 3B + diagnóstico Sync 3C.
 class OrderOperationScreen extends ConsumerStatefulWidget {
   const OrderOperationScreen({super.key});
 
   @override
-  ConsumerState<OrderOperationScreen> createState() => _OrderOperationScreenState();
+  ConsumerState<OrderOperationScreen> createState() =>
+      _OrderOperationScreenState();
 }
 
 class _OrderOperationScreenState extends ConsumerState<OrderOperationScreen> {
@@ -70,6 +76,98 @@ class _OrderOperationScreenState extends ConsumerState<OrderOperationScreen> {
     );
   }
 
+  Future<void> _addPayment(Order order) async {
+    if (!order.isOpen) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('El pedido ya está cerrado')),
+      );
+      return;
+    }
+
+    final svc = ref.read(orderServiceProvider);
+    final pays = await svc.paymentsOf(order.localId);
+    final engine = ref.read(commercialEngineProvider);
+    final paid = engine.sumPayments(pays.map((p) => p.amount));
+    final balance = engine.outstandingBalance(total: order.total, paid: paid);
+    if (balance <= 0.009) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Sin saldo pendiente')),
+      );
+      return;
+    }
+
+    if (!mounted) return;
+    final symbol = ref.read(businessConfigProvider)?.currencySymbol ?? 'B/.';
+    final label = order.localNumber ?? order.serverId ?? order.localId;
+    final settlement = await showMultiTenderPaymentDialog(
+      context: context,
+      balanceDue: balance,
+      orderTotal: order.total,
+      alreadyPaid: paid,
+      orderLabel: label,
+      title: 'Cobrar Pedido',
+      engine: engine,
+      currencySymbol: symbol,
+    );
+    if (settlement == null || !mounted) return;
+
+    setState(() {
+      _busy = true;
+      _status = 'Registrando pagos…';
+      _showDiag = true;
+    });
+    try {
+      await svc.collectPayments(
+        orderLocalId: order.localId,
+        tenders: settlement.paymentsToPost,
+        currency: ref.read(businessConfigProvider)?.currency ?? 'USD',
+      );
+      ref.invalidate(localOrdersProvider);
+      ref.invalidate(syncPendingCountProvider);
+      ref.invalidate(syncOperationsProvider);
+      setState(() => _status =
+          'Pagos OK · ${settlement.paymentsToPost.length} método(s) · sync en curso');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Pago registrado'
+              '${settlement.change > 0.009 ? ' · vuelto $symbol${settlement.change.toStringAsFixed(2)}' : ''}',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() => _status = 'ERROR pago: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _syncOne(Order o) async {
+    setState(() {
+      _busy = true;
+      _status = 'Sync pedido ${o.localId}…';
+      _showDiag = true;
+    });
+    try {
+      await ref.read(orderServiceProvider).syncOrderToEn1(o.localId);
+      ref.invalidate(localOrdersProvider);
+      setState(() => _status = 'OK — ver Response Code en log');
+    } catch (e) {
+      setState(() => _status = 'ERROR: $e');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final ordersAsync = ref.watch(localOrdersProvider);
@@ -91,7 +189,8 @@ class _OrderOperationScreenState extends ConsumerState<OrderOperationScreen> {
                 ? const SizedBox(
                     width: 22,
                     height: 22,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.white),
                   )
                 : const Icon(Icons.cloud_sync),
           ),
@@ -126,7 +225,9 @@ class _OrderOperationScreenState extends ConsumerState<OrderOperationScreen> {
                 padding: const EdgeInsets.all(8),
                 child: SingleChildScrollView(
                   child: Text(
-                    diag.isEmpty ? 'Sin actividad Sync aún. Pulsa ☁ o Nuevo pedido.' : diag,
+                    diag.isEmpty
+                        ? 'Sin actividad Sync aún. Pulsa ☁ o Nuevo pedido.'
+                        : diag,
                     style: const TextStyle(
                       fontFamily: 'monospace',
                       fontSize: 11,
@@ -169,28 +270,24 @@ class _OrderOperationScreenState extends ConsumerState<OrderOperationScreen> {
                         '${o.lifecycleStatus} · ${o.total.toStringAsFixed(2)}'
                         '${o.serverId != null ? ' · EN1 #${o.serverId}' : ' · pendiente sync'}',
                       ),
-                      trailing: Icon(
-                        o.isOpen ? Icons.lock_open : Icons.lock,
-                        color: o.isOpen ? EposBrand.orange : Colors.green,
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (o.isOpen)
+                            IconButton(
+                              tooltip: 'Agregar pago',
+                              onPressed: _busy ? null : () => _addPayment(o),
+                              icon: const Icon(Icons.payments_outlined),
+                            ),
+                          Icon(
+                            o.isOpen ? Icons.lock_open : Icons.lock,
+                            color: o.isOpen ? EposBrand.orange : Colors.green,
+                          ),
+                        ],
                       ),
-                      onTap: _busy
-                          ? null
-                          : () async {
-                              setState(() {
-                                _busy = true;
-                                _status = 'Sync pedido ${o.localId}…';
-                                _showDiag = true;
-                              });
-                              try {
-                                await ref.read(orderServiceProvider).syncOrderToEn1(o.localId);
-                                ref.invalidate(localOrdersProvider);
-                                setState(() => _status = 'OK — ver Response Code en log');
-                              } catch (e) {
-                                setState(() => _status = 'ERROR: $e');
-                              } finally {
-                                if (mounted) setState(() => _busy = false);
-                              }
-                            },
+                      onTap: _busy ? null : () => _syncOne(o),
+                      onLongPress:
+                          _busy || !o.isOpen ? null : () => _addPayment(o),
                     );
                   },
                 );

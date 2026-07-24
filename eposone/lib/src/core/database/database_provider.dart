@@ -72,7 +72,7 @@ class Database extends _$Database {
       inspector: true,
     );
 
-    // Insertar datos de prueba si la base de datos está vacía
+    // Sin catálogo local: productos llegan vía bootstrap EN1.
     await seedTestData(_isar!);
 
     return _isar!;

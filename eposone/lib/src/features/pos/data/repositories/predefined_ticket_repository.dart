@@ -7,7 +7,8 @@ import 'package:eposone/src/features/pos/domain/entities/predefined_ticket.dart'
 part 'predefined_ticket_repository.g.dart';
 
 @riverpod
-PredefinedTicketRepository predefinedTicketRepository(PredefinedTicketRepositoryRef ref) {
+PredefinedTicketRepository predefinedTicketRepository(
+    PredefinedTicketRepositoryRef ref) {
   final db = ref.watch(databaseProvider).requireValue;
   return PredefinedTicketRepository(db);
 }
@@ -65,7 +66,8 @@ class PredefinedTicketRepository {
   Future<void> delete(String localId) async {
     final ticket = await getById(localId);
     if (ticket != null) {
-      await _isar.writeTxn(() => _isar.predefinedTickets.put(ticket.markAsDeleted()));
+      await _isar
+          .writeTxn(() => _isar.predefinedTickets.put(ticket.markAsDeleted()));
     }
   }
 

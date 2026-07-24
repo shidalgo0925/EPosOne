@@ -4,7 +4,10 @@ import 'package:go_router/go_router.dart';
 import 'package:eposone/src/core/providers/business_config_provider.dart';
 import 'package:eposone/src/core/session/pos_session.dart';
 import 'package:eposone/src/features/cash_register/presentation/providers/cash_register_provider.dart';
+import 'package:eposone/src/features/commercial_engine/commercial_engine.dart';
+import 'package:eposone/src/features/auth/domain/cashier_display.dart';
 import 'package:eposone/src/features/auth/domain/entities/cashier.dart';
+import 'package:eposone/src/features/auth/presentation/utils/cashier_session_guard.dart';
 import 'package:eposone/src/features/pos/presentation/providers/cart_provider.dart';
 import 'package:eposone/src/features/pos/presentation/utils/save_open_ticket_flow.dart';
 import 'package:eposone/src/features/pos/presentation/widgets/pos_product_grid.dart';
@@ -21,11 +24,16 @@ import 'package:eposone/src/features/products/domain/entities/selected_modifier.
 import 'package:eposone/src/features/pos/presentation/widgets/modifier_picker_sheet.dart';
 import 'package:eposone/src/features/pos/presentation/providers/pos_page_provider.dart';
 import 'package:eposone/src/features/pos/domain/entities/pos_page.dart';
+import 'package:eposone/src/features/pos/domain/entities/pos_page_item.dart';
+import 'package:eposone/src/features/pos/data/repositories/pos_page_repository.dart';
 import 'package:eposone/src/features/inventory/presentation/providers/inventory_provider.dart';
 import 'package:eposone/src/features/sync/presentation/providers/en1_connection_status.dart';
 import 'package:eposone/src/features/sync/presentation/providers/sync_provider.dart';
 import 'package:eposone/src/features/sync/presentation/widgets/en1_status_chip.dart';
+import 'package:eposone/src/features/platform/data/provisioning_store.dart';
 import 'package:eposone/src/core/theme/eposone_theme.dart';
+import 'package:eposone/src/core/database/database_provider.dart';
+import 'package:eposone/src/features/platform/data/en1_bootstrap_repository.dart';
 
 class PosScreen extends ConsumerStatefulWidget {
   const PosScreen({super.key});
@@ -39,13 +47,82 @@ class _PosScreenState extends ConsumerState<PosScreen> {
   String _searchQuery = '';
   String? _categoryFilter;
   String? _selectedPageId;
+  bool _pageRepairTried = false;
+  /// Solo phone: ticket sheet expandido (swipe ↑). Tablet no lo usa.
+  bool _phoneTicketOpen = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) PosLayout.lockLandscapeIfTablet(context);
+      _maybeRepairEmptyEn1Pages();
+      enforceActiveEn1CashierSession(ref, context: context);
     });
+  }
+
+  /// Si Comida/Bar EN1 están rotas (sin productos o sin categorías), reparar sin red.
+  Future<void> _maybeRepairEmptyEn1Pages() async {
+    if (_pageRepairTried || !mounted) return;
+    _pageRepairTried = true;
+    try {
+      final pages = await ref.read(posPagesListProvider.future);
+      final en1Pages =
+          pages.where((p) => p.localId.startsWith('en1_page_')).toList();
+      if (en1Pages.isEmpty) return;
+
+      final repo = ref.read(posPageRepositoryProvider);
+      final products = await ref.read(productsListProvider.future);
+      final active = products.where((p) => p.isActive).toList();
+      final allCats = await ref.read(categoriesProvider.future);
+      final catById = {for (final c in allCats) c.localId: c};
+      var needsRepair = false;
+      for (final page in en1Pages) {
+        final resolved =
+            await repo.resolveProductsForPage(page.localId, active);
+        final items = await repo.getItems(page.localId);
+        final hasProductItem =
+            items.any((i) => i.itemType == PosPageItemType.product);
+        final hasCatItem =
+            items.any((i) => i.itemType == PosPageItemType.category);
+        if (!hasProductItem && hasCatItem) {
+          final viaCat = active.where(
+            (p) => items.any(
+              (i) =>
+                  i.itemType == PosPageItemType.category &&
+                  p.categoryId == i.refId,
+            ),
+          );
+          if (viaCat.isEmpty) needsRepair = true;
+        }
+        if (items.isEmpty && resolved.isEmpty) needsRepair = true;
+        // Productos sí, categorías no → chips vacíos (regresión recurrente).
+        if (resolved.isNotEmpty && !hasCatItem) {
+          final hasDerivedCat = resolved.any(
+            (p) => p.categoryId != null && catById.containsKey(p.categoryId),
+          );
+          if (hasDerivedCat) needsRepair = true;
+        }
+        if (hasCatItem) {
+          final resolvedCats = items.where(
+            (i) =>
+                i.itemType == PosPageItemType.category &&
+                catById.containsKey(i.refId),
+          );
+          if (resolvedCats.isEmpty && resolved.isNotEmpty) needsRepair = true;
+        }
+      }
+      if (!needsRepair) return;
+
+      final isar = await ref.read(databaseProvider.future);
+      await En1BootstrapRepository(isar: isar).repairEn1PosPagesFromLocal();
+      ref.invalidate(posPagesListProvider);
+      ref.invalidate(productsListProvider);
+      ref.invalidate(categoriesProvider);
+      if (mounted) setState(() {});
+    } catch (_) {
+      // Silencioso: el cajero puede reparar desde Este dispositivo.
+    }
   }
 
   @override
@@ -59,17 +136,23 @@ class _PosScreenState extends ConsumerState<PosScreen> {
     final config = ref.read(businessConfigProvider);
     if (config?.trackInventory == true && product.stock <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${product.name}: sin stock'), backgroundColor: Colors.red),
+        SnackBar(
+            content: Text('${product.name}: sin stock'),
+            backgroundColor: Colors.red),
       );
       return;
     }
 
     final cart = ref.read(cartProvider);
-    final existing = cart.items.where((i) => i.product.localId == product.localId);
-    final qtyInCart = existing.isEmpty ? 0.0 : existing.fold(0.0, (s, i) => s + i.quantity);
+    final existing =
+        cart.items.where((i) => i.product.localId == product.localId);
+    final qtyInCart =
+        existing.isEmpty ? 0.0 : existing.fold(0.0, (s, i) => s + i.quantity);
     if (config?.trackInventory == true && qtyInCart + 1 > product.stock) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Stock insuficiente: ${product.name}'), backgroundColor: Colors.orange),
+        SnackBar(
+            content: Text('Stock insuficiente: ${product.name}'),
+            backgroundColor: Colors.orange),
       );
       return;
     }
@@ -84,6 +167,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
         context,
         groups: groups,
         symbol: config?.currencySymbol ?? 'B/.',
+        engine: ref.read(commercialEngineProvider),
       );
       if (selected == null || !mounted) return;
       modifiers = selected;
@@ -102,7 +186,9 @@ class _PosScreenState extends ConsumerState<PosScreen> {
 
     if (product == null || !product.isActive) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Producto no encontrado: $code'), backgroundColor: Colors.orange),
+        SnackBar(
+            content: Text('Producto no encontrado: $code'),
+            backgroundColor: Colors.orange),
       );
       return;
     }
@@ -115,7 +201,8 @@ class _PosScreenState extends ConsumerState<PosScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
       builder: (ctx) {
         final maxHeight = MediaQuery.sizeOf(ctx).height * 0.85;
         return SafeArea(
@@ -156,7 +243,8 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                     context.push('/categories');
                   },
                 ),
-                if (ref.read(businessConfigProvider)?.openTicketsEnabled ?? true)
+                if (ref.read(businessConfigProvider)?.openTicketsEnabled ??
+                    true)
                   ListTile(
                     leading: const Icon(Icons.receipt_long_outlined),
                     title: const Text('Tickets abiertos'),
@@ -190,6 +278,15 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                   onTap: () {
                     Navigator.pop(ctx);
                     context.push('/sales');
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.assessment_outlined),
+                  title: const Text('Reportes'),
+                  subtitle: const Text('Ventas, consultar e imprimir'),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    context.push('/reports');
                   },
                 ),
                 ListTile(
@@ -230,11 +327,31 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                   ),
                 const Divider(),
                 ListTile(
+                  leading: const Icon(Icons.switch_account),
+                  title: const Text('Cambiar cajero'),
+                  subtitle: const Text('El turno permanece abierto'),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    ref.read(posSessionProvider.notifier).lock();
+                    context.go('/pin?switch=1');
+                  },
+                ),
+                ListTile(
                   leading: const Icon(Icons.lock),
                   title: const Text('Bloquear pantalla'),
                   onTap: () {
                     Navigator.pop(ctx);
                     ref.read(posSessionProvider.notifier).lock();
+                    context.go('/pin');
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.logout),
+                  title: const Text('Salir'),
+                  subtitle: const Text('Cerrar sesión del cajero'),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    ref.read(posSessionProvider.notifier).logout();
                     context.go('/pin');
                   },
                 ),
@@ -260,23 +377,23 @@ class _PosScreenState extends ConsumerState<PosScreen> {
     final symbol = config?.currencySymbol ?? 'B/.';
     final trackInventory = config?.trackInventory ?? false;
     final en1SyncReady = config?.isEn1SyncReady ?? false;
-    final productsAsync = _searchQuery.isEmpty
-        ? ref.watch(productsListProvider)
-        : ref.watch(productsSearchProvider(_searchQuery));
+    final productsAsync = ref.watch(productsListProvider);
     final categoriesAsync = ref.watch(categoriesProvider);
     final cart = ref.watch(cartProvider);
     final posPagesAsync = ref.watch(posPagesListProvider);
     final posPages = posPagesAsync.valueOrNull ?? [];
     if (posPages.isNotEmpty &&
-        (_selectedPageId == null || !posPages.any((p) => p.localId == _selectedPageId))) {
+        (_selectedPageId == null ||
+            !posPages.any((p) => p.localId == _selectedPageId))) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) setState(() => _selectedPageId = posPages.first.localId);
       });
     }
     final isTablet = PosLayout.isTablet(context);
     final screenWidth = MediaQuery.sizeOf(context).width;
+    // Split 6:4 → catálogo ~60% del ancho (antes 7:3 / 68%).
     final gridColumns = isTablet
-        ? PosLayout.gridColumns(screenWidth * 0.68)
+        ? PosLayout.gridColumns(screenWidth * 0.60)
         : PosLayout.gridColumns(screenWidth);
 
     ref.listen(currentCashRegisterProvider, (prev, next) {
@@ -291,17 +408,45 @@ class _PosScreenState extends ConsumerState<PosScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        toolbarHeight: isTablet ? 44 : kToolbarHeight,
+        toolbarHeight: isTablet ? 56 : kToolbarHeight,
         leading: IconButton(icon: const Icon(Icons.menu), onPressed: _openMenu),
-        title: isTablet
-            ? Text(config?.businessName ?? 'EPOSOne', style: const TextStyle(fontSize: 15))
-            : Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(config?.businessName ?? 'EPOSOne', style: const TextStyle(fontSize: 16)),
-                  Text(session.cashierName, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.normal)),
-                ],
-              ),
+        title: FutureBuilder(
+          future: ProvisioningStore.loadConfig(),
+          builder: (context, snap) {
+            final caja = snap.data?.cajaName ?? snap.data?.cajaId ?? 'Caja';
+            final cashier = CashierDisplay.displayName(
+              name: session.cashierName,
+              contactId: session.cashierContactId,
+            );
+            final turno =
+                session.cashRegisterId != null ? 'Turno abierto' : 'Sin turno';
+            final line = '$caja · $cashier · $turno';
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  config?.businessName ?? 'EPOSOne',
+                  style: TextStyle(
+                      fontSize: isTablet ? 15 : 16,
+                      fontWeight: FontWeight.w600),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  line,
+                  style: TextStyle(
+                    fontSize: isTablet ? 12 : 12,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white.withValues(alpha: 0.92),
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
+              ],
+            );
+          },
+        ),
         actions: [
           // Hito 3B.1: auto-sync 30s + indicador EN1
           Builder(builder: (_) {
@@ -313,7 +458,8 @@ class _PosScreenState extends ConsumerState<PosScreen> {
             tooltip: 'Escanear código',
             onPressed: _scanBarcode,
           ),
-          if (ref.watch(businessConfigProvider)?.openTicketsEnabled ?? true) ...[
+          if (ref.watch(businessConfigProvider)?.openTicketsEnabled ??
+              true) ...[
             const OpenTicketsButton(),
             IconButton(
               icon: const Icon(Icons.save_outlined, size: 22),
@@ -324,11 +470,11 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                       try {
                         await saveOpenTicketFlow(context, ref);
                       } catch (e) {
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('$e'), backgroundColor: Colors.red),
-                          );
-                        }
+                        if (!context.mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                              content: Text('$e'), backgroundColor: Colors.red),
+                        );
                       }
                     },
             ),
@@ -344,7 +490,8 @@ class _PosScreenState extends ConsumerState<PosScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 8),
               child: Row(
                 children: [
-                  Icon(Icons.account_balance_wallet, size: 14, color: EposBrand.orange.withValues(alpha: 0.9)),
+                  Icon(Icons.account_balance_wallet,
+                      size: 14, color: EposBrand.orange.withValues(alpha: 0.9)),
                   const SizedBox(width: 6),
                   const Expanded(
                     child: Text(
@@ -392,16 +539,22 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                           padding: const EdgeInsets.symmetric(horizontal: 8),
                           child: Row(
                             children: [
-                              Icon(Icons.warning_amber, size: 14, color: Colors.orange.shade800),
+                              Icon(Icons.warning_amber,
+                                  size: 14, color: Colors.orange.shade800),
                               const SizedBox(width: 6),
                               Expanded(
                                 child: Text(
                                   '$count producto${count == 1 ? '' : 's'} bajo stock mínimo',
-                                  style: const TextStyle(fontSize: 11, color: EposBrand.navy),
+                                  style: const TextStyle(
+                                      fontSize: 11, color: EposBrand.navy),
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
-                              const Text('Ver', style: TextStyle(fontSize: 11, color: EposBrand.orange, fontWeight: FontWeight.w600)),
+                              const Text('Ver',
+                                  style: TextStyle(
+                                      fontSize: 11,
+                                      color: EposBrand.orange,
+                                      fontWeight: FontWeight.w600)),
                             ],
                           ),
                         ),
@@ -429,16 +582,24 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                           padding: const EdgeInsets.symmetric(horizontal: 8),
                           child: Row(
                             children: [
-                              Icon(Icons.cloud_upload_outlined, size: 14, color: EposBrand.navy.withValues(alpha: 0.85)),
+                              Icon(Icons.cloud_upload_outlined,
+                                  size: 14,
+                                  color:
+                                      EposBrand.navy.withValues(alpha: 0.85)),
                               const SizedBox(width: 6),
                               Expanded(
                                 child: Text(
                                   '$count pendiente${count == 1 ? '' : 's'} de sync EN1',
-                                  style: const TextStyle(fontSize: 11, color: EposBrand.navy),
+                                  style: const TextStyle(
+                                      fontSize: 11, color: EposBrand.navy),
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
-                              const Text('Sync', style: TextStyle(fontSize: 11, color: EposBrand.orange, fontWeight: FontWeight.w600)),
+                              const Text('Sync',
+                                  style: TextStyle(
+                                      fontSize: 11,
+                                      color: EposBrand.orange,
+                                      fontWeight: FontWeight.w600)),
                             ],
                           ),
                         ),
@@ -452,70 +613,145 @@ class _PosScreenState extends ConsumerState<PosScreen> {
             ),
           Expanded(
             child: isTablet
-          ? Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Expanded(
-                  flex: 7,
-                  child: _CatalogPane(
-                    searchController: _searchController,
-                    searchQuery: _searchQuery,
-                    categoryFilter: _categoryFilter,
+                ? Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(
+                        flex: 6,
+                        child: _CatalogPane(
+                          searchController: _searchController,
+                          searchQuery: _searchQuery,
+                          categoryFilter: _categoryFilter,
+                          categoriesAsync: categoriesAsync,
+                          productsAsync: productsAsync,
+                          symbol: symbol,
+                          trackInventory: trackInventory,
+                          crossAxisCount: gridColumns,
+                          onSearchChanged: (v) =>
+                              setState(() => _searchQuery = v),
+                          onCategoryChanged: (id) =>
+                              setState(() => _categoryFilter = id),
+                          onProductTap: _addProduct,
+                          posPages: posPages,
+                          selectedPageId: _selectedPageId,
+                          onPageSelected: (id) => setState(() {
+                            _selectedPageId = id;
+                            _categoryFilter = null;
+                          }),
+                        ),
+                      ),
+                      Expanded(
+                        flex: 4,
+                        child: const PosTicketPanel(expanded: true),
+                      ),
+                    ],
+                  )
+                : _buildPhoneBody(
+                    cart: cart,
                     categoriesAsync: categoriesAsync,
                     productsAsync: productsAsync,
                     symbol: symbol,
                     trackInventory: trackInventory,
-                    crossAxisCount: gridColumns,
-                    onSearchChanged: (v) => setState(() => _searchQuery = v),
-                    onCategoryChanged: (id) => setState(() => _categoryFilter = id),
-                    onProductTap: _addProduct,
+                    gridColumns: gridColumns,
                     posPages: posPages,
-                    selectedPageId: _selectedPageId,
-                    onPageSelected: (id) => setState(() {
-                      _selectedPageId = id;
-                      _categoryFilter = null;
-                    }),
                   ),
-                ),
-                Expanded(
-                  flex: 3,
-                  child: const PosTicketPanel(expanded: true),
-                ),
-              ],
-            )
-          : Column(
-              children: [
-                Expanded(
-                  child: _CatalogPane(
-                    searchController: _searchController,
-                    searchQuery: _searchQuery,
-                    categoryFilter: _categoryFilter,
-                    categoriesAsync: categoriesAsync,
-                    productsAsync: productsAsync,
-                    symbol: symbol,
-                    trackInventory: trackInventory,
-                    crossAxisCount: gridColumns,
-                    onSearchChanged: (v) => setState(() => _searchQuery = v),
-                    onCategoryChanged: (id) => setState(() => _categoryFilter = id),
-                    onProductTap: _addProduct,
-                    posPages: posPages,
-                    selectedPageId: _selectedPageId,
-                    onPageSelected: (id) => setState(() {
-                      _selectedPageId = id;
-                      _categoryFilter = null;
-                    }),
-                  ),
-                ),
-                if (cart.items.isNotEmpty)
-                  SizedBox(
-                    height: 220 + ViewInsets.bottom(context),
-                    child: PosTicketPanel(expanded: false),
-                  ),
-              ],
-            ),
           ),
         ],
       ),
+    );
+  }
+
+  /// Phone only — tablet sigue en el Row de arriba, intacto.
+  Widget _buildPhoneBody({
+    required CartState cart,
+    required AsyncValue<List<Category>> categoriesAsync,
+    required AsyncValue<List<Product>> productsAsync,
+    required String symbol,
+    required bool trackInventory,
+    required int gridColumns,
+    required List<PosPage> posPages,
+  }) {
+    final hasItems = cart.items.isNotEmpty;
+    if (!hasItems && _phoneTicketOpen) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _phoneTicketOpen) {
+          setState(() => _phoneTicketOpen = false);
+        }
+      });
+    }
+
+    final collapsedH =
+        210 + ViewInsets.bottom(context, compact: true, extra: 4);
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Altura relativa al body (no a toda la pantalla) → sin overflow.
+        final openH =
+            (constraints.maxHeight * 0.88).clamp(collapsedH, constraints.maxHeight);
+        return PopScope(
+          canPop: !_phoneTicketOpen,
+          onPopInvokedWithResult: (didPop, _) {
+            if (!didPop && _phoneTicketOpen) {
+              setState(() => _phoneTicketOpen = false);
+            }
+          },
+          child: Column(
+            children: [
+              Expanded(
+                child: Stack(
+                  children: [
+                    _CatalogPane(
+                      searchController: _searchController,
+                      searchQuery: _searchQuery,
+                      categoryFilter: _categoryFilter,
+                      categoriesAsync: categoriesAsync,
+                      productsAsync: productsAsync,
+                      symbol: symbol,
+                      trackInventory: trackInventory,
+                      crossAxisCount: gridColumns,
+                      onSearchChanged: (v) =>
+                          setState(() => _searchQuery = v),
+                      onCategoryChanged: (id) =>
+                          setState(() => _categoryFilter = id),
+                      onProductTap: _addProduct,
+                      posPages: posPages,
+                      selectedPageId: _selectedPageId,
+                      onPageSelected: (id) => setState(() {
+                        _selectedPageId = id;
+                        _categoryFilter = null;
+                      }),
+                    ),
+                    if (hasItems && _phoneTicketOpen)
+                      Positioned.fill(
+                        child: GestureDetector(
+                          onTap: () =>
+                              setState(() => _phoneTicketOpen = false),
+                          child: ColoredBox(
+                            color: Colors.black.withValues(alpha: 0.25),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              if (hasItems)
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 220),
+                  curve: Curves.easeOutCubic,
+                  height: _phoneTicketOpen ? openH : collapsedH,
+                  child: PosTicketPanel(
+                    phoneSheet: true,
+                    expanded: _phoneTicketOpen,
+                    onPhoneSheetExpand: () =>
+                        setState(() => _phoneTicketOpen = true),
+                    onPhoneSheetCollapse: () =>
+                        setState(() => _phoneTicketOpen = false),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
@@ -553,11 +789,16 @@ class _CatalogPane extends ConsumerWidget {
     this.onPageSelected,
   });
 
-  bool get _usePageMode => posPages.isNotEmpty && searchQuery.isEmpty && selectedPageId != null;
+  /// Con páginas: siempre modo página (búsqueda filtra dentro de Comida/Bar).
+  /// Sin páginas: catálogo global.
+  bool get _hasPages => posPages.isNotEmpty && selectedPageId != null;
 
   List<Category> _barCategories(WidgetRef ref) {
-    if (_usePageMode && selectedPageId != null) {
-      return ref.watch(posPageCategoriesProvider(selectedPageId!)).valueOrNull ?? const [];
+    if (_hasPages && selectedPageId != null) {
+      return ref
+              .watch(posPageCategoriesProvider(selectedPageId!))
+              .valueOrNull ??
+          const [];
     }
     final all = categoriesAsync.valueOrNull ?? const <Category>[];
     return [...all]..sort((a, b) {
@@ -566,11 +807,27 @@ class _CatalogPane extends ConsumerWidget {
       });
   }
 
+  List<Product> _filterProducts(List<Product> source) {
+    Iterable<Product> list = source.where((p) => p.isActive);
+    if (categoryFilter != null) {
+      list = list.where((p) => p.categoryId == categoryFilter);
+    }
+    final q = searchQuery.trim().toLowerCase();
+    if (q.isNotEmpty) {
+      list = list.where((p) {
+        final name = p.name.toLowerCase();
+        final barcode = (p.barcode ?? '').toLowerCase();
+        final sku = (p.sku ?? '').toLowerCase();
+        return name.contains(q) || barcode.contains(q) || sku.contains(q);
+      });
+    }
+    return list.toList();
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final pageProductsAsync = _usePageMode
-        ? ref.watch(posPageProductsProvider(selectedPageId!))
-        : null;
+    final pageProductsAsync =
+        _hasPages ? ref.watch(posPageProductsProvider(selectedPageId!)) : null;
     final barCategories = _barCategories(ref);
 
     return Column(
@@ -602,14 +859,17 @@ class _CatalogPane extends ConsumerWidget {
                       hintText: 'Buscar...',
                       hintStyle: const TextStyle(fontSize: 13),
                       isDense: true,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 8),
                       prefixIcon: const Icon(Icons.search, size: 20),
-                      prefixIconConstraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                      prefixIconConstraints:
+                          const BoxConstraints(minWidth: 36, minHeight: 36),
                       suffixIcon: searchQuery.isNotEmpty
                           ? IconButton(
                               icon: const Icon(Icons.clear, size: 18),
                               padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                              constraints: const BoxConstraints(
+                                  minWidth: 32, minHeight: 32),
                               onPressed: () {
                                 searchController.clear();
                                 onSearchChanged('');
@@ -635,69 +895,101 @@ class _CatalogPane extends ConsumerWidget {
           ),
         ),
         Expanded(
-          child: _buildGrid(ref, pageProductsAsync),
+          child: _buildGrid(pageProductsAsync),
         ),
-        // Páginas (Comida/Bar): visibles siempre que existan, también en tablet 10".
         if (posPages.isNotEmpty && onPageSelected != null)
-          Container(
-            height: 40,
-            decoration: BoxDecoration(
-              color: EposBrand.background,
-              border: Border(top: BorderSide(color: EposBrand.divider)),
-            ),
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-              itemCount: posPages.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 4),
-              itemBuilder: (_, i) {
-                final page = posPages[i];
-                final selected = page.localId == selectedPageId && searchQuery.isEmpty;
-                return Material(
-                  color: selected ? EposBrand.orange : EposBrand.surface,
-                  borderRadius: BorderRadius.circular(6),
-                  child: InkWell(
-                    onTap: () {
-                      // Al elegir página se limpia búsqueda para ver el catálogo de esa página.
-                      if (searchQuery.isNotEmpty) onSearchChanged('');
-                      onPageSelected?.call(page.localId);
-                    },
+          Padding(
+            // Tablet: COMIDA/BAR queda bajo la barra/dock del sistema si no hay
+            // margen; en celular el ticket inferior ya las empuja hacia arriba.
+            padding: EdgeInsets.only(bottom: _pageBarBottomInset(context)),
+            child: Container(
+              height: 40,
+              decoration: BoxDecoration(
+                color: EposBrand.background,
+                border: Border(top: BorderSide(color: EposBrand.divider)),
+              ),
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                itemCount: posPages.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 4),
+                itemBuilder: (_, i) {
+                  final page = posPages[i];
+                  final selected = page.localId == selectedPageId;
+                  final countAsync =
+                      ref.watch(posPageProductsProvider(page.localId));
+                  final count = countAsync.valueOrNull?.length;
+                  final label = count == null
+                      ? page.name.toUpperCase()
+                      : '${page.name.toUpperCase()} ($count)';
+                  return Material(
+                    color: selected ? EposBrand.orange : EposBrand.surface,
                     borderRadius: BorderRadius.circular(6),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                      child: Text(
-                        page.name.toUpperCase(),
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: selected ? Colors.white : EposBrand.navy,
+                    child: InkWell(
+                      onTap: () {
+                        onPageSelected?.call(page.localId);
+                      },
+                      borderRadius: BorderRadius.circular(6),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 6),
+                        child: Text(
+                          label,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: selected ? Colors.white : EposBrand.navy,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                );
-              },
+                  );
+                },
+              ),
             ),
           ),
       ],
     );
   }
 
-  List<Product> _applyCategoryFilter(List<Product> products) {
-    if (categoryFilter == null) return products;
-    return products.where((p) => p.categoryId == categoryFilter).toList();
+  /// Margen bajo pestañas Comida/Bar — solo tablet (dock / gesture bar).
+  double _pageBarBottomInset(BuildContext context) {
+    if (!PosLayout.isTablet(context)) return 0;
+    final mq = MediaQuery.of(context);
+    // Con teclado el Scaffold ya reduce altura; basta un respiro mínimo.
+    if (mq.viewInsets.bottom > 0) return 8;
+    return ViewInsets.bottom(context, extra: 8).clamp(40.0, 72.0);
   }
 
-  Widget _buildGrid(WidgetRef ref, AsyncValue<List<Product>>? pageProductsAsync) {
-    if (_usePageMode && pageProductsAsync != null) {
+  Widget _buildGrid(AsyncValue<List<Product>>? pageProductsAsync) {
+    if (_hasPages && pageProductsAsync != null) {
       return pageProductsAsync.when(
-        data: (list) => PosProductGrid(
-          products: _applyCategoryFilter(list),
-          symbol: symbol,
-          trackInventory: trackInventory,
-          crossAxisCount: crossAxisCount,
-          onProductTap: onProductTap,
-        ),
+        data: (list) {
+          final filtered = _filterProducts(list);
+          if (list.isEmpty) {
+            return const Center(
+              child: Padding(
+                padding: EdgeInsets.all(24),
+                child: Text(
+                  'Esta página no tiene productos.\n'
+                  'Configuración → Este dispositivo → Reparar páginas Comida / Bar\n'
+                  'o vuelva a descargar el catálogo EN1.',
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            );
+          }
+          if (filtered.isEmpty) {
+            return const Center(child: Text('Sin resultados en esta página'));
+          }
+          return PosProductGrid(
+            products: filtered,
+            symbol: symbol,
+            trackInventory: trackInventory,
+            crossAxisCount: crossAxisCount,
+            onProductTap: onProductTap,
+          );
+        },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error: $e')),
       );
@@ -705,7 +997,7 @@ class _CatalogPane extends ConsumerWidget {
 
     return productsAsync.when(
       data: (products) {
-        final list = _applyCategoryFilter(products.where((Product p) => p.isActive).toList());
+        final list = _filterProducts(products);
         return PosProductGrid(
           products: list,
           symbol: symbol,

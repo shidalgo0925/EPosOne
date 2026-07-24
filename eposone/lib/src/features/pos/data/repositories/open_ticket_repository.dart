@@ -108,14 +108,19 @@ class OpenTicketRepository {
             quantity: item.quantity,
             unitPrice: item.unitPrice,
             discount: item.discount,
-            modifiersJson: item.modifiersJson.isEmpty ? null : item.modifiersJson,
+            fiscalCategoryCode: item.product.fiscalCategoryCode,
+            modifiersJson:
+                item.modifiersJson.isEmpty ? null : item.modifiersJson,
           ),
         )
         .toList();
 
     await _isar.writeTxn(() async {
       await _isar.openTickets.put(ticket);
-      await _isar.openTicketLines.filter().openTicketIdEqualTo(ticket.localId).deleteAll();
+      await _isar.openTicketLines
+          .filter()
+          .openTicketIdEqualTo(ticket.localId)
+          .deleteAll();
       await _isar.openTicketLines.putAll(lines);
     });
 
@@ -188,13 +193,40 @@ class OpenTicketRepository {
     return updated;
   }
 
+  Future<OpenTicket?> getByLinkedOrderLocalId(String orderLocalId) async {
+    return _isar.openTickets
+        .filter()
+        .linkedOrderLocalIdEqualTo(orderLocalId)
+        .statusEqualTo(OpenTicketStatus.open)
+        .isDeletedEqualTo(false)
+        .findFirst();
+  }
+
+  /// Cierra tickets POS vinculados a un pedido ya cobrado/cerrado en EN1.
+  /// No anula el pedido remoto (solo saca el slot de abiertos).
+  Future<int> closeTicketsForClosedOrder(String orderLocalId) async {
+    final tickets = await _isar.openTickets
+        .filter()
+        .linkedOrderLocalIdEqualTo(orderLocalId)
+        .statusEqualTo(OpenTicketStatus.open)
+        .isDeletedEqualTo(false)
+        .findAll();
+    for (final ticket in tickets) {
+      await deleteTicket(ticket.localId);
+    }
+    return tickets.length;
+  }
+
   Future<void> deleteTicket(String localId) async {
     await _isar.writeTxn(() async {
       final ticket = await getById(localId);
       if (ticket != null) {
         await _isar.openTickets.put(ticket.markAsDeleted());
       }
-      await _isar.openTicketLines.filter().openTicketIdEqualTo(localId).deleteAll();
+      await _isar.openTicketLines
+          .filter()
+          .openTicketIdEqualTo(localId)
+          .deleteAll();
     });
   }
 
@@ -252,7 +284,8 @@ class OpenTicketRepository {
     final updatedTo = [...toLines];
     for (final line in moving) {
       final matchIdx = updatedTo.indexWhere(
-        (t) => t.productId == line.productId &&
+        (t) =>
+            t.productId == line.productId &&
             t.unitPrice == line.unitPrice &&
             t.discount == line.discount &&
             t.modifiersJson == line.modifiersJson,
@@ -270,32 +303,43 @@ class OpenTicketRepository {
             quantity: line.quantity,
             unitPrice: line.unitPrice,
             discount: line.discount,
+            fiscalCategoryCode: line.fiscalCategoryCode,
             modifiersJson: line.modifiersJson,
           ),
         );
       }
     }
 
-    final remainingFrom = fromLines.where((l) => !lineIds.contains(l.localId)).toList();
+    final remainingFrom =
+        fromLines.where((l) => !lineIds.contains(l.localId)).toList();
     final now = DateTime.now();
 
     await _isar.writeTxn(() async {
-      await _isar.openTicketLines.filter().openTicketIdEqualTo(fromTicketId).deleteAll();
+      await _isar.openTicketLines
+          .filter()
+          .openTicketIdEqualTo(fromTicketId)
+          .deleteAll();
       if (remainingFrom.isNotEmpty) {
         await _isar.openTicketLines.putAll(remainingFrom);
-        await _isar.openTickets.put(fromTicket.copyWith(savedAt: now, updatedAt: now));
+        await _isar.openTickets
+            .put(fromTicket.copyWith(savedAt: now, updatedAt: now));
       } else {
         await _isar.openTickets.put(fromTicket.markAsDeleted());
       }
 
-      await _isar.openTicketLines.filter().openTicketIdEqualTo(toTicketId).deleteAll();
+      await _isar.openTicketLines
+          .filter()
+          .openTicketIdEqualTo(toTicketId)
+          .deleteAll();
       await _isar.openTicketLines.putAll(updatedTo);
-      await _isar.openTickets.put(toTicket.copyWith(savedAt: now, updatedAt: now));
+      await _isar.openTickets
+          .put(toTicket.copyWith(savedAt: now, updatedAt: now));
     });
   }
 
   /// Fusiona todo el ticket origen en el destino y elimina el origen.
-  Future<void> mergeTickets({required String fromTicketId, required String toTicketId}) async {
+  Future<void> mergeTickets(
+      {required String fromTicketId, required String toTicketId}) async {
     final lines = await getLines(fromTicketId);
     await moveLinesToTicket(
       fromTicketId: fromTicketId,

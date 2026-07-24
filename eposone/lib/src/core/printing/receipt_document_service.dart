@@ -1,30 +1,36 @@
-import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:printing/printing.dart';
-import 'package:share_plus/share_plus.dart';
+import 'package:eposone/src/core/printing/cash_document_builder.dart';
+import 'package:eposone/src/core/printing/print_engine.dart';
 import 'package:eposone/src/core/printing/receipt_pdf_builder.dart';
 import 'package:eposone/src/core/printing/receipt_text_builder.dart';
-import 'package:eposone/src/core/printing/thermal_printer_service.dart';
+import 'package:eposone/src/core/printing/shift_report_builder.dart';
+import 'package:eposone/src/core/printing/thermal_logo_raster.dart';
+import 'package:eposone/src/features/cash_register/domain/entities/cash_movement.dart';
+import 'package:eposone/src/features/cash_register/domain/entities/cash_register.dart';
+import 'package:eposone/src/features/cash_register/domain/shift_summary.dart';
 import 'package:eposone/src/features/sales/domain/entities/sale.dart';
 import 'package:eposone/src/features/sales/domain/entities/sale_item.dart';
 import 'package:eposone/src/features/settings/domain/entities/business_config.dart';
 
-/// Orquesta impresión PDF, térmica BT y compartir (L5 + L6.1).
+/// Fachada de documentos comerciales/caja → [PrintEngine].
 class ReceiptDocumentService {
   static Future<Uint8List> salePdfBytes({
     required BusinessConfig? config,
     required Sale sale,
     required List<SaleItem> items,
     required String symbol,
+    String? customerName,
+    String? customerDocument,
   }) {
     return ReceiptPdfBuilder.buildSaleReceipt(
       config: config,
       sale: sale,
       items: items,
       symbol: symbol,
+      customerName: customerName,
+      customerDocument: customerDocument,
     );
   }
 
@@ -34,28 +40,34 @@ class ReceiptDocumentService {
     required Sale sale,
     required List<SaleItem> items,
     required String symbol,
+    String? customerName,
+    String? customerDocument,
   }) async {
-    final lines = ReceiptTextBuilder.buildSaleReceipt(
-      config: config,
-      sale: sale,
-      items: items,
-      symbol: symbol,
+    final logoRaster = await ThermalLogoRaster.fromConfig(config);
+    if (!context.mounted) return;
+    await PrintEngine.printDocument(
+      context: context,
+      textLines: ReceiptTextBuilder.buildSaleReceipt(
+        config: config,
+        sale: sale,
+        items: items,
+        symbol: symbol,
+        customerName: customerName,
+        customerDocument: customerDocument,
+      ),
+      qrData: ReceiptTextBuilder.qrPayload(sale: sale, symbol: symbol),
+      logoRaster: logoRaster,
+      buildPdf: (format) => ReceiptPdfBuilder.buildSaleReceipt(
+        config: config,
+        sale: sale,
+        items: items,
+        symbol: symbol,
+        customerName: customerName,
+        customerDocument: customerDocument,
+        pageFormat: format,
+      ),
+      thermalOkMessage: 'Recibo enviado a impresora',
     );
-
-    if (Platform.isAndroid || Platform.isIOS) {
-      final thermalOk = await ThermalPrinterService.printLines(lines);
-      if (thermalOk) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Recibo enviado a impresora térmica')),
-          );
-        }
-        return;
-      }
-    }
-
-    final bytes = await salePdfBytes(config: config, sale: sale, items: items, symbol: symbol);
-    await Printing.layoutPdf(onLayout: (_) async => bytes);
   }
 
   static Future<void> shareSalePdf({
@@ -63,17 +75,21 @@ class ReceiptDocumentService {
     required BusinessConfig? config,
     required List<SaleItem> items,
     required String symbol,
+    String? customerName,
+    String? customerDocument,
   }) async {
-    final bytes = await salePdfBytes(config: config, sale: sale, items: items, symbol: symbol);
-    final dir = await getTemporaryDirectory();
-    final name = sale.receiptNumber ?? sale.localId;
-    final file = File('${dir.path}/recibo_$name.pdf');
-    await file.writeAsBytes(bytes);
-
+    final bytes = await salePdfBytes(
+      config: config,
+      sale: sale,
+      items: items,
+      symbol: symbol,
+      customerName: customerName,
+      customerDocument: customerDocument,
+    );
     final business = config?.businessName ?? 'EPOSOne';
     final receiptNo = sale.receiptNumber ?? sale.localId;
     final message = StringBuffer()
-      ..writeln('$business')
+      ..writeln(business)
       ..writeln('Recibo: $receiptNo')
       ..writeln('Total: $symbol${sale.total.toStringAsFixed(2)}');
     if (sale.tipAmount > 0) {
@@ -81,10 +97,11 @@ class ReceiptDocumentService {
     }
     message.write(config?.receiptFooter ?? 'Gracias por su compra');
 
-    await Share.shareXFiles(
-      [XFile(file.path, mimeType: 'application/pdf', name: 'recibo_$name.pdf')],
-      text: message.toString(),
+    await PrintEngine.sharePdf(
+      bytes: bytes,
+      fileName: 'recibo_$receiptNo.pdf',
       subject: 'Recibo $receiptNo — $business',
+      body: message.toString(),
     );
   }
 
@@ -99,35 +116,125 @@ class ReceiptDocumentService {
     required double discount,
     required double tax,
     required double total,
+    Map<double, double>? taxByRate,
+    double exemptBase = 0,
   }) async {
-    final textLines = ReceiptTextBuilder.buildBillPreview(
-      config: config,
-      symbol: symbol,
-      ticketLabel: ticketLabel,
-      comment: comment,
-      lines: lines,
-      subtotal: subtotal,
-      discount: discount,
-      tax: tax,
-      total: total,
+    final logoRaster = await ThermalLogoRaster.fromConfig(config);
+    if (!context.mounted) return;
+    await PrintEngine.printDocument(
+      context: context,
+      textLines: ReceiptTextBuilder.buildBillPreview(
+        config: config,
+        symbol: symbol,
+        ticketLabel: ticketLabel,
+        comment: comment,
+        lines: lines,
+        subtotal: subtotal,
+        discount: discount,
+        tax: tax,
+        total: total,
+        taxByRate: taxByRate,
+        exemptBase: exemptBase,
+      ),
+      logoRaster: logoRaster,
+      buildPdf: (format) => ReceiptPdfBuilder.buildBillPreview(
+        config: config,
+        symbol: symbol,
+        ticketLabel: ticketLabel,
+        comment: comment,
+        lines: lines,
+        subtotal: subtotal,
+        discount: discount,
+        tax: tax,
+        total: total,
+        taxByRate: taxByRate,
+        exemptBase: exemptBase,
+        pageFormat: format,
+      ),
+      thermalOkMessage: 'Pre-cuenta enviada a impresora',
     );
+  }
 
-    if (Platform.isAndroid || Platform.isIOS) {
-      final ok = await ThermalPrinterService.printLines(textLines);
-      if (ok) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Pre-cuenta enviada a impresora')),
-          );
-        }
-        return;
-      }
-    }
+  /// Arqueo (X) o cierre (Z).
+  static Future<void> printShiftReport({
+    required BuildContext context,
+    required BusinessConfig? config,
+    required CashRegister register,
+    required ShiftSummary summary,
+    required String symbol,
+    required bool isClosing,
+    double? countedCash,
+    double? difference,
+  }) async {
+    await PrintEngine.printDocument(
+      context: context,
+      textLines: ShiftReportBuilder.buildText(
+        config: config,
+        register: register,
+        summary: summary,
+        symbol: symbol,
+        isClosing: isClosing,
+        countedCash: countedCash,
+        difference: difference,
+      ),
+      buildPdf: (format) => ShiftReportBuilder.buildPdf(
+        config: config,
+        register: register,
+        summary: summary,
+        symbol: symbol,
+        isClosing: isClosing,
+        countedCash: countedCash,
+        difference: difference,
+        pageFormat: format,
+      ),
+      thermalOkMessage:
+          isClosing ? 'Cierre (Z) enviado a impresora' : 'Arqueo (X) enviado a impresora',
+    );
+  }
 
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Configure impresora BT en Ajustes → Impresora')),
-      );
-    }
+  static Future<void> printCashOpen({
+    required BuildContext context,
+    required BusinessConfig? config,
+    required CashRegister register,
+    required String symbol,
+  }) async {
+    await PrintEngine.printDocument(
+      context: context,
+      textLines: CashDocumentBuilder.buildOpenText(
+        config: config,
+        register: register,
+        symbol: symbol,
+      ),
+      buildPdf: (format) => CashDocumentBuilder.buildOpenPdf(
+        config: config,
+        register: register,
+        symbol: symbol,
+        pageFormat: format,
+      ),
+      thermalOkMessage: 'Apertura enviada a impresora',
+    );
+  }
+
+  static Future<void> printCashMovement({
+    required BuildContext context,
+    required BusinessConfig? config,
+    required CashMovement movement,
+    required String symbol,
+  }) async {
+    await PrintEngine.printDocument(
+      context: context,
+      textLines: CashDocumentBuilder.buildMovementText(
+        config: config,
+        movement: movement,
+        symbol: symbol,
+      ),
+      buildPdf: (format) => CashDocumentBuilder.buildMovementPdf(
+        config: config,
+        movement: movement,
+        symbol: symbol,
+        pageFormat: format,
+      ),
+      thermalOkMessage: 'Movimiento enviado a impresora',
+    );
   }
 }

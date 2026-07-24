@@ -1,5 +1,7 @@
 import 'package:isar/isar.dart';
+import 'package:uuid/uuid.dart';
 import 'package:eposone/src/core/entities/sync_entity.dart';
+import 'package:eposone/src/core/time/en1_date_time_service.dart';
 
 part 'sale_item.g.dart';
 
@@ -36,13 +38,13 @@ class SaleItem extends SyncEntity {
   });
 
   @override
-  SaleItem markAsModified() => copyWith(syncStatus: SyncStatus.modified, updatedAt: DateTime.now());
+  SaleItem markAsModified() => copyWith(syncStatus: SyncStatus.modified, updatedAt: En1DateTimeService.nowUtc());
 
   @override
-  SaleItem markAsSynced(String serverId) => copyWith(serverId: serverId, syncStatus: SyncStatus.synced, updatedAt: DateTime.now());
+  SaleItem markAsSynced(String serverId) => copyWith(serverId: serverId, syncStatus: SyncStatus.synced, updatedAt: En1DateTimeService.nowUtc());
 
   @override
-  SaleItem markAsDeleted() => copyWith(deletedAt: DateTime.now(), syncStatus: SyncStatus.modified, updatedAt: DateTime.now());
+  SaleItem markAsDeleted() => copyWith(deletedAt: En1DateTimeService.nowUtc(), syncStatus: SyncStatus.modified, updatedAt: En1DateTimeService.nowUtc());
 
   SaleItem copyWith({
     String? localId,
@@ -89,19 +91,22 @@ class SaleItem extends SyncEntity {
     double discount = 0,
     double taxRate = 0,
     String? modifiersJson,
-  }) =>
-      SaleItem(
-        localId: DateTime.now().millisecondsSinceEpoch.toString(),
-        saleId: saleId,
-        productId: productId,
-        productName: productName,
-        quantity: quantity,
-        unitPrice: unitPrice,
-        discount: discount,
-        taxRate: taxRate,
-        total: (quantity * unitPrice) - discount,
-        modifiersJson: modifiersJson,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      );
+  }) {
+    final now = En1DateTimeService.nowUtc();
+    // UUID: varios ítems en el mismo ms no deben compartir isarId (hash de localId).
+    return SaleItem(
+      localId: const Uuid().v4(),
+      saleId: saleId,
+      productId: productId,
+      productName: productName,
+      quantity: quantity,
+      unitPrice: unitPrice,
+      discount: discount,
+      taxRate: taxRate,
+      total: (quantity * unitPrice) - discount,
+      modifiersJson: modifiersJson,
+      createdAt: now,
+      updatedAt: now,
+    );
+  }
 }

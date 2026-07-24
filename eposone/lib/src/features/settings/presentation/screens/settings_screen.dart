@@ -11,11 +11,32 @@ class SettingsScreen extends StatelessWidget {
       body: ListView(
         children: [
           ListTile(
+            leading: const Icon(Icons.storefront_outlined),
+            title: const Text('Negocio'),
+            subtitle: const Text('Logo, nombre, RUC, encabezado de recibo'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/settings/business'),
+          ),
+          ListTile(
+            leading: const Icon(Icons.badge_outlined),
+            title: const Text('Cajeros'),
+            subtitle: const Text('PIN, roles, catálogo EN1'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/settings/cashiers'),
+          ),
+          ListTile(
             leading: const Icon(Icons.print_outlined),
-            title: const Text('Impresora térmica'),
-            subtitle: const Text('Bluetooth, cajón monedero'),
+            title: const Text('Impresora'),
+            subtitle: const Text('Caja: Bluetooth o red (IP), cajón'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => context.push('/settings/printer'),
+          ),
+          ListTile(
+            leading: const Icon(Icons.soup_kitchen_outlined),
+            title: const Text('Producción (Cocina / Bar)'),
+            subtitle: const Text('Destinos, impresora o pantalla, routing'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/settings/production'),
           ),
           ListTile(
             leading: const Icon(Icons.dashboard_customize_outlined),
@@ -37,6 +58,13 @@ class SettingsScreen extends StatelessWidget {
             subtitle: const Text('Nombres predefinidos, tipo de orden'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => context.push('/settings/open-tickets'),
+          ),
+          ListTile(
+            leading: const Icon(Icons.percent_outlined),
+            title: const Text('Fiscal / Impuestos'),
+            subtitle: const Text('Contrato ITBMS, tipo de establecimiento'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/settings/tax'),
           ),
           ListTile(
             leading: const Icon(Icons.verified_outlined),

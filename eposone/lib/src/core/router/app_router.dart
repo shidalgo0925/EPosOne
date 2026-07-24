@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:eposone/src/core/session/pos_session.dart';
+import 'package:eposone/src/features/auth/presentation/screens/cashiers_settings_screen.dart';
 import 'package:eposone/src/features/auth/presentation/screens/onboarding_screen.dart';
 import 'package:eposone/src/features/auth/presentation/screens/pin_screen.dart';
 import 'package:eposone/src/features/auth/presentation/screens/splash_screen.dart';
@@ -31,8 +32,12 @@ import 'package:eposone/src/features/inventory/presentation/screens/inventory_sc
 import 'package:eposone/src/features/products/presentation/screens/modifier_groups_screen.dart';
 import 'package:eposone/src/features/settings/presentation/screens/pos_pages_settings_screen.dart';
 import 'package:eposone/src/features/settings/presentation/screens/printer_settings_screen.dart';
+import 'package:eposone/src/features/settings/presentation/screens/production_destinations_screen.dart';
+import 'package:eposone/src/features/settings/presentation/screens/production_routing_screen.dart';
 import 'package:eposone/src/features/settings/presentation/screens/settings_screen.dart';
+import 'package:eposone/src/features/settings/presentation/screens/business_profile_settings_screen.dart';
 import 'package:eposone/src/features/fiscal/presentation/screens/fiscal_settings_screen.dart';
+import 'package:eposone/src/features/fiscal/presentation/screens/tax_contract_settings_screen.dart';
 import 'package:eposone/src/features/sync/presentation/screens/sync_settings_screen.dart';
 import 'package:eposone/src/features/premium/presentation/screens/premium_settings_screen.dart';
 import 'package:eposone/src/features/premium/presentation/screens/coupons_settings_screen.dart';
@@ -40,7 +45,12 @@ import 'package:eposone/src/features/customers/presentation/screens/customer_det
 import 'package:eposone/src/features/platform/presentation/screens/platform_welcome_screen.dart';
 import 'package:eposone/src/features/platform/presentation/screens/connect_en1_screen.dart';
 import 'package:eposone/src/features/platform/presentation/screens/device_info_screen.dart';
+import 'package:eposone/src/features/licensing/presentation/screens/license_status_screen.dart';
 import 'package:eposone/src/features/orders/presentation/screens/order_operation_screen.dart';
+import 'package:eposone/src/features/reports/presentation/screens/reports_hub_screen.dart';
+import 'package:eposone/src/features/reports/presentation/screens/sales_report_screen.dart';
+import 'package:eposone/src/features/reports/presentation/screens/shifts_report_screen.dart';
+import 'package:eposone/src/features/reports/presentation/screens/employees_report_screen.dart';
 
 
 
@@ -104,8 +114,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/platform/welcome', builder: (_, __) => const PlatformWelcomeScreen()),
       GoRoute(path: '/platform/connect', builder: (_, __) => const ConnectEn1Screen()),
       GoRoute(path: '/platform/device', builder: (_, __) => const DeviceInfoScreen()),
+      GoRoute(path: '/platform/license', builder: (_, __) => const LicenseStatusScreen()),
       GoRoute(path: '/onboarding', builder: (_, __) => const OnboardingScreen()),
-      GoRoute(path: '/pin', builder: (_, __) => const PinScreen()),
+      GoRoute(
+        path: '/pin',
+        builder: (_, state) => PinScreen(
+          switchCashier: state.uri.queryParameters['switch'] == '1',
+        ),
+      ),
       GoRoute(path: '/cash/open', builder: (_, __) => const CashOpenScreen()),
       GoRoute(path: '/pos', builder: (_, __) => const PosScreen()),
       GoRoute(path: '/pos/scan', builder: (_, __) => const BarcodeScannerScreen()),
@@ -153,6 +169,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           return SaleDetailScreen(saleId: id);
         },
       ),
+      GoRoute(path: '/reports', builder: (_, __) => const ReportsHubScreen()),
+      GoRoute(
+          path: '/reports/sales',
+          builder: (_, __) => const SalesReportScreen()),
+      GoRoute(
+          path: '/reports/shifts',
+          builder: (_, __) => const ShiftsReportScreen()),
+      GoRoute(
+          path: '/reports/employees',
+          builder: (_, __) => const EmployeesReportScreen()),
       GoRoute(path: '/tickets/pick', builder: (_, __) => const PickTicketScreen()),
       GoRoute(
         path: '/tickets/pick/move/:id',
@@ -163,8 +189,25 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (_, state) => SplitOpenTicketScreen(ticketId: state.pathParameters['id']!),
       ),
       GoRoute(path: '/settings', builder: (_, __) => const SettingsScreen()),
+      GoRoute(
+        path: '/settings/business',
+        builder: (_, __) => const BusinessProfileSettingsScreen(),
+      ),
+      GoRoute(path: '/settings/cashiers', builder: (_, __) => const CashiersSettingsScreen()),
       GoRoute(path: '/settings/open-tickets', builder: (_, __) => const OpenTicketsSettingsScreen()),
       GoRoute(path: '/settings/printer', builder: (_, __) => const PrinterSettingsScreen()),
+      GoRoute(
+          path: '/settings/production',
+          builder: (_, __) => const ProductionDestinationsScreen()),
+      GoRoute(
+          path: '/settings/production/routing',
+          builder: (_, __) => const ProductionRoutingScreen()),
+      GoRoute(
+        path: '/settings/production/edit',
+        builder: (_, state) => ProductionDestinationEditScreen(
+          destinationId: state.uri.queryParameters['id'],
+        ),
+      ),
       GoRoute(path: '/settings/modifiers', builder: (_, __) => const ModifierGroupsScreen()),
       GoRoute(path: '/settings/modifiers/new', builder: (_, __) => const ModifierGroupFormScreen()),
       GoRoute(
@@ -178,6 +221,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (_, state) => PosPageFormScreen(pageId: state.pathParameters['id']),
       ),
       GoRoute(path: '/settings/fiscal', builder: (_, __) => const FiscalSettingsScreen()),
+      GoRoute(
+        path: '/settings/tax',
+        builder: (_, __) => const TaxContractSettingsScreen(),
+      ),
       GoRoute(path: '/settings/fiscal/documents', builder: (_, __) => const FiscalDocumentsScreen()),
       GoRoute(path: '/settings/sync', builder: (_, __) => const SyncSettingsScreen()),
       GoRoute(path: '/settings/sync/history', builder: (_, __) => const SyncHistoryScreen()),

@@ -7,9 +7,11 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:eposone/src/core/entities/sync_entity.dart';
 import 'package:eposone/src/features/platform/data/en1_bootstrap_api.dart';
+import 'package:eposone/src/features/platform/data/en1_cashier_catalog_store.dart';
 import 'package:eposone/src/features/platform/data/provisioning_store.dart';
 import 'package:eposone/src/features/platform/domain/en1_bootstrap_models.dart';
 import 'package:eposone/src/features/platform/domain/provisioning_config.dart';
+import 'package:eposone/src/features/licensing/domain/license_service.dart';
 import 'package:eposone/src/features/pos/domain/entities/pos_page.dart';
 import 'package:eposone/src/features/pos/domain/entities/pos_page_item.dart';
 import 'package:eposone/src/features/products/domain/entities/category.dart';
@@ -51,12 +53,23 @@ class En1BootstrapRepository {
   static const _barCategoryHints = {
     'cervezas istmo',
     'cervezas',
+    'cerveza',
     'cocteles',
     'cócteles',
     'vinos y espumantes',
     'vinos',
+    'vino',
     'licores',
+    'licor',
     'bebidas',
+    'bebida',
+    'batidos',
+    'smoothie',
+    'cafes',
+    'cafés',
+    'cafe',
+    'café',
+    'tragos',
     'bar',
   };
 
@@ -102,15 +115,27 @@ class En1BootstrapRepository {
       }
 
       report('fetch', 'Consultando catálogo EN1…');
+      final knownCashiersVersion =
+          await En1CashierCatalogStore.getCashiersVersion();
       final payload = await _api.fetchBootstrap(
         apiBaseUrl: base,
         accessToken: token,
+        knownCashiersVersion: knownCashiersVersion,
       );
       final products = payload.products;
       if (products.isEmpty) {
-        throw En1BootstrapException(
-          'EN1 bootstrap no devolvió productos. Verifica Device Token y org Itsmo (org 5).',
-        );
+        final existingProducts = await _isar.products
+            .filter()
+            .localIdStartsWith('en1_')
+            .isDeletedEqualTo(false)
+            .count();
+        if (existingProducts == 0) {
+          throw En1BootstrapException(
+            'EN1 bootstrap no devolvió productos. Verifica Device Token y organización.',
+          );
+        }
+        // Respuesta incremental: conservar catálogo local existente.
+        report('catalog', 'Catálogo sin cambios · actualizando cajeros…');
       }
 
       if (payload.config != null && provisioned != null) {
@@ -149,12 +174,16 @@ class En1BootstrapRepository {
           .toList()
         ..sort();
 
-      report('categories', 'Guardando categorías…', current: 0, total: uniqueCats.length);
+      report('categories', 'Guardando categorías…',
+          current: 0, total: uniqueCats.length);
       await _isar.writeTxn(() async {
         var order = 0;
         for (final name in uniqueCats) {
           final localId = 'en1_cat_${_slug(name)}';
-          final existing = await _isar.categorys.filter().localIdEqualTo(localId).findFirst();
+          final existing = await _isar.categorys
+              .filter()
+              .localIdEqualTo(localId)
+              .findFirst();
           final now = DateTime.now();
           final cat = Category(
             localId: localId,
@@ -182,16 +211,20 @@ class En1BootstrapRepository {
         return null;
       }
 
-      report('products', 'Guardando productos…', current: 0, total: products.length);
+      report('products', 'Guardando productos…',
+          current: 0, total: products.length);
       await _isar.writeTxn(() async {
-        var i = 0;
         for (final remote in products) {
-          i++;
           final catId = catForName(remote.category)?.localId;
           final localId = 'en1_${remote.productRef}';
-          final existing =
-              await _isar.products.filter().localIdEqualTo(localId).findFirst() ??
-                  await _isar.products.filter().skuEqualTo(remote.productRef).findFirst();
+          final existing = await _isar.products
+                  .filter()
+                  .localIdEqualTo(localId)
+                  .findFirst() ??
+              await _isar.products
+                  .filter()
+                  .skuEqualTo(remote.productRef)
+                  .findFirst();
 
           meta[remote.productRef] = {
             'tracks_inventory': remote.tracksInventory,
@@ -206,6 +239,8 @@ class En1BootstrapRepository {
 
           final stock = stockByRef[remote.productRef] ?? existing?.stock ?? 0;
           final now = DateTime.now();
+          // Bootstrap = catálogo de venta: activo salvo Inactivo explícito en EN1.
+          final active = remote.isActive;
           final product = Product(
             localId: localId,
             serverId: remote.productRef,
@@ -221,19 +256,24 @@ class En1BootstrapRepository {
             stock: stock,
             categoryId: catId,
             imagePath: existing?.imagePath,
-            // Siempre vendible en POS si EN1 lo devolvió en bootstrap (salvo inactive explícito).
-            isActive: remote.isActive,
+            isActive: active,
             minStockAlert: remote.minStock,
           );
           await _isar.products.put(product);
-          if (i % 10 == 0 || i == products.length) {
-            // Progress outside writeTxn would be smoother; coarse updates ok.
+          if (!active) {
+            debugPrint(
+              '[EN1 Bootstrap] Producto inactivo omitible en POS: ${remote.name} '
+              '(status=${remote.status}, ref=${remote.productRef})',
+            );
           }
         }
       });
-      report('products', 'Productos guardados', current: products.length, total: products.length);
+      report('products', 'Productos guardados',
+          current: products.length, total: products.length);
 
-      final withImages = products.where((p) => p.imageUrl != null && p.imageUrl!.isNotEmpty).toList();
+      final withImages = products
+          .where((p) => p.imageUrl != null && p.imageUrl!.isNotEmpty)
+          .toList();
       var imgIndex = 0;
       for (final remote in withImages) {
         imgIndex++;
@@ -253,10 +293,13 @@ class En1BootstrapRepository {
         if (ok) {
           imageOk++;
           await _isar.writeTxn(() async {
-            final p =
-                await _isar.products.filter().localIdEqualTo('en1_${remote.productRef}').findFirst();
+            final p = await _isar.products
+                .filter()
+                .localIdEqualTo('en1_${remote.productRef}')
+                .findFirst();
             if (p != null) {
-              await _isar.products.put(p.copyWith(imagePath: dest, updatedAt: DateTime.now()));
+              await _isar.products
+                  .put(p.copyWith(imagePath: dest, updatedAt: DateTime.now()));
             }
           });
         } else {
@@ -264,16 +307,35 @@ class En1BootstrapRepository {
         }
       }
 
+      report('cashiers', 'Guardando cajeros…');
+      await En1CashierCatalogStore.saveFromBootstrap(
+        cashiersVersion: payload.cashiersVersion,
+        cashiers: payload.cashiers,
+      );
+
+      report('license', 'Actualizando licencia…');
+      await LicenseService().applyFromBootstrap(payload.license);
+
       report('pos', 'Configurando menú POS…');
-      await _rebuildPosPagesForEn1(categoryByName.values.toList());
+      // Usar categorías EN1 ya en DB (incluye las de este pull) para no dejar huecos.
+      final allEn1Cats = await _isar.categorys
+          .filter()
+          .localIdStartsWith('en1_')
+          .isDeletedEqualTo(false)
+          .findAll();
+      await _rebuildPosPagesForEn1(
+        allEn1Cats.isNotEmpty ? allEn1Cats : categoryByName.values.toList(),
+      );
 
       // Desactivar seed Istmo local
       report('cleanup', 'Desactivando catálogo local Istmo…');
       await _isar.writeTxn(() async {
-        final istmo = await _isar.products.filter().localIdStartsWith('istmo_').findAll();
+        final istmo =
+            await _isar.products.filter().localIdStartsWith('istmo_').findAll();
         for (final p in istmo) {
           if (p.isActive) {
-            await _isar.products.put(p.copyWith(isActive: false, updatedAt: DateTime.now()));
+            await _isar.products
+                .put(p.copyWith(isActive: false, updatedAt: DateTime.now()));
           }
         }
       });
@@ -282,7 +344,9 @@ class En1BootstrapRepository {
       final completedAt = DateTime.now();
       await prefs.setBool(_prefsDoneKey, true);
       await prefs.setString(_prefsAtKey, completedAt.toIso8601String());
-      await prefs.setString(_prefsMetaKey, jsonEncode(meta));
+      if (meta.isNotEmpty) {
+        await prefs.setString(_prefsMetaKey, jsonEncode(meta));
+      }
 
       final stockUpdated = stockByRef.length;
       final result = En1BootstrapResult(
@@ -307,7 +371,8 @@ class En1BootstrapRepository {
       return result;
     } catch (e) {
       if (recordInSyncHistory) {
-        await _recordSyncHistory(success: false, detail: null, error: e.toString());
+        await _recordSyncHistory(
+            success: false, detail: null, error: e.toString());
       }
       rethrow;
     }
@@ -315,9 +380,13 @@ class En1BootstrapRepository {
 
   /// Menú POS: páginas Comida + Bar desde categorías EN1 (como seed Istmo).
   /// EN1 no envía “páginas” en bootstrap — se reconstruyen en local.
+  ///
+  /// Importante: además de categorías, se agregan **productos** a cada página
+  /// (si solo hay categorías y el categoryId no cuadra, el grid queda vacío).
   Future<void> _rebuildPosPagesForEn1(List<Category> en1Categories) async {
     final now = DateTime.now();
-    final cats = [...en1Categories]..sort((a, b) => (a.sortOrder ?? 0).compareTo(b.sortOrder ?? 0));
+    final cats = [...en1Categories]
+      ..sort((a, b) => (a.sortOrder ?? 0).compareTo(b.sortOrder ?? 0));
 
     final comida = <Category>[];
     final bar = <Category>[];
@@ -326,23 +395,126 @@ class En1BootstrapRepository {
       if (bucket == 'bar') {
         bar.add(cat);
       } else {
-        // Default comida (incluye categorías desconocidas).
         comida.add(cat);
       }
     }
-    // Si todo cayó en un solo lado, balancear: sin hints → todo en Comida.
     if (comida.isEmpty && bar.isNotEmpty) {
       comida.addAll(bar);
       bar.clear();
     }
 
+    final catById = {for (final c in cats) c.localId: c};
+    for (final p in await _isar.products
+        .filter()
+        .localIdStartsWith('en1_')
+        .isDeletedEqualTo(false)
+        .findAll()) {
+      final cid = p.categoryId;
+      if (cid == null || catById.containsKey(cid)) continue;
+      final missing = await _isar.categorys
+          .filter()
+          .localIdEqualTo(cid)
+          .isDeletedEqualTo(false)
+          .findFirst();
+      if (missing != null) catById[cid] = missing;
+    }
+
+    // Todos los EN1 no borrados → menú. Reactivar los que vengan “apagados”
+    // por status raro (evita perder p.ej. Batido tras re-sync).
+    var en1Products = await _isar.products
+        .filter()
+        .localIdStartsWith('en1_')
+        .isDeletedEqualTo(false)
+        .findAll();
+    final inactive = en1Products.where((p) => !p.isActive).toList();
+    if (inactive.isNotEmpty) {
+      await _isar.writeTxn(() async {
+        final nowFix = DateTime.now();
+        for (final p in inactive) {
+          await _isar.products
+              .put(p.copyWith(isActive: true, updatedAt: nowFix));
+        }
+      });
+      debugPrint(
+        '[EN1 Bootstrap] Reactivados ${inactive.length} productos EN1 para menú POS',
+      );
+      en1Products = await _isar.products
+          .filter()
+          .localIdStartsWith('en1_')
+          .isDeletedEqualTo(false)
+          .findAll();
+    }
+
+    final comidaCatIds = {for (final c in comida) c.localId};
+    final barCatIds = {for (final c in bar) c.localId};
+
+    final comidaProducts = <Product>[];
+    final barProducts = <Product>[];
+    for (final p in en1Products) {
+      final cid = p.categoryId;
+      final nameHint = p.name.toLowerCase();
+      final looksDrink = RegExp(
+        r'batido|smoothie|jugo|refresco|cerveza|vino|coctel|cocktail|bebida|latte|cafe|café',
+      ).hasMatch(nameHint);
+
+      if (cid != null && barCatIds.contains(cid)) {
+        barProducts.add(p);
+      } else if (cid != null && comidaCatIds.contains(cid)) {
+        comidaProducts.add(p);
+        // Bebida mal clasificada en categoría de comida → también en Bar.
+        if (looksDrink) barProducts.add(p);
+      } else if (cid != null && catById.containsKey(cid)) {
+        if (_pageBucketForCategory(catById[cid]!.name) == 'bar' || looksDrink) {
+          barProducts.add(p);
+        } else {
+          comidaProducts.add(p);
+        }
+      } else if (looksDrink) {
+        barProducts.add(p);
+      } else {
+        comidaProducts.add(p);
+      }
+    }
+
+    // Dedup por localId
+    Map<String, Product> uniq(List<Product> list) {
+      final m = <String, Product>{};
+      for (final p in list) {
+        m.putIfAbsent(p.localId, () => p);
+      }
+      return m;
+    }
+
+    final comidaU = uniq(comidaProducts).values.toList();
+    final barU = uniq(barProducts).values.toList();
+
+    // Asegurar categorías en cada página aunque el pull venga raro:
+    // toda categoría referenciada por productos de la página entra al menú.
+    List<Category> catsForProducts(List<Product> prods, List<Category> seeded) {
+      final byId = {for (final c in seeded) c.localId: c};
+      for (final p in prods) {
+        final cid = p.categoryId;
+        if (cid == null || byId.containsKey(cid)) continue;
+        final fromDb = catById[cid];
+        if (fromDb != null) byId[cid] = fromDb;
+      }
+      final list = byId.values.toList()
+        ..sort((a, b) => (a.sortOrder ?? 0).compareTo(b.sortOrder ?? 0));
+      return list;
+    }
+
+    final comidaCatsFinal = catsForProducts(comidaU, comida);
+    final barCatsFinal = catsForProducts(barU, bar);
+
     await _isar.writeTxn(() async {
-      // Desactivar seed Istmo + página única legacy EN1.
+      // Desactivar seed Istmo + páginas EN1 previas (se recrean abajo).
       for (final prefix in ['istmo_', 'en1_page_']) {
-        final pages = await _isar.posPages.filter().localIdStartsWith(prefix).findAll();
+        final pages =
+            await _isar.posPages.filter().localIdStartsWith(prefix).findAll();
         for (final p in pages) {
           if (p.isActive) {
-            await _isar.posPages.put(p.copyWith(isActive: false, updatedAt: now));
+            await _isar.posPages
+                .put(p.copyWith(isActive: false, updatedAt: now));
           }
         }
       }
@@ -352,9 +524,11 @@ class En1BootstrapRepository {
         required String name,
         required int sortOrder,
         required List<Category> pageCats,
-        bool forceActive = false,
+        required List<Product> pageProducts,
       }) async {
-        final existing = await _isar.posPages.filter().localIdEqualTo(pageId).findFirst();
+        final existing =
+            await _isar.posPages.filter().localIdEqualTo(pageId).findFirst();
+        final active = pageCats.isNotEmpty || pageProducts.isNotEmpty;
         await _isar.posPages.put(
           PosPage(
             localId: pageId,
@@ -364,15 +538,16 @@ class En1BootstrapRepository {
             updatedAt: now,
             name: name,
             sortOrder: sortOrder,
-            isActive: forceActive || pageCats.isNotEmpty,
+            isActive: active,
           ),
         );
 
-        final oldItems = await _isar.posPageItems.filter().pageIdEqualTo(pageId).findAll();
-        for (final item in oldItems) {
-          if (!item.isDeleted) {
-            await _isar.posPageItems.put(item.markAsDeleted());
-          }
+        // Hard-delete ítems previos (soft-delete dejaba menús vacíos tras re-sync).
+        final oldItems =
+            await _isar.posPageItems.filter().pageIdEqualTo(pageId).findAll();
+        if (oldItems.isNotEmpty) {
+          await _isar.posPageItems
+              .deleteAll(oldItems.map((e) => e.isarId).toList());
         }
 
         var sort = 0;
@@ -391,70 +566,60 @@ class En1BootstrapRepository {
             ),
           );
         }
+        for (final p in pageProducts) {
+          await _isar.posPageItems.put(
+            PosPageItem(
+              localId: 'en1_pi_${pageId}_prod_${p.localId}',
+              serverId: 'en1_pi_${pageId}_prod_${p.localId}',
+              syncStatus: SyncStatus.synced,
+              createdAt: now,
+              updatedAt: now,
+              pageId: pageId,
+              itemType: PosPageItemType.product,
+              refId: p.localId,
+              sortOrder: sort++,
+            ),
+          );
+        }
       }
-
-      final en1Products = await _isar.products
-          .filter()
-          .localIdStartsWith('en1_')
-          .isActiveEqualTo(true)
-          .findAll();
 
       await upsertPage(
         pageId: _en1PageComida,
         name: 'Comida',
         sortOrder: 0,
-        pageCats: comida,
-        forceActive: en1Products.isNotEmpty,
+        pageCats: comidaCatsFinal,
+        pageProducts: comidaU,
       );
       await upsertPage(
         pageId: _en1PageBar,
         name: 'Bar',
         sortOrder: 1,
-        pageCats: bar,
+        pageCats: barCatsFinal,
+        pageProducts: barU,
       );
-
-      // Productos EN1 sin categoría → ítems en Comida.
-      var prodSort = 1000;
-      for (final p in en1Products) {
-        if (p.categoryId != null && p.categoryId!.isNotEmpty) continue;
-        await _isar.posPageItems.put(
-          PosPageItem(
-            localId: 'en1_pi_prod_${p.localId}',
-            serverId: 'en1_pi_prod_${p.localId}',
-            syncStatus: SyncStatus.synced,
-            createdAt: now,
-            updatedAt: now,
-            pageId: _en1PageComida,
-            itemType: PosPageItemType.product,
-            refId: p.localId,
-            sortOrder: prodSort++,
-          ),
-        );
-      }
-
-      // Sin categorías EN1: volcar todos los productos activos en Comida.
-      if (comida.isEmpty && bar.isEmpty && en1Products.isNotEmpty) {
-        for (final p in en1Products) {
-          await _isar.posPageItems.put(
-            PosPageItem(
-              localId: 'en1_pi_prod_all_${p.localId}',
-              serverId: 'en1_pi_prod_all_${p.localId}',
-              syncStatus: SyncStatus.synced,
-              createdAt: now,
-              updatedAt: now,
-              pageId: _en1PageComida,
-              itemType: PosPageItemType.product,
-              refId: p.localId,
-              sortOrder: prodSort++,
-            ),
-          );
-        }
-      }
     });
 
     debugPrint(
-      '[EN1 Bootstrap] Páginas POS: Comida=${comida.length} cats · Bar=${bar.length} cats',
+      '[EN1 Bootstrap] Páginas POS: Comida=${comidaCatsFinal.length} cats/${comidaU.length} prods · '
+      'Bar=${barCatsFinal.length} cats/${barU.length} prods',
     );
+  }
+
+  /// Repara Comida/Bar desde catálogo EN1 ya local (sin red).
+  /// Útil tras actualizar APK si las páginas quedaron vacías.
+  Future<int> repairEn1PosPagesFromLocal() async {
+    final cats = await _isar.categorys
+        .filter()
+        .localIdStartsWith('en1_')
+        .isDeletedEqualTo(false)
+        .findAll();
+    await _rebuildPosPagesForEn1(cats);
+    final pages = await _isar.posPages
+        .filter()
+        .localIdStartsWith('en1_page_')
+        .isActiveEqualTo(true)
+        .findAll();
+    return pages.length;
   }
 
   String _pageBucketForCategory(String name) {
@@ -465,8 +630,10 @@ class En1BootstrapRepository {
         .replaceAll('í', 'i')
         .replaceAll('ó', 'o')
         .replaceAll('ú', 'u');
-    if (_barCategoryHints.any((h) => n.contains(h) || h.contains(n))) return 'bar';
-    if (_comidaCategoryHints.any((h) => n.contains(h) || h.contains(n))) return 'comida';
+    if (_barCategoryHints.any((h) => n.contains(h) || h.contains(n)))
+      return 'bar';
+    if (_comidaCategoryHints.any((h) => n.contains(h) || h.contains(n)))
+      return 'comida';
     // Heurística: cerveza/vino/licor/cóctel → bar
     if (RegExp(r'cerv|vino|licor|coctel|cocktail|bebida|bar').hasMatch(n)) {
       return 'bar';
@@ -485,7 +652,8 @@ class En1BootstrapRepository {
       entityKind: SyncEntityKind.catalogPull,
       entityLocalId: detail,
       direction: SyncDirection.pull,
-      operationStatus: success ? SyncOperationStatus.completed : SyncOperationStatus.failed,
+      operationStatus:
+          success ? SyncOperationStatus.completed : SyncOperationStatus.failed,
       attemptCount: 1,
       errorMessage: error,
       processedAt: now,
@@ -510,16 +678,22 @@ class En1BootstrapRepository {
 
       String? orgId;
       String? orgName;
+      String? orgTimezone;
       if (org is Map) {
         orgId = org['id']?.toString();
         orgName = org['name']?.toString();
+        orgTimezone = org['timezone']?.toString();
       }
       final branchRef = branch is Map ? branch['ref']?.toString() : null;
       final branchName = branch is Map ? branch['name']?.toString() : null;
       final posRef = pos is Map ? pos['ref']?.toString() : null;
       final posName = pos is Map ? pos['name']?.toString() : null;
       final registerRef = register is Map ? register['ref']?.toString() : null;
-      final registerName = register is Map ? register['name']?.toString() : null;
+      final registerName =
+          register is Map ? register['name']?.toString() : null;
+
+      final timezone =
+          orgTimezone ?? cfg['timezone']?.toString() ?? current.timezone;
 
       final updated = current.copyWith(
         apiBaseUrl: apiBaseUrl,
@@ -533,8 +707,9 @@ class En1BootstrapRepository {
         registerName: registerName ?? current.registerName,
         businessName: businessName ?? current.businessName,
         currency: cfg['currency']?.toString() ?? current.currency,
-        timezone: cfg['timezone']?.toString() ?? current.timezone,
-        configVersion: (cfg['config_version'] as num?)?.toInt() ?? current.configVersion,
+        timezone: timezone,
+        configVersion:
+            (cfg['config_version'] as num?)?.toInt() ?? current.configVersion,
       );
       await ProvisioningStore.saveConfig(updated);
     } catch (e) {

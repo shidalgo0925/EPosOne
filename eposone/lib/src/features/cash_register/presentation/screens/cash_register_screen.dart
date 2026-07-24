@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
+import 'package:eposone/src/core/printing/receipt_document_service.dart';
 import 'package:eposone/src/core/providers/business_config_provider.dart';
 import 'package:eposone/src/core/theme/eposone_theme.dart';
+import 'package:eposone/src/core/time/en1_date_time_service.dart';
 import 'package:eposone/src/features/cash_register/domain/entities/cash_register.dart';
 import 'package:eposone/src/core/session/pos_session.dart';
 import 'package:eposone/src/features/cash_register/presentation/providers/cash_register_provider.dart';
@@ -120,6 +121,9 @@ class _OpenRegisterPanelState extends ConsumerState<_OpenRegisterPanel> {
               ref.read(cashRegisterNotifierProvider.notifier).open(
                     amount,
                     openedBy: ref.read(posSessionProvider)?.cashierName,
+                    cashierId: ref.read(posSessionProvider)?.cashierId,
+                    cashierContactId:
+                        ref.read(posSessionProvider)?.cashierContactId,
                     notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
                   );
             },
@@ -141,7 +145,6 @@ class _ShiftHub extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final summaryAsync = ref.watch(shiftSummaryProvider(register.localId));
-    final dateFmt = DateFormat('dd/MM/yyyy HH:mm');
 
     return summaryAsync.when(
       data: (summary) => SingleChildScrollView(
@@ -161,9 +164,15 @@ class _ShiftHub extends ConsumerWidget {
                   const Icon(Icons.lock_open, color: Colors.green, size: 40),
                   const SizedBox(height: 8),
                   const Text('Turno abierto', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                  Text('Desde ${dateFmt.format(register.openDate)}', style: const TextStyle(color: EposBrand.textSecondary)),
+                  Text('Desde ${En1DateTimeService.formatLocal(register.openDate)}', style: const TextStyle(color: EposBrand.textSecondary)),
                   if (register.openedBy != null)
-                    Text('Por ${register.openedBy}', style: const TextStyle(color: EposBrand.textSecondary, fontSize: 12)),
+                    Text('Abrió: ${register.openedBy}', style: const TextStyle(color: EposBrand.textSecondary, fontSize: 12)),
+                  if (register.currentCashierName != null)
+                    Text(
+                      'Cajero actual: ${register.currentCashierName}'
+                      '${register.currentCashierContactId != null ? ' · #${register.currentCashierContactId}' : ''}',
+                      style: const TextStyle(color: EposBrand.textSecondary, fontSize: 12),
+                    ),
                 ],
               ),
             ),
@@ -199,6 +208,22 @@ class _ShiftHub extends ConsumerWidget {
               valueColor: EposBrand.orange,
             ),
             const SizedBox(height: 24),
+            OutlinedButton.icon(
+              onPressed: () {
+                final config = ref.read(businessConfigProvider);
+                ReceiptDocumentService.printShiftReport(
+                  context: context,
+                  config: config,
+                  register: register,
+                  summary: summary,
+                  symbol: symbol,
+                  isClosing: false,
+                );
+              },
+              icon: const Icon(Icons.print_outlined),
+              label: const Text('Imprimir arqueo (X)'),
+            ),
+            const SizedBox(height: 8),
             FilledButton.icon(
               onPressed: () => context.push('/cash-register/treasury'),
               icon: const Icon(Icons.swap_vert),

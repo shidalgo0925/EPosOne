@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:eposone/src/core/providers/business_config_provider.dart';
 import 'package:eposone/src/core/printing/receipt_document_service.dart';
+import 'package:eposone/src/core/printing/receipt_text_builder.dart';
 import 'package:eposone/src/core/utils/view_insets.dart';
-import 'package:eposone/src/features/pos/presentation/providers/pos_provider.dart';
+import 'package:eposone/src/core/widgets/business_logo_header.dart';
+import 'package:eposone/src/features/customers/presentation/providers/customer_provider.dart';
 import 'package:eposone/src/features/sales/domain/entities/sale.dart';
 import 'package:eposone/src/features/sales/domain/entities/sale_item.dart';
 import 'package:eposone/src/features/sales/presentation/providers/sales_provider.dart';
@@ -49,18 +50,65 @@ void _confirmRefund(BuildContext context, WidgetRef ref, Sale sale) {
   );
 }
 
-class ReceiptScreen extends ConsumerWidget {
+Future<({String? name, String? document})> _customerFields(
+  WidgetRef ref,
+  Sale sale,
+) async {
+  if (sale.customerId == null) return (name: null, document: null);
+  final c = await ref.read(customerByIdProvider(sale.customerId!).future);
+  return (name: c?.name, document: c?.document);
+}
+
+/// Pantalla post-cobro: auto-imprime el recibo una vez (como precuenta al pedir).
+class ReceiptScreen extends ConsumerStatefulWidget {
   final String saleId;
   const ReceiptScreen({super.key, required this.saleId});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final detailAsync = ref.watch(saleDetailProvider(saleId));
+  ConsumerState<ReceiptScreen> createState() => _ReceiptScreenState();
+}
+
+class _ReceiptScreenState extends ConsumerState<ReceiptScreen> {
+  bool _autoPrinted = false;
+
+  Future<void> _autoPrintIfNeeded(Sale sale, List<SaleItem> items) async {
+    if (_autoPrinted) return;
+    _autoPrinted = true;
+    final config = ref.read(businessConfigProvider);
+    final symbol = config?.currencySymbol ?? 'B/.';
+    final c = await _customerFields(ref, sale);
+    if (!mounted) return;
+    await ReceiptDocumentService.printSale(
+      context: context,
+      config: config,
+      sale: sale,
+      items: items,
+      symbol: symbol,
+      customerName: c.name,
+      customerDocument: c.document,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final detailAsync = ref.watch(saleDetailProvider(widget.saleId));
     final config = ref.watch(businessConfigProvider);
     final symbol = config?.currencySymbol ?? 'B/.';
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Recibo')),
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/pos');
+            }
+          },
+        ),
+        title: const Text('Recibo'),
+      ),
       body: detailAsync.when(
         data: (detail) {
           final sale = detail['sale'] as Sale?;
@@ -69,6 +117,18 @@ class ReceiptScreen extends ConsumerWidget {
             return const Center(child: Text('Venta no encontrada'));
           }
 
+          // Auto-impresión al llegar tras cobrar (una sola vez).
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _autoPrintIfNeeded(sale, items);
+          });
+
+          final previewLines = ReceiptTextBuilder.buildSaleReceipt(
+            config: config,
+            sale: sale,
+            items: items,
+            symbol: symbol,
+          );
+
           return Column(
             children: [
               Expanded(
@@ -76,49 +136,34 @@ class ReceiptScreen extends ConsumerWidget {
                   padding: const EdgeInsets.all(20),
                   child: Column(
                     children: [
-                      Icon(Icons.check_circle, size: 56, color: Colors.green.shade400),
+                      Icon(Icons.check_circle,
+                          size: 56, color: Colors.green.shade400),
                       const SizedBox(height: 8),
-                      const Text('¡Venta completada!', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      const Text('¡Venta completada!',
+                          style: TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 24),
                       Container(
                         width: double.infinity,
-                        padding: const EdgeInsets.all(20),
+                        padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           border: Border.all(color: Colors.grey.shade700),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            Text(config?.businessName ?? 'EPOSOne',
-                                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                            if (config?.address != null) Text(config!.address!, style: const TextStyle(color: Colors.grey)),
-                            const Divider(height: 24),
-                            if (sale.receiptNumber != null)
-                              Text('Recibo: ${sale.receiptNumber}', style: const TextStyle(fontWeight: FontWeight.w600)),
-                            Text(DateFormat('dd/MM/yyyy HH:mm').format(sale.saleDate)),
-                            if (sale.cashierName != null) Text('Cajero: ${sale.cashierName}'),
-                            const Divider(height: 24),
-                            ...items.map((item) => Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 4),
-                                  child: Row(
-                                    children: [
-                                      Expanded(
-                                        child: Text('${item.quantity.toStringAsFixed(item.quantity == item.quantity.toInt() ? 0 : 1)} x ${item.productName}'),
-                                      ),
-                                      Text('$symbol${(item.quantity * item.unitPrice).toStringAsFixed(2)}'),
-                                    ],
+                            BusinessLogoHeader(logoPath: config?.logoPath),
+                            for (final line in previewLines)
+                              if (line.trim().isNotEmpty)
+                                Text(
+                                  line,
+                                  style: const TextStyle(
+                                    fontFamily: 'monospace',
+                                    fontSize: 11,
+                                    height: 1.25,
                                   ),
-                                )),
-                            const Divider(height: 24),
-                            _row('Subtotal', sale.subtotal, symbol),
-                            if (sale.discount > 0) _row('Descuento', -sale.discount, symbol),
-                            if (sale.taxAmount > 0) _row(config?.taxName ?? 'ITBMS', sale.taxAmount, symbol),
-                            if (sale.tipAmount > 0) _row('Propina', sale.tipAmount, symbol),
-                            _row('TOTAL', sale.total, symbol, bold: true),
-                            const SizedBox(height: 8),
-                            _row('Pago', sale.amountPaid, symbol),
-                            _row('Método', 0, symbol, text: paymentMethodLabel(sale.paymentMethod)),
-                            if (sale.change > 0) _row('Vuelto', sale.change, symbol),
+                                ),
                           ],
                         ),
                       ),
@@ -127,7 +172,8 @@ class ReceiptScreen extends ConsumerWidget {
                 ),
               ),
               Padding(
-                padding: EdgeInsets.fromLTRB(16, 16, 16, ViewInsets.bottom(context)),
+                padding: EdgeInsets.fromLTRB(
+                    16, 16, 16, ViewInsets.bottom(context)),
                 child: Column(
                   children: [
                     SizedBox(
@@ -144,26 +190,37 @@ class ReceiptScreen extends ConsumerWidget {
                       children: [
                         Expanded(
                           child: OutlinedButton.icon(
-                            onPressed: () => ReceiptDocumentService.printSale(
-                              context: context,
-                              config: config,
-                              sale: sale,
-                              items: items,
-                              symbol: symbol,
-                            ),
+                            onPressed: () async {
+                              final c = await _customerFields(ref, sale);
+                              if (!context.mounted) return;
+                              await ReceiptDocumentService.printSale(
+                                context: context,
+                                config: config,
+                                sale: sale,
+                                items: items,
+                                symbol: symbol,
+                                customerName: c.name,
+                                customerDocument: c.document,
+                              );
+                            },
                             icon: const Icon(Icons.print),
-                            label: const Text('Imprimir'),
+                            label: const Text('Reimprimir'),
                           ),
                         ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: OutlinedButton.icon(
-                            onPressed: () => ReceiptDocumentService.shareSalePdf(
-                              sale: sale,
-                              config: config,
-                              items: items,
-                              symbol: symbol,
-                            ),
+                            onPressed: () async {
+                              final c = await _customerFields(ref, sale);
+                              await ReceiptDocumentService.shareSalePdf(
+                                sale: sale,
+                                config: config,
+                                items: items,
+                                symbol: symbol,
+                                customerName: c.name,
+                                customerDocument: c.document,
+                              );
+                            },
                             icon: const Icon(Icons.share),
                             label: const Text('Compartir'),
                           ),
@@ -171,14 +228,16 @@ class ReceiptScreen extends ConsumerWidget {
                       ],
                     ),
                     TextButton(
-                      onPressed: () => context.go('/sales/${sale.localId}'),
+                      onPressed: () =>
+                          context.go('/sales?id=${sale.localId}'),
                       child: const Text('Ver historial'),
                     ),
                     if (sale.status == SaleStatus.completed)
                       TextButton.icon(
                         onPressed: () => _confirmRefund(context, ref, sale),
                         icon: const Icon(Icons.replay, color: Colors.orange),
-                        label: const Text('Reembolsar', style: TextStyle(color: Colors.orange)),
+                        label: const Text('Reembolsar',
+                            style: TextStyle(color: Colors.orange)),
                       ),
                   ],
                 ),
@@ -188,22 +247,6 @@ class ReceiptScreen extends ConsumerWidget {
         },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error: $e')),
-      ),
-    );
-  }
-
-  Widget _row(String label, double value, String symbol, {bool bold = false, String? text}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
-      child: Row(
-        children: [
-          Text(label, style: TextStyle(fontWeight: bold ? FontWeight.bold : FontWeight.normal)),
-          const Spacer(),
-          Text(
-            text ?? '$symbol${value.toStringAsFixed(2)}',
-            style: TextStyle(fontWeight: bold ? FontWeight.bold : FontWeight.w600, fontSize: bold ? 18 : 14),
-          ),
-        ],
       ),
     );
   }

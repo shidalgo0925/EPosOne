@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:eposone/src/core/providers/business_config_provider.dart';
+import 'package:eposone/src/core/time/en1_date_time_service.dart';
+import 'package:eposone/src/features/auth/domain/cashier_display.dart';
 import 'package:eposone/src/features/pos/presentation/providers/pos_provider.dart';
 import 'package:eposone/src/features/pos/presentation/utils/pos_layout.dart';
 import 'package:eposone/src/features/sales/domain/entities/sale.dart';
@@ -64,10 +65,18 @@ class _SalesHistoryScreenState extends ConsumerState<SalesHistoryScreen> {
 
   void _selectSale(Sale sale, {required bool isTablet}) {
     if (isTablet) {
+      // Mantener lista + detalle; no reemplazar la ruta (rompe "atrás").
       setState(() => _selectedSaleId = sale.localId);
-      context.go('/sales/${sale.localId}');
     } else {
       context.push('/sales/${sale.localId}');
+    }
+  }
+
+  void _goBack() {
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go('/pos');
     }
   }
 
@@ -100,6 +109,10 @@ class _SalesHistoryScreenState extends ConsumerState<SalesHistoryScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: _goBack,
+        ),
         title: const Text('Recibos'),
         actions: [
           IconButton(icon: const Icon(Icons.calendar_today), onPressed: _showDateFilter),
@@ -136,6 +149,8 @@ class _SalesHistoryScreenState extends ConsumerState<SalesHistoryScreen> {
           }
 
           final totalSales = filtered.fold<double>(0, (sum, s) => sum + s.total);
+          final totalTips = filtered.fold<double>(0, (sum, s) => sum + s.tipAmount);
+          final salesNet = totalSales - totalTips;
           final listPane = Column(
             children: [
               _SearchBar(
@@ -150,13 +165,31 @@ class _SalesHistoryScreenState extends ConsumerState<SalesHistoryScreen> {
                     _SummaryChip(label: 'Ventas', value: '${filtered.length}', icon: Icons.receipt),
                     const SizedBox(width: 12),
                     _SummaryChip(
-                      label: 'Total',
+                      label: 'Cobrado',
                       value: '$symbol${totalSales.toStringAsFixed(2)}',
                       icon: Icons.attach_money,
                     ),
                   ],
                 ),
               ),
+              if (totalTips > 0)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Venta $symbol${salesNet.toStringAsFixed(2)} · Propina $symbol${totalTips.toStringAsFixed(2)}',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey.shade700,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               Expanded(
                 child: ListView.builder(
                   padding: const EdgeInsets.all(8),
@@ -359,20 +392,47 @@ class _SaleCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              DateFormat('dd/MM/yyyy HH:mm').format(sale.saleDate),
+              En1DateTimeService.formatLocal(sale.saleDate),
               style: const TextStyle(fontSize: 12),
             ),
-            if (sale.cashierName != null)
-              Text(sale.cashierName!, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+            if (sale.cashierName != null || sale.cashierId != null)
+              Text(
+                CashierDisplay.displayName(
+                  name: sale.cashierName,
+                  contactId: sale.cashierId != null &&
+                          sale.cashierId!.startsWith('en1_cashier_')
+                      ? int.tryParse(
+                          sale.cashierId!.substring('en1_cashier_'.length),
+                        )
+                      : null,
+                ),
+                style: const TextStyle(fontSize: 11, color: Colors.grey),
+              ),
+            if (sale.tipAmount > 0)
+              Text(
+                'Propina $symbol${sale.tipAmount.toStringAsFixed(2)} · Venta $symbol${(sale.total - sale.tipAmount).toStringAsFixed(2)}',
+                style: const TextStyle(fontSize: 11, color: Colors.teal),
+              ),
           ],
         ),
-        trailing: Text(
-          '$symbol${sale.total.toStringAsFixed(2)}',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: isInactive ? Colors.grey : Theme.of(context).colorScheme.primary,
-          ),
+        trailing: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Text(
+              '$symbol${sale.total.toStringAsFixed(2)}',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: isInactive ? Colors.grey : Theme.of(context).colorScheme.primary,
+              ),
+            ),
+            if (sale.tipAmount > 0)
+              Text(
+                'incl. propina',
+                style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
+              ),
+          ],
         ),
         onTap: onTap,
       ),

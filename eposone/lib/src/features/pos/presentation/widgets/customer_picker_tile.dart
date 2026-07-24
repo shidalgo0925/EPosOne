@@ -27,7 +27,8 @@ class CustomerPickerTile extends ConsumerWidget {
       onTap: () => _pickCustomer(context, ref),
       borderRadius: BorderRadius.circular(8),
       child: Container(
-        padding: EdgeInsets.symmetric(horizontal: compact ? 8 : 10, vertical: compact ? 5 : 8),
+        padding: EdgeInsets.symmetric(
+            horizontal: compact ? 8 : 10, vertical: compact ? 5 : 8),
         decoration: BoxDecoration(
           color: EposBrand.background,
           borderRadius: BorderRadius.circular(compact ? 6 : 8),
@@ -35,14 +36,17 @@ class CustomerPickerTile extends ConsumerWidget {
         ),
         child: Row(
           children: [
-            Icon(Icons.person_outline, size: compact ? 15 : 18, color: EposBrand.navy.withValues(alpha: 0.7)),
+            Icon(Icons.person_outline,
+                size: compact ? 15 : 18,
+                color: EposBrand.navy.withValues(alpha: 0.7)),
             SizedBox(width: compact ? 6 : 8),
             Expanded(
               child: Text(
                 label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: compact ? 11 : 13, fontWeight: FontWeight.w500),
+                style: TextStyle(
+                    fontSize: compact ? 11 : 13, fontWeight: FontWeight.w500),
               ),
             ),
             if (cart.customerId != null)
@@ -50,10 +54,12 @@ class CustomerPickerTile extends ConsumerWidget {
                 icon: const Icon(Icons.close, size: 16),
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-                onPressed: () => ref.read(cartProvider.notifier).setCustomer(null),
+                onPressed: () =>
+                    ref.read(cartProvider.notifier).setCustomer(null),
               )
             else
-              Icon(Icons.chevron_right, size: 18, color: EposBrand.textSecondary),
+              Icon(Icons.chevron_right,
+                  size: 18, color: EposBrand.textSecondary),
           ],
         ),
       ),
@@ -124,7 +130,12 @@ class _CustomerPickerSheetState extends State<_CustomerPickerSheet> {
       builder: (_, scrollController) => Column(
         children: [
           const SizedBox(height: 8),
-          Container(width: 40, height: 4, decoration: BoxDecoration(color: EposBrand.divider, borderRadius: BorderRadius.circular(2))),
+          Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                  color: EposBrand.divider,
+                  borderRadius: BorderRadius.circular(2))),
           Padding(
             padding: const EdgeInsets.all(16),
             child: TextField(
@@ -137,7 +148,9 @@ class _CustomerPickerSheetState extends State<_CustomerPickerSheet> {
             ),
           ),
           ListTile(
-            leading: CircleAvatar(backgroundColor: EposBrand.background, child: Icon(Icons.person_off, color: EposBrand.textSecondary)),
+            leading: CircleAvatar(
+                backgroundColor: EposBrand.background,
+                child: Icon(Icons.person_off, color: EposBrand.textSecondary)),
             title: const Text('Cliente ocasional'),
             onTap: () => Navigator.pop(context, _clearCustomerSentinel),
           ),
@@ -152,11 +165,16 @@ class _CustomerPickerSheetState extends State<_CustomerPickerSheet> {
                       final c = filtered[i];
                       return ListTile(
                         leading: CircleAvatar(
-                          backgroundColor: EposBrand.orange.withValues(alpha: 0.15),
-                          child: Text(c.name.isNotEmpty ? c.name[0].toUpperCase() : '?', style: const TextStyle(color: EposBrand.navy)),
+                          backgroundColor:
+                              EposBrand.orange.withValues(alpha: 0.15),
+                          child: Text(
+                              c.name.isNotEmpty ? c.name[0].toUpperCase() : '?',
+                              style: const TextStyle(color: EposBrand.navy)),
                         ),
                         title: Text(c.name),
-                        subtitle: Text([c.phone, c.document].whereType<String>().join(' · ')),
+                        subtitle: Text([c.phone, c.document]
+                            .whereType<String>()
+                            .join(' · ')),
                         onTap: () => Navigator.pop(context, c),
                       );
                     },

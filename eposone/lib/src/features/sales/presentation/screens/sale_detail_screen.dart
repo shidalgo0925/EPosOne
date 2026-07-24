@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:eposone/src/features/sales/domain/entities/sale.dart';
 import 'package:eposone/src/features/sales/presentation/providers/sales_provider.dart';
 import 'package:eposone/src/features/sales/presentation/widgets/sale_detail_panel.dart';
@@ -14,6 +15,16 @@ class SaleDetailScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/sales');
+            }
+          },
+        ),
         title: const Text('Detalle de Venta'),
         actions: [
           detailAsync.when(

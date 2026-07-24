@@ -1,6 +1,7 @@
 import 'package:isar/isar.dart';
 import 'package:eposone/src/core/entities/sync_entity.dart';
 import 'package:eposone/src/features/pos/domain/entities/order_type.dart';
+import 'package:eposone/src/features/fiscal/domain/establishment_type.dart';
 import 'package:eposone/src/features/fiscal/domain/entities/pac_provider_type.dart';
 import 'package:eposone/src/features/sync/domain/entities/en1_sync_mode.dart';
 
@@ -17,9 +18,14 @@ class BusinessConfig extends SyncEntity {
   final String? email;
   final String currency; // USD, PAB, etc.
   final String? currencySymbol;
-  final double taxRate; // ej: 7.0 para 7%
+  final double taxRate; // ej: 7.0 para 7% (legacy / fallback)
   final String? taxName;
   final bool taxIncluded;
+  @enumerated
+  final EstablishmentType establishmentType;
+  final bool chargesRestaurantService;
+  final bool sellsAlcohol;
+  final bool isExemptEstablishment;
   final String receiptHeader;
   final String receiptFooter;
   final String? receiptPrefix; // prefijo para número de recibo
@@ -67,6 +73,10 @@ class BusinessConfig extends SyncEntity {
     this.taxRate = 0,
     this.taxName,
     this.taxIncluded = false,
+    this.establishmentType = EstablishmentType.other,
+    this.chargesRestaurantService = false,
+    this.sellsAlcohol = false,
+    this.isExemptEstablishment = false,
     this.receiptHeader = 'Gracias por su compra',
     this.receiptFooter = 'Vuelva pronto',
     this.receiptPrefix = 'R',
@@ -138,6 +148,7 @@ class BusinessConfig extends SyncEntity {
     DateTime? deletedAt,
     String? businessName,
     String? logoPath,
+    bool clearLogoPath = false,
     String? address,
     String? phone,
     String? email,
@@ -146,6 +157,10 @@ class BusinessConfig extends SyncEntity {
     double? taxRate,
     String? taxName,
     bool? taxIncluded,
+    EstablishmentType? establishmentType,
+    bool? chargesRestaurantService,
+    bool? sellsAlcohol,
+    bool? isExemptEstablishment,
     String? receiptHeader,
     String? receiptFooter,
     String? receiptPrefix,
@@ -181,7 +196,7 @@ class BusinessConfig extends SyncEntity {
         updatedAt: updatedAt ?? this.updatedAt,
         deletedAt: deletedAt ?? this.deletedAt,
         businessName: businessName ?? this.businessName,
-        logoPath: logoPath ?? this.logoPath,
+        logoPath: clearLogoPath ? null : (logoPath ?? this.logoPath),
         address: address ?? this.address,
         phone: phone ?? this.phone,
         email: email ?? this.email,
@@ -190,6 +205,12 @@ class BusinessConfig extends SyncEntity {
         taxRate: taxRate ?? this.taxRate,
         taxName: taxName ?? this.taxName,
         taxIncluded: taxIncluded ?? this.taxIncluded,
+        establishmentType: establishmentType ?? this.establishmentType,
+        chargesRestaurantService:
+            chargesRestaurantService ?? this.chargesRestaurantService,
+        sellsAlcohol: sellsAlcohol ?? this.sellsAlcohol,
+        isExemptEstablishment:
+            isExemptEstablishment ?? this.isExemptEstablishment,
         receiptHeader: receiptHeader ?? this.receiptHeader,
         receiptFooter: receiptFooter ?? this.receiptFooter,
         receiptPrefix: receiptPrefix ?? this.receiptPrefix,

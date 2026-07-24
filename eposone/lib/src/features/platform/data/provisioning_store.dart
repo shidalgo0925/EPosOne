@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:eposone/src/core/time/en1_date_time_service.dart';
 import 'package:eposone/src/features/platform/domain/connection_status.dart';
 import 'package:eposone/src/features/platform/domain/provisioning_config.dart';
 
@@ -79,6 +80,7 @@ class ProvisioningStore {
     await prefs.setString(_configKeyV1, jsonEncode(map));
     await prefs.setString(_statusKey, ConnectionStatus.connected.storageValue);
     await prefs.remove(_errorKey);
+    await En1DateTimeService.setBusinessTimezone(config.timezone);
   }
 
   static Future<void> clearConfig() async {

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:eposone/src/core/theme/eposone_theme.dart';
+import 'package:eposone/src/core/time/en1_date_time_service.dart';
 import 'package:eposone/src/features/sync/presentation/providers/en1_connection_status.dart';
 
 /// Indicador visible EN1 (Hito 3B.1).
@@ -36,7 +36,7 @@ class En1StatusChip extends ConsumerWidget {
         };
         final time = s.lastSyncAt == null
             ? null
-            : DateFormat('HH:mm:ss').format(s.lastSyncAt!.toLocal());
+            : En1DateTimeService.formatLocal(s.lastSyncAt!, 'HH:mm:ss');
 
         if (compact) {
           return Tooltip(

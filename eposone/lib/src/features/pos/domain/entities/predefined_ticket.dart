@@ -31,12 +31,16 @@ class PredefinedTicket extends SyncEntity {
       copyWith(syncStatus: SyncStatus.modified, updatedAt: DateTime.now());
 
   @override
-  PredefinedTicket markAsSynced(String serverId) =>
-      copyWith(serverId: serverId, syncStatus: SyncStatus.synced, updatedAt: DateTime.now());
+  PredefinedTicket markAsSynced(String serverId) => copyWith(
+      serverId: serverId,
+      syncStatus: SyncStatus.synced,
+      updatedAt: DateTime.now());
 
   @override
-  PredefinedTicket markAsDeleted() =>
-      copyWith(deletedAt: DateTime.now(), syncStatus: SyncStatus.modified, updatedAt: DateTime.now());
+  PredefinedTicket markAsDeleted() => copyWith(
+      deletedAt: DateTime.now(),
+      syncStatus: SyncStatus.modified,
+      updatedAt: DateTime.now());
 
   PredefinedTicket copyWith({
     String? localId,

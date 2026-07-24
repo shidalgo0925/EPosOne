@@ -20,7 +20,11 @@ class PosPageRepository {
   PosPageRepository(this._isar);
 
   Future<List<PosPage>> getActivePages() async {
-    final pages = await _isar.posPages.filter().isDeletedEqualTo(false).isActiveEqualTo(true).findAll();
+    final pages = await _isar.posPages
+        .filter()
+        .isDeletedEqualTo(false)
+        .isActiveEqualTo(true)
+        .findAll();
     pages.sort((a, b) {
       final o = a.sortOrder.compareTo(b.sortOrder);
       return o != 0 ? o : a.name.compareTo(b.name);
@@ -29,7 +33,8 @@ class PosPageRepository {
   }
 
   Future<List<PosPage>> getAllPages() async {
-    final pages = await _isar.posPages.filter().isDeletedEqualTo(false).findAll();
+    final pages =
+        await _isar.posPages.filter().isDeletedEqualTo(false).findAll();
     pages.sort((a, b) {
       final o = a.sortOrder.compareTo(b.sortOrder);
       return o != 0 ? o : a.name.compareTo(b.name);
@@ -58,26 +63,33 @@ class PosPageRepository {
   }
 
   Future<List<PosPageItem>> getItems(String pageId) async {
-    final items = await _isar.posPageItems.filter().pageIdEqualTo(pageId).isDeletedEqualTo(false).findAll();
+    final items = await _isar.posPageItems
+        .filter()
+        .pageIdEqualTo(pageId)
+        .isDeletedEqualTo(false)
+        .findAll();
     items.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
     return items;
   }
 
   Future<void> setPageItems(String pageId, List<PosPageItem> items) async {
     await _isar.writeTxn(() async {
-      final existing = await _isar.posPageItems.filter().pageIdEqualTo(pageId).findAll();
+      final existing =
+          await _isar.posPageItems.filter().pageIdEqualTo(pageId).findAll();
       for (final old in existing) {
         await _isar.posPageItems.put(old.markAsDeleted());
       }
       for (var i = 0; i < items.length; i++) {
-        await _isar.posPageItems.put(items[i].copyWith(pageId: pageId, sortOrder: i));
+        await _isar.posPageItems
+            .put(items[i].copyWith(pageId: pageId, sortOrder: i));
       }
     });
   }
 
-  Future<List<Product>> resolveProductsForPage(String pageId, List<Product> allActiveProducts) async {
+  Future<List<Product>> resolveProductsForPage(
+      String pageId, List<Product> allActiveProducts) async {
     final items = await getItems(pageId);
-    if (items.isEmpty) return allActiveProducts;
+    if (items.isEmpty) return const [];
 
     final byId = {for (final p in allActiveProducts) p.localId: p};
     final seen = <String>{};
@@ -90,7 +102,9 @@ class PosPageRepository {
           result.add(product);
         }
       } else {
-        final catProducts = allActiveProducts.where((p) => p.categoryId == item.refId).toList()
+        final catProducts = allActiveProducts
+            .where((p) => p.categoryId == item.refId)
+            .toList()
           ..sort((a, b) => a.name.compareTo(b.name));
         for (final product in catProducts) {
           if (seen.add(product.localId)) {
@@ -100,11 +114,7 @@ class PosPageRepository {
       }
     }
 
+    // Página con ítems pero sin productos → lista vacía (dispara reparación, no catálogo global).
     return result;
-  }
-
-  Future<bool> hasConfiguredPages() async {
-    final count = await _isar.posPages.filter().isDeletedEqualTo(false).isActiveEqualTo(true).count();
-    return count > 0;
   }
 }

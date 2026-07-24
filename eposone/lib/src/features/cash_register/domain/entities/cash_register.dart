@@ -1,5 +1,7 @@
 import 'package:isar/isar.dart';
+import 'package:uuid/uuid.dart';
 import 'package:eposone/src/core/entities/sync_entity.dart';
+import 'package:eposone/src/core/time/en1_date_time_service.dart';
 
 part 'cash_register.g.dart';
 
@@ -21,6 +23,17 @@ class CashRegister extends SyncEntity {
   final String? closedBy;
   final String? notes;
 
+  /// Cajero que abrió el turno (id local Isar o `en1_cashier_<contactId>`).
+  final String? openedByCashierId;
+
+  /// EN1 `cashier_contact_id` al abrir (null en Standalone puro).
+  final int? openedByCashierContactId;
+
+  /// Cajero actual del turno (puede cambiar sin cerrar caja).
+  final String? currentCashierId;
+  final int? currentCashierContactId;
+  final String? currentCashierName;
+
   const CashRegister({
     required super.localId,
     super.serverId,
@@ -38,18 +51,30 @@ class CashRegister extends SyncEntity {
     this.openedBy,
     this.closedBy,
     this.notes,
+    this.openedByCashierId,
+    this.openedByCashierContactId,
+    this.currentCashierId,
+    this.currentCashierContactId,
+    this.currentCashierName,
   });
 
   bool get isOpen => status == CashRegisterStatus.open;
 
   @override
-  CashRegister markAsModified() => copyWith(syncStatus: SyncStatus.modified, updatedAt: DateTime.now());
+  CashRegister markAsModified() =>
+      copyWith(syncStatus: SyncStatus.modified, updatedAt: En1DateTimeService.nowUtc());
 
   @override
-  CashRegister markAsSynced(String serverId) => copyWith(serverId: serverId, syncStatus: SyncStatus.synced, updatedAt: DateTime.now());
+  CashRegister markAsSynced(String serverId) => copyWith(
+      serverId: serverId,
+      syncStatus: SyncStatus.synced,
+      updatedAt: En1DateTimeService.nowUtc());
 
   @override
-  CashRegister markAsDeleted() => copyWith(deletedAt: DateTime.now(), syncStatus: SyncStatus.modified, updatedAt: DateTime.now());
+  CashRegister markAsDeleted() => copyWith(
+      deletedAt: En1DateTimeService.nowUtc(),
+      syncStatus: SyncStatus.modified,
+      updatedAt: En1DateTimeService.nowUtc());
 
   CashRegister copyWith({
     String? localId,
@@ -68,6 +93,13 @@ class CashRegister extends SyncEntity {
     String? openedBy,
     String? closedBy,
     String? notes,
+    String? openedByCashierId,
+    int? openedByCashierContactId,
+    String? currentCashierId,
+    int? currentCashierContactId,
+    String? currentCashierName,
+    bool clearOpenedByContactId = false,
+    bool clearCurrentContactId = false,
   }) =>
       CashRegister(
         localId: localId ?? this.localId,
@@ -86,22 +118,55 @@ class CashRegister extends SyncEntity {
         openedBy: openedBy ?? this.openedBy,
         closedBy: closedBy ?? this.closedBy,
         notes: notes ?? this.notes,
+        openedByCashierId: openedByCashierId ?? this.openedByCashierId,
+        openedByCashierContactId: clearOpenedByContactId
+            ? null
+            : (openedByCashierContactId ?? this.openedByCashierContactId),
+        currentCashierId: currentCashierId ?? this.currentCashierId,
+        currentCashierContactId: clearCurrentContactId
+            ? null
+            : (currentCashierContactId ?? this.currentCashierContactId),
+        currentCashierName: currentCashierName ?? this.currentCashierName,
       );
 
   factory CashRegister.create({
     required double openingAmount,
     String? openedBy,
     String? notes,
+    String? openedByCashierId,
+    int? openedByCashierContactId,
+    String? currentCashierName,
+  }) {
+    final now = En1DateTimeService.nowUtc();
+    return CashRegister(
+      // = client_shift_id (idempotencia EN1 Cash Shift HTTP v1.0)
+      localId: const Uuid().v4(),
+      openDate: now,
+      openingAmount: openingAmount,
+      openedBy: openedBy,
+      notes: notes,
+      openedByCashierId: openedByCashierId,
+      openedByCashierContactId: openedByCashierContactId,
+      currentCashierId: openedByCashierId,
+      currentCashierContactId: openedByCashierContactId,
+      currentCashierName: currentCashierName ?? openedBy,
+      createdAt: now,
+      updatedAt: now,
+    );
+  }
+
+  CashRegister assignCurrentCashier({
+    required String cashierId,
+    required String cashierName,
+    int? cashierContactId,
   }) =>
-      CashRegister(
-        localId: DateTime.now().millisecondsSinceEpoch.toString(),
-        openDate: DateTime.now(),
-        openingAmount: openingAmount,
-        openedBy: openedBy,
-        notes: notes,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      );
+      copyWith(
+        currentCashierId: cashierId,
+        currentCashierName: cashierName,
+        currentCashierContactId: cashierContactId,
+        clearCurrentContactId: cashierContactId == null,
+        updatedAt: En1DateTimeService.nowUtc(),
+      ).markAsModified();
 
   CashRegister close({
     required double closingAmount,
@@ -110,13 +175,14 @@ class CashRegister extends SyncEntity {
     String? notes,
   }) =>
       copyWith(
-        closeDate: DateTime.now(),
+        closeDate: En1DateTimeService.nowUtc(),
         closingAmount: closingAmount,
         expectedAmount: expectedAmount,
         difference: closingAmount - expectedAmount,
         status: CashRegisterStatus.closed,
         closedBy: closedBy,
         notes: notes ?? this.notes,
-        updatedAt: DateTime.now(),
+        syncStatus: SyncStatus.modified,
+        updatedAt: En1DateTimeService.nowUtc(),
       );
 }

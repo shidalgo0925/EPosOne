@@ -3,8 +3,11 @@ import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:eposone/src/core/providers/business_config_provider.dart';
+import 'package:eposone/src/core/time/en1_clock_guard.dart';
+import 'package:eposone/src/core/time/en1_date_time_service.dart';
 import 'package:eposone/src/features/orders/presentation/providers/order_providers.dart';
 import 'package:eposone/src/features/platform/data/provisioning_store.dart';
+import 'package:eposone/src/features/pos/presentation/providers/open_ticket_provider.dart';
 import 'package:eposone/src/features/settings/data/repositories/business_config_repository.dart';
 import 'package:eposone/src/features/sync/presentation/providers/sync_provider.dart';
 
@@ -75,15 +78,18 @@ final en1AutoSyncKeeperProvider = Provider<void>((ref) {
     try {
       ref.read(syncRunningProvider.notifier).state = true;
       await ref.read(orderServiceProvider).flushPendingToEn1(config: config);
+      unawaited(En1ClockGuard.checkQuiet(apiBaseUrl: config?.en1ApiUrl));
       try {
         final cfg = await ref.read(businessConfigRepositoryProvider).getConfig();
         await ref.read(businessConfigRepositoryProvider).saveConfig(
-              cfg.copyWith(en1LastSyncAt: DateTime.now()).markAsModified(),
+              cfg.copyWith(en1LastSyncAt: En1DateTimeService.nowUtc()).markAsModified(),
             );
       } catch (_) {}
       ref.invalidate(syncPendingCountProvider);
       ref.invalidate(syncOperationsProvider);
       ref.invalidate(localOrdersProvider);
+      ref.invalidate(openTicketsListProvider);
+      ref.invalidate(openTicketsCountProvider);
       ref.invalidate(en1StatusSnapshotProvider);
       ref.invalidate(businessConfigAsyncProvider);
     } catch (_) {
@@ -108,7 +114,11 @@ Future<bool> _probeOnline(String? baseUrl) async {
     if (!uri.hasScheme) uri = Uri.parse('https://$base');
     final req = await client.headUrl(uri).timeout(const Duration(seconds: 3));
     final res = await req.close().timeout(const Duration(seconds: 3));
+    final dateHeader = res.headers.value(HttpHeaders.dateHeader);
     await res.drain<void>();
+    if (dateHeader != null) {
+      unawaited(En1DateTimeService.applyServerDateHeader(dateHeader));
+    }
     return res.statusCode < 500;
   } catch (_) {
     return false;

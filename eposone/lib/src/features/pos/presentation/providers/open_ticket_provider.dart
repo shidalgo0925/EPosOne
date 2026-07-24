@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:eposone/src/core/session/pos_session.dart';
+import 'package:eposone/src/features/commercial_engine/commercial_engine.dart';
 import 'package:eposone/src/features/orders/presentation/providers/order_providers.dart';
 import 'package:eposone/src/features/pos/data/repositories/open_ticket_repository.dart';
 import 'package:eposone/src/features/pos/data/repositories/predefined_ticket_repository.dart';
@@ -22,20 +23,41 @@ final openTicketsCountProvider = FutureProvider<int>((ref) async {
   return repo.countOpenTickets();
 });
 
-final availablePredefinedSlotsProvider = FutureProvider<List<PredefinedTicket>>((ref) async {
+final availablePredefinedSlotsProvider =
+    FutureProvider<List<PredefinedTicket>>((ref) async {
   final repo = ref.watch(predefinedTicketRepositoryProvider);
   return repo.getAvailableSlots();
 });
 
-typedef OpenTicketDetail = ({OpenTicket ticket, List<OpenTicketLine> lines, double total});
+typedef OpenTicketDetail = ({
+  OpenTicket ticket,
+  List<OpenTicketLine> lines,
+  double total
+});
 
-final openTicketDetailProvider = FutureProvider.family<OpenTicketDetail?, String>((ref, id) async {
+final openTicketDetailProvider =
+    FutureProvider.family<OpenTicketDetail?, String>((ref, id) async {
   final repo = ref.watch(openTicketRepositoryProvider);
   final ticket = await repo.getById(id);
   if (ticket == null) return null;
   final lines = await repo.getLines(id);
-  final total = lines.fold<double>(0, (sum, l) => sum + l.lineTotal);
-  return (ticket: ticket, lines: lines, total: total);
+  final result = ref.read(commercialEngineProvider).calculateTotals(
+        CommercialOrderInput(
+          lines: [
+            for (final line in lines)
+          CommercialLineInput(
+            lineId: line.localId,
+            productId: line.productId,
+            quantity: line.quantity,
+            unitPrice: line.unitPrice,
+            lineDiscount: line.discount,
+            fiscalCategoryCode: line.fiscalCategoryCode,
+          ),
+          ],
+          documentDiscountPercent: ticket.discountPercent ?? 0,
+        ),
+      );
+  return (ticket: ticket, lines: lines, total: result.total);
 });
 
 class SaveOpenTicketParams {
@@ -123,7 +145,8 @@ class OpenTicketActions {
         );
   }
 
-  Future<void> moveTicket(String ticketId, String targetSlotId, String targetLabel) async {
+  Future<void> moveTicket(
+      String ticketId, String targetSlotId, String targetLabel) async {
     await _ref.read(openTicketRepositoryProvider).moveToSlot(
           ticketId: ticketId,
           targetSlotId: targetSlotId,
@@ -180,14 +203,16 @@ class OpenTicketActions {
 
   Future<OpenTicket> createEmptyTicket(SaveOpenTicketParams params) async {
     final session = _ref.read(posSessionProvider);
-    final ticket = await _ref.read(openTicketRepositoryProvider).createEmptyTicket(
-          label: params.label ?? 'Ticket ${DateTime.now().millisecondsSinceEpoch % 10000}',
-          comment: params.comment,
-          predefinedSlotId: params.predefinedSlotId,
-          orderType: params.orderType ?? OrderType.generic,
-          cashierId: session?.cashierId,
-          cashRegisterId: session?.cashRegisterId,
-        );
+    final ticket =
+        await _ref.read(openTicketRepositoryProvider).createEmptyTicket(
+              label: params.label ??
+                  'Ticket ${DateTime.now().millisecondsSinceEpoch % 10000}',
+              comment: params.comment,
+              predefinedSlotId: params.predefinedSlotId,
+              orderType: params.orderType ?? OrderType.generic,
+              cashierId: session?.cashierId,
+              cashRegisterId: session?.cashRegisterId,
+            );
     _invalidate();
     return ticket;
   }
@@ -207,7 +232,8 @@ class OpenTicketActions {
     _ref.invalidate(openTicketDetailProvider(toTicketId));
   }
 
-  Future<void> mergeInto({required String fromTicketId, required String toTicketId}) async {
+  Future<void> mergeInto(
+      {required String fromTicketId, required String toTicketId}) async {
     await _ref.read(openTicketRepositoryProvider).mergeTickets(
           fromTicketId: fromTicketId,
           toTicketId: toTicketId,
@@ -224,4 +250,5 @@ class OpenTicketActions {
   }
 }
 
-final openTicketActionsProvider = Provider<OpenTicketActions>((ref) => OpenTicketActions(ref));
+final openTicketActionsProvider =
+    Provider<OpenTicketActions>((ref) => OpenTicketActions(ref));

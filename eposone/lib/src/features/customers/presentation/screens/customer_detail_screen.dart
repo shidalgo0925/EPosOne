@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:eposone/src/core/providers/business_config_provider.dart';
 import 'package:eposone/src/core/theme/eposone_theme.dart';
+import 'package:eposone/src/core/time/en1_date_time_service.dart';
 import 'package:eposone/src/features/customers/presentation/providers/customer_provider.dart';
 import 'package:eposone/src/features/pos/presentation/providers/pos_provider.dart';
 import 'package:eposone/src/features/premium/presentation/providers/premium_provider.dart';
@@ -19,7 +19,6 @@ class CustomerDetailScreen extends ConsumerWidget {
     final customerAsync = ref.watch(customerByIdProvider(customerId));
     final salesAsync = ref.watch(customerSalesProvider(customerId));
     final symbol = ref.watch(businessConfigProvider)?.currencySymbol ?? 'B/.';
-    final dateFmt = DateFormat('dd/MM/yyyy HH:mm');
 
     return Scaffold(
       appBar: AppBar(
@@ -84,7 +83,7 @@ class CustomerDetailScreen extends ConsumerWidget {
                       (sale) => Card(
                         child: ListTile(
                           title: Text(sale.receiptNumber ?? sale.localId, style: const TextStyle(fontWeight: FontWeight.w600)),
-                          subtitle: Text('${dateFmt.format(sale.saleDate)} · ${paymentMethodLabel(sale.paymentMethod)}'),
+                          subtitle: Text('${En1DateTimeService.formatLocal(sale.saleDate)} · ${paymentMethodLabel(sale.paymentMethod)}'),
                           trailing: Text(
                             '$symbol${sale.total.toStringAsFixed(2)}',
                             style: const TextStyle(fontWeight: FontWeight.bold, color: EposBrand.navy),

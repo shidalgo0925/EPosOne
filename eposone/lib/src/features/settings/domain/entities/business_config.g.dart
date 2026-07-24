@@ -32,237 +32,258 @@ const BusinessConfigSchema = CollectionSchema(
       name: r'businessName',
       type: IsarType.string,
     ),
-    r'createdAt': PropertySchema(
+    r'chargesRestaurantService': PropertySchema(
       id: 3,
+      name: r'chargesRestaurantService',
+      type: IsarType.bool,
+    ),
+    r'createdAt': PropertySchema(
+      id: 4,
       name: r'createdAt',
       type: IsarType.dateTime,
     ),
     r'currency': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'currency',
       type: IsarType.string,
     ),
     r'currencySymbol': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'currencySymbol',
       type: IsarType.string,
     ),
     r'defaultOrderType': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'defaultOrderType',
       type: IsarType.byte,
       enumMap: _BusinessConfigdefaultOrderTypeEnumValueMap,
     ),
     r'deletedAt': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'deletedAt',
       type: IsarType.dateTime,
     ),
     r'email': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'email',
       type: IsarType.string,
     ),
     r'en1ApiToken': PropertySchema(
-      id: 9,
+      id: 10,
       name: r'en1ApiToken',
       type: IsarType.string,
     ),
     r'en1ApiUrl': PropertySchema(
-      id: 10,
+      id: 11,
       name: r'en1ApiUrl',
       type: IsarType.string,
     ),
     r'en1BranchId': PropertySchema(
-      id: 11,
+      id: 12,
       name: r'en1BranchId',
       type: IsarType.string,
     ),
     r'en1LastSyncAt': PropertySchema(
-      id: 12,
+      id: 13,
       name: r'en1LastSyncAt',
       type: IsarType.dateTime,
     ),
     r'en1SyncEnabled': PropertySchema(
-      id: 13,
+      id: 14,
       name: r'en1SyncEnabled',
       type: IsarType.bool,
     ),
     r'en1SyncMode': PropertySchema(
-      id: 14,
+      id: 15,
       name: r'en1SyncMode',
       type: IsarType.byte,
       enumMap: _BusinessConfigen1SyncModeEnumValueMap,
     ),
+    r'establishmentType': PropertySchema(
+      id: 16,
+      name: r'establishmentType',
+      type: IsarType.byte,
+      enumMap: _BusinessConfigestablishmentTypeEnumValueMap,
+    ),
     r'fiscalBranchCode': PropertySchema(
-      id: 15,
+      id: 17,
       name: r'fiscalBranchCode',
       type: IsarType.string,
     ),
     r'fiscalInvoicingEnabled': PropertySchema(
-      id: 16,
+      id: 18,
       name: r'fiscalInvoicingEnabled',
       type: IsarType.bool,
     ),
     r'fiscalNextNumber': PropertySchema(
-      id: 17,
+      id: 19,
       name: r'fiscalNextNumber',
       type: IsarType.long,
     ),
     r'fiscalPointOfSale': PropertySchema(
-      id: 18,
+      id: 20,
       name: r'fiscalPointOfSale',
       type: IsarType.string,
     ),
     r'isDeleted': PropertySchema(
-      id: 19,
+      id: 21,
       name: r'isDeleted',
       type: IsarType.bool,
     ),
     r'isEn1SyncReady': PropertySchema(
-      id: 20,
+      id: 22,
       name: r'isEn1SyncReady',
       type: IsarType.bool,
     ),
+    r'isExemptEstablishment': PropertySchema(
+      id: 23,
+      name: r'isExemptEstablishment',
+      type: IsarType.bool,
+    ),
     r'isFiscalReady': PropertySchema(
-      id: 21,
+      id: 24,
       name: r'isFiscalReady',
       type: IsarType.bool,
     ),
     r'isPendingSync': PropertySchema(
-      id: 22,
+      id: 25,
       name: r'isPendingSync',
       type: IsarType.bool,
     ),
     r'isSetupComplete': PropertySchema(
-      id: 23,
+      id: 26,
       name: r'isSetupComplete',
       type: IsarType.bool,
     ),
     r'isSynced': PropertySchema(
-      id: 24,
+      id: 27,
       name: r'isSynced',
       type: IsarType.bool,
     ),
     r'localId': PropertySchema(
-      id: 25,
+      id: 28,
       name: r'localId',
       type: IsarType.string,
     ),
     r'logoPath': PropertySchema(
-      id: 26,
+      id: 29,
       name: r'logoPath',
       type: IsarType.string,
     ),
     r'loyaltyEnabled': PropertySchema(
-      id: 27,
+      id: 30,
       name: r'loyaltyEnabled',
       type: IsarType.bool,
     ),
     r'loyaltyPointsPerUnit': PropertySchema(
-      id: 28,
+      id: 31,
       name: r'loyaltyPointsPerUnit',
       type: IsarType.double,
     ),
     r'nextFiscalNumber': PropertySchema(
-      id: 29,
+      id: 32,
       name: r'nextFiscalNumber',
       type: IsarType.string,
     ),
     r'nextReceiptNumber': PropertySchema(
-      id: 30,
+      id: 33,
       name: r'nextReceiptNumber',
       type: IsarType.string,
     ),
     r'openTicketsEnabled': PropertySchema(
-      id: 31,
+      id: 34,
       name: r'openTicketsEnabled',
       type: IsarType.bool,
     ),
     r'pacApiToken': PropertySchema(
-      id: 32,
+      id: 35,
       name: r'pacApiToken',
       type: IsarType.string,
     ),
     r'pacApiUrl': PropertySchema(
-      id: 33,
+      id: 36,
       name: r'pacApiUrl',
       type: IsarType.string,
     ),
     r'pacProvider': PropertySchema(
-      id: 34,
+      id: 37,
       name: r'pacProvider',
       type: IsarType.byte,
       enumMap: _BusinessConfigpacProviderEnumValueMap,
     ),
     r'phone': PropertySchema(
-      id: 35,
+      id: 38,
       name: r'phone',
       type: IsarType.string,
     ),
     r'receiptFooter': PropertySchema(
-      id: 36,
+      id: 39,
       name: r'receiptFooter',
       type: IsarType.string,
     ),
     r'receiptHeader': PropertySchema(
-      id: 37,
+      id: 40,
       name: r'receiptHeader',
       type: IsarType.string,
     ),
     r'receiptNextNumber': PropertySchema(
-      id: 38,
+      id: 41,
       name: r'receiptNextNumber',
       type: IsarType.long,
     ),
     r'receiptPrefix': PropertySchema(
-      id: 39,
+      id: 42,
       name: r'receiptPrefix',
       type: IsarType.string,
     ),
     r'ruc': PropertySchema(
-      id: 40,
+      id: 43,
       name: r'ruc',
       type: IsarType.string,
     ),
+    r'sellsAlcohol': PropertySchema(
+      id: 44,
+      name: r'sellsAlcohol',
+      type: IsarType.bool,
+    ),
     r'serverId': PropertySchema(
-      id: 41,
+      id: 45,
       name: r'serverId',
       type: IsarType.string,
     ),
     r'syncStatus': PropertySchema(
-      id: 42,
+      id: 46,
       name: r'syncStatus',
       type: IsarType.byte,
       enumMap: _BusinessConfigsyncStatusEnumValueMap,
     ),
     r'taxIncluded': PropertySchema(
-      id: 43,
+      id: 47,
       name: r'taxIncluded',
       type: IsarType.bool,
     ),
     r'taxName': PropertySchema(
-      id: 44,
+      id: 48,
       name: r'taxName',
       type: IsarType.string,
     ),
     r'taxRate': PropertySchema(
-      id: 45,
+      id: 49,
       name: r'taxRate',
       type: IsarType.double,
     ),
     r'trackInventory': PropertySchema(
-      id: 46,
+      id: 50,
       name: r'trackInventory',
       type: IsarType.bool,
     ),
     r'updatedAt': PropertySchema(
-      id: 47,
+      id: 51,
       name: r'updatedAt',
       type: IsarType.dateTime,
     ),
     r'usePredefinedTickets': PropertySchema(
-      id: 48,
+      id: 52,
       name: r'usePredefinedTickets',
       type: IsarType.bool,
     )
@@ -402,52 +423,56 @@ void _businessConfigSerialize(
   writer.writeString(offsets[0], object.address);
   writer.writeBool(offsets[1], object.allowDecimalQty);
   writer.writeString(offsets[2], object.businessName);
-  writer.writeDateTime(offsets[3], object.createdAt);
-  writer.writeString(offsets[4], object.currency);
-  writer.writeString(offsets[5], object.currencySymbol);
-  writer.writeByte(offsets[6], object.defaultOrderType.index);
-  writer.writeDateTime(offsets[7], object.deletedAt);
-  writer.writeString(offsets[8], object.email);
-  writer.writeString(offsets[9], object.en1ApiToken);
-  writer.writeString(offsets[10], object.en1ApiUrl);
-  writer.writeString(offsets[11], object.en1BranchId);
-  writer.writeDateTime(offsets[12], object.en1LastSyncAt);
-  writer.writeBool(offsets[13], object.en1SyncEnabled);
-  writer.writeByte(offsets[14], object.en1SyncMode.index);
-  writer.writeString(offsets[15], object.fiscalBranchCode);
-  writer.writeBool(offsets[16], object.fiscalInvoicingEnabled);
-  writer.writeLong(offsets[17], object.fiscalNextNumber);
-  writer.writeString(offsets[18], object.fiscalPointOfSale);
-  writer.writeBool(offsets[19], object.isDeleted);
-  writer.writeBool(offsets[20], object.isEn1SyncReady);
-  writer.writeBool(offsets[21], object.isFiscalReady);
-  writer.writeBool(offsets[22], object.isPendingSync);
-  writer.writeBool(offsets[23], object.isSetupComplete);
-  writer.writeBool(offsets[24], object.isSynced);
-  writer.writeString(offsets[25], object.localId);
-  writer.writeString(offsets[26], object.logoPath);
-  writer.writeBool(offsets[27], object.loyaltyEnabled);
-  writer.writeDouble(offsets[28], object.loyaltyPointsPerUnit);
-  writer.writeString(offsets[29], object.nextFiscalNumber);
-  writer.writeString(offsets[30], object.nextReceiptNumber);
-  writer.writeBool(offsets[31], object.openTicketsEnabled);
-  writer.writeString(offsets[32], object.pacApiToken);
-  writer.writeString(offsets[33], object.pacApiUrl);
-  writer.writeByte(offsets[34], object.pacProvider.index);
-  writer.writeString(offsets[35], object.phone);
-  writer.writeString(offsets[36], object.receiptFooter);
-  writer.writeString(offsets[37], object.receiptHeader);
-  writer.writeLong(offsets[38], object.receiptNextNumber);
-  writer.writeString(offsets[39], object.receiptPrefix);
-  writer.writeString(offsets[40], object.ruc);
-  writer.writeString(offsets[41], object.serverId);
-  writer.writeByte(offsets[42], object.syncStatus.index);
-  writer.writeBool(offsets[43], object.taxIncluded);
-  writer.writeString(offsets[44], object.taxName);
-  writer.writeDouble(offsets[45], object.taxRate);
-  writer.writeBool(offsets[46], object.trackInventory);
-  writer.writeDateTime(offsets[47], object.updatedAt);
-  writer.writeBool(offsets[48], object.usePredefinedTickets);
+  writer.writeBool(offsets[3], object.chargesRestaurantService);
+  writer.writeDateTime(offsets[4], object.createdAt);
+  writer.writeString(offsets[5], object.currency);
+  writer.writeString(offsets[6], object.currencySymbol);
+  writer.writeByte(offsets[7], object.defaultOrderType.index);
+  writer.writeDateTime(offsets[8], object.deletedAt);
+  writer.writeString(offsets[9], object.email);
+  writer.writeString(offsets[10], object.en1ApiToken);
+  writer.writeString(offsets[11], object.en1ApiUrl);
+  writer.writeString(offsets[12], object.en1BranchId);
+  writer.writeDateTime(offsets[13], object.en1LastSyncAt);
+  writer.writeBool(offsets[14], object.en1SyncEnabled);
+  writer.writeByte(offsets[15], object.en1SyncMode.index);
+  writer.writeByte(offsets[16], object.establishmentType.index);
+  writer.writeString(offsets[17], object.fiscalBranchCode);
+  writer.writeBool(offsets[18], object.fiscalInvoicingEnabled);
+  writer.writeLong(offsets[19], object.fiscalNextNumber);
+  writer.writeString(offsets[20], object.fiscalPointOfSale);
+  writer.writeBool(offsets[21], object.isDeleted);
+  writer.writeBool(offsets[22], object.isEn1SyncReady);
+  writer.writeBool(offsets[23], object.isExemptEstablishment);
+  writer.writeBool(offsets[24], object.isFiscalReady);
+  writer.writeBool(offsets[25], object.isPendingSync);
+  writer.writeBool(offsets[26], object.isSetupComplete);
+  writer.writeBool(offsets[27], object.isSynced);
+  writer.writeString(offsets[28], object.localId);
+  writer.writeString(offsets[29], object.logoPath);
+  writer.writeBool(offsets[30], object.loyaltyEnabled);
+  writer.writeDouble(offsets[31], object.loyaltyPointsPerUnit);
+  writer.writeString(offsets[32], object.nextFiscalNumber);
+  writer.writeString(offsets[33], object.nextReceiptNumber);
+  writer.writeBool(offsets[34], object.openTicketsEnabled);
+  writer.writeString(offsets[35], object.pacApiToken);
+  writer.writeString(offsets[36], object.pacApiUrl);
+  writer.writeByte(offsets[37], object.pacProvider.index);
+  writer.writeString(offsets[38], object.phone);
+  writer.writeString(offsets[39], object.receiptFooter);
+  writer.writeString(offsets[40], object.receiptHeader);
+  writer.writeLong(offsets[41], object.receiptNextNumber);
+  writer.writeString(offsets[42], object.receiptPrefix);
+  writer.writeString(offsets[43], object.ruc);
+  writer.writeBool(offsets[44], object.sellsAlcohol);
+  writer.writeString(offsets[45], object.serverId);
+  writer.writeByte(offsets[46], object.syncStatus.index);
+  writer.writeBool(offsets[47], object.taxIncluded);
+  writer.writeString(offsets[48], object.taxName);
+  writer.writeDouble(offsets[49], object.taxRate);
+  writer.writeBool(offsets[50], object.trackInventory);
+  writer.writeDateTime(offsets[51], object.updatedAt);
+  writer.writeBool(offsets[52], object.usePredefinedTickets);
 }
 
 BusinessConfig _businessConfigDeserialize(
@@ -460,54 +485,60 @@ BusinessConfig _businessConfigDeserialize(
     address: reader.readStringOrNull(offsets[0]),
     allowDecimalQty: reader.readBoolOrNull(offsets[1]) ?? false,
     businessName: reader.readString(offsets[2]),
-    createdAt: reader.readDateTime(offsets[3]),
-    currency: reader.readStringOrNull(offsets[4]) ?? 'USD',
-    currencySymbol: reader.readStringOrNull(offsets[5]),
+    chargesRestaurantService: reader.readBoolOrNull(offsets[3]) ?? false,
+    createdAt: reader.readDateTime(offsets[4]),
+    currency: reader.readStringOrNull(offsets[5]) ?? 'USD',
+    currencySymbol: reader.readStringOrNull(offsets[6]),
     defaultOrderType: _BusinessConfigdefaultOrderTypeValueEnumMap[
-            reader.readByteOrNull(offsets[6])] ??
+            reader.readByteOrNull(offsets[7])] ??
         OrderType.generic,
-    deletedAt: reader.readDateTimeOrNull(offsets[7]),
-    email: reader.readStringOrNull(offsets[8]),
-    en1ApiToken: reader.readStringOrNull(offsets[9]),
-    en1ApiUrl: reader.readStringOrNull(offsets[10]),
-    en1BranchId: reader.readStringOrNull(offsets[11]),
-    en1LastSyncAt: reader.readDateTimeOrNull(offsets[12]),
-    en1SyncEnabled: reader.readBoolOrNull(offsets[13]) ?? false,
+    deletedAt: reader.readDateTimeOrNull(offsets[8]),
+    email: reader.readStringOrNull(offsets[9]),
+    en1ApiToken: reader.readStringOrNull(offsets[10]),
+    en1ApiUrl: reader.readStringOrNull(offsets[11]),
+    en1BranchId: reader.readStringOrNull(offsets[12]),
+    en1LastSyncAt: reader.readDateTimeOrNull(offsets[13]),
+    en1SyncEnabled: reader.readBoolOrNull(offsets[14]) ?? false,
     en1SyncMode: _BusinessConfigen1SyncModeValueEnumMap[
-            reader.readByteOrNull(offsets[14])] ??
+            reader.readByteOrNull(offsets[15])] ??
         En1SyncMode.none,
-    fiscalBranchCode: reader.readStringOrNull(offsets[15]),
-    fiscalInvoicingEnabled: reader.readBoolOrNull(offsets[16]) ?? false,
-    fiscalNextNumber: reader.readLongOrNull(offsets[17]) ?? 1,
-    fiscalPointOfSale: reader.readStringOrNull(offsets[18]),
-    isSetupComplete: reader.readBoolOrNull(offsets[23]) ?? false,
-    localId: reader.readString(offsets[25]),
-    logoPath: reader.readStringOrNull(offsets[26]),
-    loyaltyEnabled: reader.readBoolOrNull(offsets[27]) ?? false,
-    loyaltyPointsPerUnit: reader.readDoubleOrNull(offsets[28]) ?? 1,
-    openTicketsEnabled: reader.readBoolOrNull(offsets[31]) ?? true,
-    pacApiToken: reader.readStringOrNull(offsets[32]),
-    pacApiUrl: reader.readStringOrNull(offsets[33]),
+    establishmentType: _BusinessConfigestablishmentTypeValueEnumMap[
+            reader.readByteOrNull(offsets[16])] ??
+        EstablishmentType.other,
+    fiscalBranchCode: reader.readStringOrNull(offsets[17]),
+    fiscalInvoicingEnabled: reader.readBoolOrNull(offsets[18]) ?? false,
+    fiscalNextNumber: reader.readLongOrNull(offsets[19]) ?? 1,
+    fiscalPointOfSale: reader.readStringOrNull(offsets[20]),
+    isExemptEstablishment: reader.readBoolOrNull(offsets[23]) ?? false,
+    isSetupComplete: reader.readBoolOrNull(offsets[26]) ?? false,
+    localId: reader.readString(offsets[28]),
+    logoPath: reader.readStringOrNull(offsets[29]),
+    loyaltyEnabled: reader.readBoolOrNull(offsets[30]) ?? false,
+    loyaltyPointsPerUnit: reader.readDoubleOrNull(offsets[31]) ?? 1,
+    openTicketsEnabled: reader.readBoolOrNull(offsets[34]) ?? true,
+    pacApiToken: reader.readStringOrNull(offsets[35]),
+    pacApiUrl: reader.readStringOrNull(offsets[36]),
     pacProvider: _BusinessConfigpacProviderValueEnumMap[
-            reader.readByteOrNull(offsets[34])] ??
+            reader.readByteOrNull(offsets[37])] ??
         PacProviderType.none,
-    phone: reader.readStringOrNull(offsets[35]),
-    receiptFooter: reader.readStringOrNull(offsets[36]) ?? 'Vuelva pronto',
+    phone: reader.readStringOrNull(offsets[38]),
+    receiptFooter: reader.readStringOrNull(offsets[39]) ?? 'Vuelva pronto',
     receiptHeader:
-        reader.readStringOrNull(offsets[37]) ?? 'Gracias por su compra',
-    receiptNextNumber: reader.readLongOrNull(offsets[38]) ?? 1,
-    receiptPrefix: reader.readStringOrNull(offsets[39]),
-    ruc: reader.readStringOrNull(offsets[40]),
-    serverId: reader.readStringOrNull(offsets[41]),
+        reader.readStringOrNull(offsets[40]) ?? 'Gracias por su compra',
+    receiptNextNumber: reader.readLongOrNull(offsets[41]) ?? 1,
+    receiptPrefix: reader.readStringOrNull(offsets[42]),
+    ruc: reader.readStringOrNull(offsets[43]),
+    sellsAlcohol: reader.readBoolOrNull(offsets[44]) ?? false,
+    serverId: reader.readStringOrNull(offsets[45]),
     syncStatus: _BusinessConfigsyncStatusValueEnumMap[
-            reader.readByteOrNull(offsets[42])] ??
+            reader.readByteOrNull(offsets[46])] ??
         SyncStatus.pending,
-    taxIncluded: reader.readBoolOrNull(offsets[43]) ?? false,
-    taxName: reader.readStringOrNull(offsets[44]),
-    taxRate: reader.readDoubleOrNull(offsets[45]) ?? 0,
-    trackInventory: reader.readBoolOrNull(offsets[46]) ?? true,
-    updatedAt: reader.readDateTime(offsets[47]),
-    usePredefinedTickets: reader.readBoolOrNull(offsets[48]) ?? false,
+    taxIncluded: reader.readBoolOrNull(offsets[47]) ?? false,
+    taxName: reader.readStringOrNull(offsets[48]),
+    taxRate: reader.readDoubleOrNull(offsets[49]) ?? 0,
+    trackInventory: reader.readBoolOrNull(offsets[50]) ?? true,
+    updatedAt: reader.readDateTime(offsets[51]),
+    usePredefinedTickets: reader.readBoolOrNull(offsets[52]) ?? false,
   );
   return object;
 }
@@ -526,19 +557,19 @@ P _businessConfigDeserializeProp<P>(
     case 2:
       return (reader.readString(offset)) as P;
     case 3:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readBoolOrNull(offset) ?? false) as P;
     case 4:
-      return (reader.readStringOrNull(offset) ?? 'USD') as P;
+      return (reader.readDateTime(offset)) as P;
     case 5:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readStringOrNull(offset) ?? 'USD') as P;
     case 6:
+      return (reader.readStringOrNull(offset)) as P;
+    case 7:
       return (_BusinessConfigdefaultOrderTypeValueEnumMap[
               reader.readByteOrNull(offset)] ??
           OrderType.generic) as P;
-    case 7:
-      return (reader.readDateTimeOrNull(offset)) as P;
     case 8:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 9:
       return (reader.readStringOrNull(offset)) as P;
     case 10:
@@ -546,25 +577,27 @@ P _businessConfigDeserializeProp<P>(
     case 11:
       return (reader.readStringOrNull(offset)) as P;
     case 12:
-      return (reader.readDateTimeOrNull(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 13:
-      return (reader.readBoolOrNull(offset) ?? false) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 14:
+      return (reader.readBoolOrNull(offset) ?? false) as P;
+    case 15:
       return (_BusinessConfigen1SyncModeValueEnumMap[
               reader.readByteOrNull(offset)] ??
           En1SyncMode.none) as P;
-    case 15:
-      return (reader.readStringOrNull(offset)) as P;
     case 16:
-      return (reader.readBoolOrNull(offset) ?? false) as P;
+      return (_BusinessConfigestablishmentTypeValueEnumMap[
+              reader.readByteOrNull(offset)] ??
+          EstablishmentType.other) as P;
     case 17:
-      return (reader.readLongOrNull(offset) ?? 1) as P;
-    case 18:
       return (reader.readStringOrNull(offset)) as P;
+    case 18:
+      return (reader.readBoolOrNull(offset) ?? false) as P;
     case 19:
-      return (reader.readBool(offset)) as P;
+      return (reader.readLongOrNull(offset) ?? 1) as P;
     case 20:
-      return (reader.readBool(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 21:
       return (reader.readBool(offset)) as P;
     case 22:
@@ -574,56 +607,64 @@ P _businessConfigDeserializeProp<P>(
     case 24:
       return (reader.readBool(offset)) as P;
     case 25:
-      return (reader.readString(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 26:
-      return (reader.readStringOrNull(offset)) as P;
-    case 27:
       return (reader.readBoolOrNull(offset) ?? false) as P;
+    case 27:
+      return (reader.readBool(offset)) as P;
     case 28:
-      return (reader.readDoubleOrNull(offset) ?? 1) as P;
+      return (reader.readString(offset)) as P;
     case 29:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 30:
-      return (reader.readString(offset)) as P;
+      return (reader.readBoolOrNull(offset) ?? false) as P;
     case 31:
-      return (reader.readBoolOrNull(offset) ?? true) as P;
+      return (reader.readDoubleOrNull(offset) ?? 1) as P;
     case 32:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 33:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 34:
-      return (_BusinessConfigpacProviderValueEnumMap[
-              reader.readByteOrNull(offset)] ??
-          PacProviderType.none) as P;
+      return (reader.readBoolOrNull(offset) ?? true) as P;
     case 35:
       return (reader.readStringOrNull(offset)) as P;
     case 36:
-      return (reader.readStringOrNull(offset) ?? 'Vuelva pronto') as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 37:
-      return (reader.readStringOrNull(offset) ?? 'Gracias por su compra') as P;
+      return (_BusinessConfigpacProviderValueEnumMap[
+              reader.readByteOrNull(offset)] ??
+          PacProviderType.none) as P;
     case 38:
-      return (reader.readLongOrNull(offset) ?? 1) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 39:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readStringOrNull(offset) ?? 'Vuelva pronto') as P;
     case 40:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readStringOrNull(offset) ?? 'Gracias por su compra') as P;
     case 41:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readLongOrNull(offset) ?? 1) as P;
     case 42:
+      return (reader.readStringOrNull(offset)) as P;
+    case 43:
+      return (reader.readStringOrNull(offset)) as P;
+    case 44:
+      return (reader.readBoolOrNull(offset) ?? false) as P;
+    case 45:
+      return (reader.readStringOrNull(offset)) as P;
+    case 46:
       return (_BusinessConfigsyncStatusValueEnumMap[
               reader.readByteOrNull(offset)] ??
           SyncStatus.pending) as P;
-    case 43:
-      return (reader.readBoolOrNull(offset) ?? false) as P;
-    case 44:
-      return (reader.readStringOrNull(offset)) as P;
-    case 45:
-      return (reader.readDoubleOrNull(offset) ?? 0) as P;
-    case 46:
-      return (reader.readBoolOrNull(offset) ?? true) as P;
     case 47:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readBoolOrNull(offset) ?? false) as P;
     case 48:
+      return (reader.readStringOrNull(offset)) as P;
+    case 49:
+      return (reader.readDoubleOrNull(offset) ?? 0) as P;
+    case 50:
+      return (reader.readBoolOrNull(offset) ?? true) as P;
+    case 51:
+      return (reader.readDateTime(offset)) as P;
+    case 52:
       return (reader.readBoolOrNull(offset) ?? false) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -651,6 +692,28 @@ const _BusinessConfigen1SyncModeValueEnumMap = {
   0: En1SyncMode.none,
   1: En1SyncMode.stub,
   2: En1SyncMode.live,
+};
+const _BusinessConfigestablishmentTypeEnumValueMap = {
+  'restaurant': 0,
+  'fonda': 1,
+  'cafeteria': 2,
+  'bar': 3,
+  'supermarket': 4,
+  'pharmacy': 5,
+  'hardware': 6,
+  'store': 7,
+  'other': 8,
+};
+const _BusinessConfigestablishmentTypeValueEnumMap = {
+  0: EstablishmentType.restaurant,
+  1: EstablishmentType.fonda,
+  2: EstablishmentType.cafeteria,
+  3: EstablishmentType.bar,
+  4: EstablishmentType.supermarket,
+  5: EstablishmentType.pharmacy,
+  6: EstablishmentType.hardware,
+  7: EstablishmentType.store,
+  8: EstablishmentType.other,
 };
 const _BusinessConfigpacProviderEnumValueMap = {
   'none': 0,
@@ -1061,6 +1124,16 @@ extension BusinessConfigQueryFilter
       return query.addFilterCondition(FilterCondition.greaterThan(
         property: r'businessName',
         value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      chargesRestaurantServiceEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'chargesRestaurantService',
+        value: value,
       ));
     });
   }
@@ -2298,6 +2371,62 @@ extension BusinessConfigQueryFilter
   }
 
   QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      establishmentTypeEqualTo(EstablishmentType value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'establishmentType',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      establishmentTypeGreaterThan(
+    EstablishmentType value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'establishmentType',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      establishmentTypeLessThan(
+    EstablishmentType value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'establishmentType',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      establishmentTypeBetween(
+    EstablishmentType lower,
+    EstablishmentType upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'establishmentType',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
       fiscalBranchCodeIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
@@ -2686,6 +2815,16 @@ extension BusinessConfigQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'isEn1SyncReady',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      isExemptEstablishmentEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'isExemptEstablishment',
         value: value,
       ));
     });
@@ -4590,6 +4729,16 @@ extension BusinessConfigQueryFilter
   }
 
   QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
+      sellsAlcoholEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'sellsAlcohol',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterFilterCondition>
       serverIdIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
@@ -5155,6 +5304,20 @@ extension BusinessConfigQuerySortBy
     });
   }
 
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
+      sortByChargesRestaurantService() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'chargesRestaurantService', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
+      sortByChargesRestaurantServiceDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'chargesRestaurantService', Sort.desc);
+    });
+  }
+
   QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy> sortByCreatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'createdAt', Sort.asc);
@@ -5318,6 +5481,20 @@ extension BusinessConfigQuerySortBy
   }
 
   QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
+      sortByEstablishmentType() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'establishmentType', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
+      sortByEstablishmentTypeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'establishmentType', Sort.desc);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
       sortByFiscalBranchCode() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'fiscalBranchCode', Sort.asc);
@@ -5397,6 +5574,20 @@ extension BusinessConfigQuerySortBy
       sortByIsEn1SyncReadyDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isEn1SyncReady', Sort.desc);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
+      sortByIsExemptEstablishment() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isExemptEstablishment', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
+      sortByIsExemptEstablishmentDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isExemptEstablishment', Sort.desc);
     });
   }
 
@@ -5672,6 +5863,20 @@ extension BusinessConfigQuerySortBy
     });
   }
 
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
+      sortBySellsAlcohol() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'sellsAlcohol', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
+      sortBySellsAlcoholDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'sellsAlcohol', Sort.desc);
+    });
+  }
+
   QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy> sortByServerId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'serverId', Sort.asc);
@@ -5821,6 +6026,20 @@ extension BusinessConfigQuerySortThenBy
       thenByBusinessNameDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'businessName', Sort.desc);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
+      thenByChargesRestaurantService() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'chargesRestaurantService', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
+      thenByChargesRestaurantServiceDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'chargesRestaurantService', Sort.desc);
     });
   }
 
@@ -5987,6 +6206,20 @@ extension BusinessConfigQuerySortThenBy
   }
 
   QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
+      thenByEstablishmentType() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'establishmentType', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
+      thenByEstablishmentTypeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'establishmentType', Sort.desc);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
       thenByFiscalBranchCode() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'fiscalBranchCode', Sort.asc);
@@ -6066,6 +6299,20 @@ extension BusinessConfigQuerySortThenBy
       thenByIsEn1SyncReadyDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isEn1SyncReady', Sort.desc);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
+      thenByIsExemptEstablishment() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isExemptEstablishment', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
+      thenByIsExemptEstablishmentDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isExemptEstablishment', Sort.desc);
     });
   }
 
@@ -6354,6 +6601,20 @@ extension BusinessConfigQuerySortThenBy
     });
   }
 
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
+      thenBySellsAlcohol() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'sellsAlcohol', Sort.asc);
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy>
+      thenBySellsAlcoholDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'sellsAlcohol', Sort.desc);
+    });
+  }
+
   QueryBuilder<BusinessConfig, BusinessConfig, QAfterSortBy> thenByServerId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'serverId', Sort.asc);
@@ -6487,6 +6748,13 @@ extension BusinessConfigQueryWhereDistinct
   }
 
   QueryBuilder<BusinessConfig, BusinessConfig, QDistinct>
+      distinctByChargesRestaurantService() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'chargesRestaurantService');
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QDistinct>
       distinctByCreatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'createdAt');
@@ -6572,6 +6840,13 @@ extension BusinessConfigQueryWhereDistinct
   }
 
   QueryBuilder<BusinessConfig, BusinessConfig, QDistinct>
+      distinctByEstablishmentType() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'establishmentType');
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QDistinct>
       distinctByFiscalBranchCode({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'fiscalBranchCode',
@@ -6612,6 +6887,13 @@ extension BusinessConfigQueryWhereDistinct
       distinctByIsEn1SyncReady() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'isEn1SyncReady');
+    });
+  }
+
+  QueryBuilder<BusinessConfig, BusinessConfig, QDistinct>
+      distinctByIsExemptEstablishment() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'isExemptEstablishment');
     });
   }
 
@@ -6759,6 +7041,13 @@ extension BusinessConfigQueryWhereDistinct
     });
   }
 
+  QueryBuilder<BusinessConfig, BusinessConfig, QDistinct>
+      distinctBySellsAlcohol() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'sellsAlcohol');
+    });
+  }
+
   QueryBuilder<BusinessConfig, BusinessConfig, QDistinct> distinctByServerId(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -6843,6 +7132,13 @@ extension BusinessConfigQueryProperty
     });
   }
 
+  QueryBuilder<BusinessConfig, bool, QQueryOperations>
+      chargesRestaurantServiceProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'chargesRestaurantService');
+    });
+  }
+
   QueryBuilder<BusinessConfig, DateTime, QQueryOperations> createdAtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'createdAt');
@@ -6923,6 +7219,13 @@ extension BusinessConfigQueryProperty
     });
   }
 
+  QueryBuilder<BusinessConfig, EstablishmentType, QQueryOperations>
+      establishmentTypeProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'establishmentType');
+    });
+  }
+
   QueryBuilder<BusinessConfig, String?, QQueryOperations>
       fiscalBranchCodeProperty() {
     return QueryBuilder.apply(this, (query) {
@@ -6961,6 +7264,13 @@ extension BusinessConfigQueryProperty
       isEn1SyncReadyProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'isEn1SyncReady');
+    });
+  }
+
+  QueryBuilder<BusinessConfig, bool, QQueryOperations>
+      isExemptEstablishmentProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'isExemptEstablishment');
     });
   }
 
@@ -7093,6 +7403,12 @@ extension BusinessConfigQueryProperty
   QueryBuilder<BusinessConfig, String?, QQueryOperations> rucProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'ruc');
+    });
+  }
+
+  QueryBuilder<BusinessConfig, bool, QQueryOperations> sellsAlcoholProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'sellsAlcohol');
     });
   }
 

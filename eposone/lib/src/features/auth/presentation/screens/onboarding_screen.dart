@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:eposone/src/core/database/database_provider.dart';
-import 'package:eposone/src/core/database/seed_data.dart';
 import 'package:eposone/src/core/startup/app_startup.dart';
 import 'package:eposone/src/core/utils/pin_hash.dart';
 import 'package:eposone/src/features/auth/data/repositories/cashier_repository.dart';
@@ -43,7 +42,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final isar = await ref.read(databaseProvider.future);
     final config = await BusinessConfigRepository(isar).getConfig();
     if (mounted) {
-      _businessName.text = config.businessName == 'Mi Negocio' ? 'Istmo' : config.businessName;
+      _businessName.text = config.businessName;
       _ruc.text = config.ruc ?? '';
       _address.text = config.address ?? '';
       _taxRate.text = config.taxRate.toStringAsFixed(0);
@@ -115,11 +114,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         );
       }
 
-      await seedClientCatalog(isar);
-
       final openAmount = double.tryParse(_openingAmount.text) ?? 0;
       if (await cashRepo.getOpenRegister() == null) {
-        await cashRepo.openRegister(openAmount, openedBy: _cashierName.text.trim());
+        final cashiers = await cashierRepo.getActiveCashiers();
+        final opener = cashiers.isNotEmpty ? cashiers.first : null;
+        await cashRepo.openRegister(
+          openAmount,
+          openedBy: _cashierName.text.trim(),
+          cashierId: opener?.localId,
+        );
       }
 
       ref.invalidate(appStartupProvider);

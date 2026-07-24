@@ -34,19 +34,27 @@ class PickTicketScreen extends ConsumerWidget {
             children: [
               if (!usePredefined || slots.isEmpty)
                 _CustomTicketTile(
-                  title: isMoveMode ? 'Renombrar (personalizado)' : 'Ticket personalizado',
+                  title: isMoveMode
+                      ? 'Renombrar (personalizado)'
+                      : 'Ticket personalizado',
                   subtitle: 'Nombre libre',
                   onTap: () => _showCustomDialog(context, ref),
                 ),
               if (usePredefined && slots.isNotEmpty) ...[
                 const Text(
                   'Tickets disponibles',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: EposBrand.navy),
+                  style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: EposBrand.navy),
                 ),
                 const SizedBox(height: 12),
                 for (final entry in grouped.entries) ...[
                   if (entry.key.isNotEmpty) ...[
-                    Text(entry.key, style: const TextStyle(color: EposBrand.textSecondary, fontWeight: FontWeight.w600)),
+                    Text(entry.key,
+                        style: const TextStyle(
+                            color: EposBrand.textSecondary,
+                            fontWeight: FontWeight.w600)),
                     const SizedBox(height: 8),
                   ],
                   Wrap(
@@ -79,7 +87,8 @@ class PickTicketScreen extends ConsumerWidget {
     );
   }
 
-  Map<String, List<PredefinedTicket>> _groupSlots(List<PredefinedTicket> slots) {
+  Map<String, List<PredefinedTicket>> _groupSlots(
+      List<PredefinedTicket> slots) {
     final map = <String, List<PredefinedTicket>>{};
     for (final s in slots) {
       final key = s.groupName ?? '';
@@ -88,10 +97,13 @@ class PickTicketScreen extends ConsumerWidget {
     return map;
   }
 
-  Future<void> _onSlotSelected(BuildContext context, WidgetRef ref, PredefinedTicket slot) async {
+  Future<void> _onSlotSelected(
+      BuildContext context, WidgetRef ref, PredefinedTicket slot) async {
     if (isMoveMode) {
       try {
-        await ref.read(openTicketActionsProvider).moveTicket(moveTicketId!, slot.localId, slot.name);
+        await ref
+            .read(openTicketActionsProvider)
+            .moveTicket(moveTicketId!, slot.localId, slot.name);
         if (context.mounted) {
           context.pop();
           ScaffoldMessenger.of(context).showSnackBar(
@@ -117,7 +129,8 @@ class PickTicketScreen extends ConsumerWidget {
   Future<void> _showCustomDialog(BuildContext context, WidgetRef ref) async {
     final labelCtrl = TextEditingController();
     final commentCtrl = TextEditingController();
-    OrderType orderType = ref.read(businessConfigProvider)?.defaultOrderType ?? OrderType.generic;
+    OrderType orderType =
+        ref.read(businessConfigProvider)?.defaultOrderType ?? OrderType.generic;
 
     final result = await showDialog<SaveOpenTicketParams>(
       context: context,
@@ -130,31 +143,39 @@ class PickTicketScreen extends ConsumerWidget {
               children: [
                 TextField(
                   controller: labelCtrl,
-                  decoration: const InputDecoration(labelText: 'Nombre *', border: OutlineInputBorder()),
+                  decoration: const InputDecoration(
+                      labelText: 'Nombre *', border: OutlineInputBorder()),
                   autofocus: true,
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: commentCtrl,
-                  decoration: const InputDecoration(labelText: 'Comentario', border: OutlineInputBorder()),
+                  decoration: const InputDecoration(
+                      labelText: 'Comentario', border: OutlineInputBorder()),
                   maxLines: 2,
                 ),
                 if (!isMoveMode) ...[
                   const SizedBox(height: 12),
                   DropdownButtonFormField<OrderType>(
                     value: orderType,
-                    decoration: const InputDecoration(labelText: 'Tipo de orden', border: OutlineInputBorder()),
+                    decoration: const InputDecoration(
+                        labelText: 'Tipo de orden',
+                        border: OutlineInputBorder()),
                     items: OrderType.values
-                        .map((t) => DropdownMenuItem(value: t, child: Text(orderTypeLabel(t))))
+                        .map((t) => DropdownMenuItem(
+                            value: t, child: Text(orderTypeLabel(t))))
                         .toList(),
-                    onChanged: (v) => setState(() => orderType = v ?? OrderType.generic),
+                    onChanged: (v) =>
+                        setState(() => orderType = v ?? OrderType.generic),
                   ),
                 ],
               ],
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+            TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancelar')),
             FilledButton(
               onPressed: () {
                 if (labelCtrl.text.trim().isEmpty) return;
@@ -162,7 +183,9 @@ class PickTicketScreen extends ConsumerWidget {
                   ctx,
                   SaveOpenTicketParams(
                     label: labelCtrl.text.trim(),
-                    comment: commentCtrl.text.trim().isEmpty ? null : commentCtrl.text.trim(),
+                    comment: commentCtrl.text.trim().isEmpty
+                        ? null
+                        : commentCtrl.text.trim(),
                     orderType: orderType,
                   ),
                 );
@@ -205,7 +228,8 @@ class _CustomTicketTile extends StatelessWidget {
   final String subtitle;
   final VoidCallback onTap;
 
-  const _CustomTicketTile({required this.title, required this.subtitle, required this.onTap});
+  const _CustomTicketTile(
+      {required this.title, required this.subtitle, required this.onTap});
 
   @override
   Widget build(BuildContext context) {

@@ -22,10 +22,9 @@ class CartItem {
     this.modifiers = const [],
   });
 
-  double get modifiersTotal => modifiers.fold(0.0, (sum, m) => sum + m.priceDelta);
+  double get modifiersTotal =>
+      modifiers.fold(0.0, (sum, m) => sum + m.priceDelta);
   double get unitPrice => customPrice ?? (product.price + modifiersTotal);
-  double get subtotal => unitPrice * quantity;
-  double get total => subtotal - discount;
 
   String get displayName {
     final label = ModifierCodec.modifiersLabel(modifiers);
@@ -83,11 +82,6 @@ class CartState {
     this.couponDiscount = 0,
   });
 
-  double get subtotal => items.fold(0, (sum, i) => sum + i.subtotal);
-  double get totalDiscount => items.fold(0, (sum, i) => sum + i.discount);
-  double get discountGlobal => discountPercent != null ? subtotal * (discountPercent! / 100) : 0;
-  double get total =>
-      (subtotal - totalDiscount - discountGlobal - couponDiscount).clamp(0, double.infinity);
   int get itemCount => items.length;
   int get totalQuantity => items.fold(0, (sum, i) => sum + i.quantity.toInt());
 
@@ -108,12 +102,18 @@ class CartState {
       CartState(
         items: items ?? this.items,
         customerId: clearCustomer ? null : (customerId ?? this.customerId),
-        discountPercent: clearDiscountPercent ? null : (discountPercent ?? this.discountPercent),
-        openTicketId: clearOpenTicket ? null : (openTicketId ?? this.openTicketId),
+        discountPercent: clearDiscountPercent
+            ? null
+            : (discountPercent ?? this.discountPercent),
+        openTicketId:
+            clearOpenTicket ? null : (openTicketId ?? this.openTicketId),
         orderType: orderType ?? this.orderType,
-        appliedCouponId: clearCoupon ? null : (appliedCouponId ?? this.appliedCouponId),
-        appliedCouponCode: clearCoupon ? null : (appliedCouponCode ?? this.appliedCouponCode),
-        couponDiscount: clearCoupon ? 0 : (couponDiscount ?? this.couponDiscount),
+        appliedCouponId:
+            clearCoupon ? null : (appliedCouponId ?? this.appliedCouponId),
+        appliedCouponCode:
+            clearCoupon ? null : (appliedCouponCode ?? this.appliedCouponCode),
+        couponDiscount:
+            clearCoupon ? 0 : (couponDiscount ?? this.couponDiscount),
       );
 }
 
@@ -134,7 +134,8 @@ class CartNotifier extends StateNotifier<CartState> {
       customPrice: customPrice,
       modifiers: modifiers,
     );
-    final existingIndex = state.items.indexWhere((i) => CartItem.sameConfiguration(i, candidate));
+    final existingIndex =
+        state.items.indexWhere((i) => CartItem.sameConfiguration(i, candidate));
 
     if (existingIndex >= 0) {
       final existing = state.items[existingIndex];
@@ -162,24 +163,31 @@ class CartNotifier extends StateNotifier<CartState> {
       return;
     }
     state = state.copyWith(
-      items: state.items.map((i) => i.id == itemId ? i.copyWith(quantity: quantity) : i).toList(),
+      items: state.items
+          .map((i) => i.id == itemId ? i.copyWith(quantity: quantity) : i)
+          .toList(),
     );
   }
 
   void updateDiscount(String itemId, double discount) {
     state = state.copyWith(
-      items: state.items.map((i) => i.id == itemId ? i.copyWith(discount: discount) : i).toList(),
+      items: state.items
+          .map((i) => i.id == itemId ? i.copyWith(discount: discount) : i)
+          .toList(),
     );
   }
 
   void updateCustomPrice(String itemId, double? price) {
     state = state.copyWith(
-      items: state.items.map((i) => i.id == itemId ? i.copyWith(customPrice: price) : i).toList(),
+      items: state.items
+          .map((i) => i.id == itemId ? i.copyWith(customPrice: price) : i)
+          .toList(),
     );
   }
 
   void removeItem(String itemId) {
-    state = state.copyWith(items: state.items.where((i) => i.id != itemId).toList());
+    state = state.copyWith(
+        items: state.items.where((i) => i.id != itemId).toList());
   }
 
   void removeQuantity(String itemId, double quantity) {
@@ -200,12 +208,14 @@ class CartNotifier extends StateNotifier<CartState> {
   List<CartItem> takeItems(Iterable<String> itemIds) {
     final idSet = itemIds.toSet();
     final taken = state.items.where((i) => idSet.contains(i.id)).toList();
-    state = state.copyWith(items: state.items.where((i) => !idSet.contains(i.id)).toList());
+    state = state.copyWith(
+        items: state.items.where((i) => !idSet.contains(i.id)).toList());
     return taken;
   }
 
   void setCustomer(String? customerId) {
-    state = state.copyWith(customerId: customerId, clearCustomer: customerId == null);
+    state = state.copyWith(
+        customerId: customerId, clearCustomer: customerId == null);
   }
 
   void setGlobalDiscount(double percent) {
@@ -216,7 +226,10 @@ class CartNotifier extends StateNotifier<CartState> {
     state = state.copyWith(clearDiscountPercent: true);
   }
 
-  void applyCoupon({required String couponId, required String code, required double discountAmount}) {
+  void applyCoupon(
+      {required String couponId,
+      required String code,
+      required double discountAmount}) {
     state = state.copyWith(
       appliedCouponId: couponId,
       appliedCouponCode: code,
@@ -257,4 +270,5 @@ class CartNotifier extends StateNotifier<CartState> {
   }
 }
 
-final cartProvider = StateNotifierProvider<CartNotifier, CartState>((ref) => CartNotifier());
+final cartProvider =
+    StateNotifierProvider<CartNotifier, CartState>((ref) => CartNotifier());

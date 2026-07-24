@@ -5,6 +5,8 @@ class PosSession {
   final String cashierId;
   final String cashierName;
   final CashierRole role;
+  /// EN1 `cashier_contact_id` (Hito 2.5). Null en modo local puro.
+  final int? cashierContactId;
   final String? cashRegisterId;
   final DateTime loggedInAt;
   final DateTime lastActivityAt;
@@ -13,6 +15,7 @@ class PosSession {
     required this.cashierId,
     required this.cashierName,
     required this.role,
+    this.cashierContactId,
     this.cashRegisterId,
     required this.loggedInAt,
     required this.lastActivityAt,
@@ -24,15 +27,19 @@ class PosSession {
     String? cashierId,
     String? cashierName,
     CashierRole? role,
+    int? cashierContactId,
     String? cashRegisterId,
     DateTime? loggedInAt,
     DateTime? lastActivityAt,
     bool clearCashRegister = false,
+    bool clearContactId = false,
   }) =>
       PosSession(
         cashierId: cashierId ?? this.cashierId,
         cashierName: cashierName ?? this.cashierName,
         role: role ?? this.role,
+        cashierContactId:
+            clearContactId ? null : (cashierContactId ?? this.cashierContactId),
         cashRegisterId: clearCashRegister ? null : (cashRegisterId ?? this.cashRegisterId),
         loggedInAt: loggedInAt ?? this.loggedInAt,
         lastActivityAt: lastActivityAt ?? this.lastActivityAt,
@@ -42,11 +49,12 @@ class PosSession {
 class PosSessionNotifier extends StateNotifier<PosSession?> {
   PosSessionNotifier() : super(null);
 
-  void login(Cashier cashier) {
+  void login(Cashier cashier, {int? cashierContactId}) {
     state = PosSession(
       cashierId: cashier.localId,
       cashierName: cashier.name,
       role: cashier.role,
+      cashierContactId: cashierContactId,
       loggedInAt: DateTime.now(),
       lastActivityAt: DateTime.now(),
     );

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:eposone/src/core/providers/business_config_provider.dart';
 import 'package:eposone/src/core/theme/eposone_theme.dart';
+import 'package:eposone/src/features/commercial_engine/commercial_engine.dart';
 import 'package:eposone/src/core/utils/view_insets.dart';
 import 'package:eposone/src/features/pos/domain/entities/order_type.dart';
 import 'package:eposone/src/features/pos/presentation/providers/cart_provider.dart';
@@ -13,13 +14,22 @@ import 'package:eposone/src/features/pos/presentation/providers/pos_provider.dar
 import 'package:eposone/src/features/pos/presentation/widgets/customer_picker_tile.dart';
 import 'package:eposone/src/features/pos/presentation/widgets/open_tickets_sheet.dart';
 import 'package:eposone/src/features/premium/data/repositories/coupon_repository.dart';
+import 'package:eposone/src/features/premium/domain/entities/coupon.dart';
 
 class PosTicketPanel extends ConsumerWidget {
   final bool expanded;
 
+  /// Solo celular: sheet inferior con swipe ↑/↓ (tablet no usa esto).
+  final bool phoneSheet;
+  final VoidCallback? onPhoneSheetExpand;
+  final VoidCallback? onPhoneSheetCollapse;
+
   const PosTicketPanel({
     super.key,
     this.expanded = true,
+    this.phoneSheet = false,
+    this.onPhoneSheetExpand,
+    this.onPhoneSheetCollapse,
   });
 
   @override
@@ -36,49 +46,81 @@ class PosTicketPanel extends ConsumerWidget {
       decoration: BoxDecoration(
         color: EposBrand.surface,
         border: Border(
-          left: expanded ? BorderSide(color: EposBrand.divider) : BorderSide.none,
-          top: expanded ? BorderSide.none : BorderSide(color: EposBrand.divider),
+          left: expanded && !phoneSheet
+              ? BorderSide(color: EposBrand.divider)
+              : BorderSide.none,
+          top: (!expanded || phoneSheet)
+              ? BorderSide(color: EposBrand.divider)
+              : BorderSide.none,
         ),
         boxShadow: [
-          if (!expanded)
-            BoxShadow(color: EposBrand.navy.withValues(alpha: 0.08), blurRadius: 12, offset: const Offset(0, -4)),
+          if (!expanded || phoneSheet)
+            BoxShadow(
+                color: EposBrand.navy.withValues(alpha: 0.08),
+                blurRadius: 12,
+                offset: const Offset(0, -4)),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (phoneSheet)
+            _PhoneSheetHandle(
+              open: expanded,
+              itemCount: cart.totalQuantity,
+              onExpand: onPhoneSheetExpand,
+              onCollapse: onPhoneSheetCollapse,
+            ),
           if (expanded) ...[
             Padding(
               padding: const EdgeInsets.fromLTRB(8, 6, 4, 0),
               child: Row(
                 children: [
-                  const Text('Ticket', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: EposBrand.navy)),
+                  const Text('Ticket',
+                      style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: EposBrand.navy)),
                   if (cart.openTicketId != null) ...[
                     const SizedBox(width: 6),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 1),
                       decoration: BoxDecoration(
                         color: EposBrand.orange.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: const Text('Guardado', style: TextStyle(fontSize: 9, color: EposBrand.orange, fontWeight: FontWeight.w600)),
+                      child: const Text('Guardado',
+                          style: TextStyle(
+                              fontSize: 9,
+                              color: EposBrand.orange,
+                              fontWeight: FontWeight.w600)),
                     ),
                   ],
                   const Spacer(),
                   if (cart.items.isNotEmpty)
-                    Text('${cart.totalQuantity} uds', style: const TextStyle(fontSize: 11, color: EposBrand.textSecondary)),
+                    Text('${cart.totalQuantity} uds',
+                        style: const TextStyle(
+                            fontSize: 11, color: EposBrand.textSecondary)),
                   PopupMenuButton<String>(
                     icon: const Icon(Icons.more_vert, size: 20),
                     padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                    constraints:
+                        const BoxConstraints(minWidth: 32, minHeight: 32),
                     onSelected: (action) async {
                       switch (action) {
                         case 'precuenta':
-                          showBillForCart(context, cart, config);
+                          showBillForCart(
+                            context,
+                            cart,
+                            config,
+                            ref.read(commercialEngineProvider),
+                          );
                         case 'limpiar':
                           ref.read(cartProvider.notifier).clear();
                         case 'descuento':
-                          await _showDiscountDialog(context, ref, cart.discountPercent);
+                          await _showDiscountDialog(
+                              context, ref, cart.discountPercent);
                         case 'cupon':
                           await _showCouponDialog(context, ref, cart);
                         case 'guardar':
@@ -89,14 +131,21 @@ class PosTicketPanel extends ConsumerWidget {
                     },
                     itemBuilder: (ctx) => [
                       if (cart.items.isNotEmpty) ...[
-                        const PopupMenuItem(value: 'precuenta', child: Text('Pre-cuenta')),
-                        const PopupMenuItem(value: 'descuento', child: Text('Descuento ticket')),
-                        const PopupMenuItem(value: 'cupon', child: Text('Cupón promocional')),
+                        const PopupMenuItem(
+                            value: 'precuenta', child: Text('Pre-cuenta')),
+                        const PopupMenuItem(
+                            value: 'descuento',
+                            child: Text('Descuento ticket')),
+                        const PopupMenuItem(
+                            value: 'cupon', child: Text('Cupón promocional')),
                         if (openTicketsOn)
-                          const PopupMenuItem(value: 'guardar', child: Text('Guardar ticket')),
+                          const PopupMenuItem(
+                              value: 'guardar', child: Text('Guardar ticket')),
                         if (cart.items.length > 1)
-                          const PopupMenuItem(value: 'dividir', child: Text('Dividir ticket')),
-                        const PopupMenuItem(value: 'limpiar', child: Text('Limpiar ticket')),
+                          const PopupMenuItem(
+                              value: 'dividir', child: Text('Dividir ticket')),
+                        const PopupMenuItem(
+                            value: 'limpiar', child: Text('Limpiar ticket')),
                       ],
                     ],
                   ),
@@ -109,7 +158,9 @@ class PosTicketPanel extends ConsumerWidget {
                 children: [
                   const Expanded(child: CustomerPickerTile(compact: true)),
                   const SizedBox(width: 6),
-                  Expanded(child: _OrderTypeSelector(orderType: cart.orderType, compact: true)),
+                  Expanded(
+                      child: _OrderTypeSelector(
+                          orderType: cart.orderType, compact: true)),
                 ],
               ),
             ),
@@ -128,13 +179,19 @@ class PosTicketPanel extends ConsumerWidget {
                     separatorBuilder: (_, __) => const SizedBox(height: 4),
                     itemBuilder: (_, i) => _TicketLine(
                       item: cart.items[i],
+                      lineTotal: totals.lineTotal(cart.items[i].id),
                       symbol: symbol,
                       expanded: expanded,
                     ),
                   ),
           ),
           Container(
-            padding: EdgeInsets.fromLTRB(8, 6, 8, ViewInsets.bottom(context) + 6),
+            padding: EdgeInsets.fromLTRB(
+              8,
+              4,
+              8,
+              ViewInsets.bottom(context, compact: true, extra: 4),
+            ),
             decoration: BoxDecoration(
               color: EposBrand.background,
               border: Border(top: BorderSide(color: EposBrand.divider)),
@@ -143,70 +200,105 @@ class PosTicketPanel extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 if (cart.items.isNotEmpty) ...[
-                  _TotalRow(label: 'Subtotal', value: '$symbol${totals.subtotal.toStringAsFixed(2)}'),
-                  if (cart.totalDiscount > 0)
+                  _TotalRow(
+                      label: 'Subtotal',
+                      value: '$symbol${totals.subtotal.toStringAsFixed(2)}'),
+                  if (totals.discount > 0)
                     _TotalRow(
-                      label: 'Desc. líneas',
-                      value: '-$symbol${cart.totalDiscount.toStringAsFixed(2)}',
-                      valueColor: Colors.red.shade400,
-                    ),
-                  if (cart.discountPercent != null && cart.discountPercent! > 0)
-                    _TotalRow(
-                      label: 'Desc. (${cart.discountPercent!.toStringAsFixed(0)}%)',
-                      value: '-$symbol${cart.discountGlobal.toStringAsFixed(2)}',
-                      valueColor: Colors.red.shade400,
-                    ),
-                  if (cart.appliedCouponCode != null && cart.couponDiscount > 0)
-                    _TotalRow(
-                      label: 'Cupón ${cart.appliedCouponCode}',
-                      value: '-$symbol${cart.couponDiscount.toStringAsFixed(2)}',
+                      label: 'Descuentos',
+                      value: '-$symbol${totals.discount.toStringAsFixed(2)}',
                       valueColor: Colors.red.shade400,
                     ),
                   if (totals.taxAmount > 0)
-                    _TotalRow(label: taxLabel, value: '$symbol${totals.taxAmount.toStringAsFixed(2)}'),
+                    _TotalRow(
+                        label: taxLabel,
+                        value: '$symbol${totals.taxAmount.toStringAsFixed(2)}'),
                   _TotalRow(
                     label: 'Total',
                     value: '$symbol${totals.total.toStringAsFixed(2)}',
                     bold: true,
                     valueColor: EposBrand.navy,
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                 ],
-                if (expanded && openTicketsOn) ...[
+                if (expanded && openTicketsOn)
+                  SizedBox(
+                    height: 44,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Expanded(
+                          flex: 4,
+                          child: OutlinedButton(
+                            onPressed: () =>
+                                showOpenTicketsSheet(context, ref),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: EposBrand.navy,
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 6),
+                              side: BorderSide(
+                                  color:
+                                      EposBrand.navy.withValues(alpha: 0.5)),
+                            ),
+                            child: const Text(
+                              'TICKETS',
+                              style: TextStyle(
+                                  fontSize: 12, fontWeight: FontWeight.w600),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          flex: 6,
+                          child: FilledButton(
+                            onPressed: cart.items.isEmpty
+                                ? null
+                                : () => context.push('/payment'),
+                            style: FilledButton.styleFrom(
+                              backgroundColor: EposBrand.orange,
+                              foregroundColor: Colors.white,
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 6),
+                            ),
+                            child: Text(
+                              cart.items.isEmpty
+                                  ? 'COBRAR'
+                                  : 'COBRAR  $symbol${totals.total.toStringAsFixed(2)}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                else
                   SizedBox(
                     width: double.infinity,
                     height: 40,
-                    child: OutlinedButton(
-                      onPressed: () => showOpenTicketsSheet(context, ref),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: EposBrand.navy,
-                        side: BorderSide(color: EposBrand.navy.withValues(alpha: 0.5)),
+                    child: FilledButton(
+                      onPressed: cart.items.isEmpty
+                          ? null
+                          : () => context.push('/payment'),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: EposBrand.orange,
+                        foregroundColor: Colors.white,
                       ),
-                      child: const Text('TICKETS ABIERTOS', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                ],
-                SizedBox(
-                  width: double.infinity,
-                  height: expanded ? 44 : 40,
-                  child: FilledButton(
-                    onPressed: cart.items.isEmpty ? null : () => context.push('/payment'),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: EposBrand.orange,
-                      foregroundColor: Colors.white,
-                    ),
-                    child: Text(
-                      cart.items.isEmpty
-                          ? 'COBRAR'
-                          : 'COBRAR  $symbol${totals.total.toStringAsFixed(2)}',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: expanded ? 14 : 13,
+                      child: Text(
+                        cart.items.isEmpty
+                            ? 'COBRAR'
+                            : 'COBRAR  $symbol${totals.total.toStringAsFixed(2)}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
                       ),
                     ),
                   ),
-                ),
                 if (!expanded && openTicketsOn && cart.items.isNotEmpty) ...[
                   const SizedBox(height: 6),
                   SizedBox(
@@ -214,7 +306,8 @@ class PosTicketPanel extends ConsumerWidget {
                     height: 36,
                     child: OutlinedButton(
                       onPressed: () => _saveTicket(context, ref),
-                      child: const Text('Guardar', style: TextStyle(fontSize: 12)),
+                      child:
+                          const Text('Guardar', style: TextStyle(fontSize: 12)),
                     ),
                   ),
                 ],
@@ -238,8 +331,10 @@ class PosTicketPanel extends ConsumerWidget {
     }
   }
 
-  Future<void> _showDiscountDialog(BuildContext context, WidgetRef ref, double? current) async {
-    final customCtrl = TextEditingController(text: current?.toStringAsFixed(0) ?? '');
+  Future<void> _showDiscountDialog(
+      BuildContext context, WidgetRef ref, double? current) async {
+    final customCtrl =
+        TextEditingController(text: current?.toStringAsFixed(0) ?? '');
 
     final result = await showDialog<_DiscountChoice>(
       context: context,
@@ -256,14 +351,16 @@ class PosTicketPanel extends ConsumerWidget {
                 for (final p in [5.0, 10.0, 15.0, 20.0])
                   ActionChip(
                     label: Text('${p.toStringAsFixed(0)}%'),
-                    onPressed: () => Navigator.pop(ctx, _DiscountChoice.percent(p)),
+                    onPressed: () =>
+                        Navigator.pop(ctx, _DiscountChoice.percent(p)),
                   ),
               ],
             ),
             const SizedBox(height: 12),
             TextField(
               controller: customCtrl,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
               decoration: const InputDecoration(
                 labelText: 'Otro %',
                 border: OutlineInputBorder(),
@@ -275,16 +372,20 @@ class PosTicketPanel extends ConsumerWidget {
         actions: [
           if (current != null)
             TextButton(
-              onPressed: () => Navigator.pop(ctx, const _DiscountChoice.clear()),
+              onPressed: () =>
+                  Navigator.pop(ctx, const _DiscountChoice.clear()),
               child: const Text('Quitar'),
             ),
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancelar')),
           FilledButton(
             onPressed: () {
               final v = double.tryParse(customCtrl.text);
               if (v == null || v <= 0 || v > 100) {
                 ScaffoldMessenger.of(ctx).showSnackBar(
-                  const SnackBar(content: Text('Indica un porcentaje entre 1 y 100')),
+                  const SnackBar(
+                      content: Text('Indica un porcentaje entre 1 y 100')),
                 );
                 return;
               }
@@ -305,7 +406,8 @@ class PosTicketPanel extends ConsumerWidget {
     }
   }
 
-  Future<void> _showCouponDialog(BuildContext context, WidgetRef ref, CartState cart) async {
+  Future<void> _showCouponDialog(
+      BuildContext context, WidgetRef ref, CartState cart) async {
     final codeCtrl = TextEditingController(text: cart.appliedCouponCode ?? '');
 
     final action = await showDialog<String>(
@@ -328,7 +430,9 @@ class PosTicketPanel extends ConsumerWidget {
               onPressed: () => Navigator.pop(ctx, 'remove'),
               child: const Text('Quitar'),
             ),
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancelar')),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, 'apply'),
             child: const Text('Aplicar'),
@@ -345,16 +449,29 @@ class PosTicketPanel extends ConsumerWidget {
     if (action != 'apply') return;
 
     try {
-      final subtotalBase = cart.subtotal - cart.totalDiscount - cart.discountGlobal;
+      final engine = ref.read(commercialEngineProvider);
+      final orderWithoutCoupon = commercialOrderFromCart(
+        cart.copyWith(clearCoupon: true),
+      );
+      final subtotalBase =
+          engine.calculateTotals(orderWithoutCoupon).netBeforeTaxes;
       final coupon = await ref.read(couponRepositoryProvider).validateForCart(
             code: codeCtrl.text,
-            subtotalAfterLineDiscounts: subtotalBase.clamp(0, double.infinity),
+            subtotalAfterLineDiscounts: subtotalBase,
           );
-      final discount = coupon.calculateDiscount(subtotalBase.clamp(0, double.infinity));
-      notifier.applyCoupon(couponId: coupon.localId, code: coupon.code, discountAmount: discount);
+      final discount = engine.calculateCouponDiscount(
+        order: orderWithoutCoupon,
+        isPercent: coupon.discountType == CouponDiscountType.percent,
+        value: coupon.value,
+      );
+      notifier.applyCoupon(
+          couponId: coupon.localId,
+          code: coupon.code,
+          discountAmount: discount);
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e'), backgroundColor: Colors.red));
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('$e'), backgroundColor: Colors.red));
       }
     }
   }
@@ -364,7 +481,9 @@ class _DiscountChoice {
   final double? percent;
   final bool clear;
   const _DiscountChoice.percent(this.percent) : clear = false;
-  const _DiscountChoice.clear() : percent = null, clear = true;
+  const _DiscountChoice.clear()
+      : percent = null,
+        clear = true;
 }
 
 class _OrderTypeSelector extends ConsumerWidget {
@@ -385,12 +504,16 @@ class _OrderTypeSelector extends ConsumerWidget {
               children: [
                 const Padding(
                   padding: EdgeInsets.all(16),
-                  child: Text('Tipo de orden', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  child: Text('Tipo de orden',
+                      style:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                 ),
                 for (final t in OrderType.values)
                   ListTile(
                     title: Text(orderTypeLabel(t)),
-                    trailing: orderType == t ? const Icon(Icons.check, color: EposBrand.orange) : null,
+                    trailing: orderType == t
+                        ? const Icon(Icons.check, color: EposBrand.orange)
+                        : null,
                     onTap: () => Navigator.pop(ctx, t),
                   ),
               ],
@@ -403,14 +526,16 @@ class _OrderTypeSelector extends ConsumerWidget {
       },
       borderRadius: BorderRadius.circular(compact ? 6 : 8),
       child: Container(
-        padding: EdgeInsets.symmetric(horizontal: compact ? 8 : 12, vertical: compact ? 5 : 10),
+        padding: EdgeInsets.symmetric(
+            horizontal: compact ? 8 : 12, vertical: compact ? 5 : 10),
         decoration: BoxDecoration(
           border: Border.all(color: EposBrand.divider),
           borderRadius: BorderRadius.circular(compact ? 6 : 8),
         ),
         child: Row(
           children: [
-            Icon(Icons.restaurant_menu, size: compact ? 15 : 18, color: EposBrand.textSecondary),
+            Icon(Icons.restaurant_menu,
+                size: compact ? 15 : 18, color: EposBrand.textSecondary),
             SizedBox(width: compact ? 4 : 8),
             Expanded(
               child: Text(
@@ -420,7 +545,8 @@ class _OrderTypeSelector extends ConsumerWidget {
                 style: TextStyle(fontSize: compact ? 11 : 13),
               ),
             ),
-            Icon(Icons.expand_more, size: compact ? 16 : 18, color: EposBrand.textSecondary),
+            Icon(Icons.expand_more,
+                size: compact ? 16 : 18, color: EposBrand.textSecondary),
           ],
         ),
       ),
@@ -430,15 +556,22 @@ class _OrderTypeSelector extends ConsumerWidget {
 
 class _TicketLine extends ConsumerWidget {
   final CartItem item;
+  final double lineTotal;
   final String symbol;
   final bool expanded;
 
-  const _TicketLine({required this.item, required this.symbol, required this.expanded});
+  const _TicketLine({
+    required this.item,
+    required this.lineTotal,
+    required this.symbol,
+    required this.expanded,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: expanded ? 6 : 8, vertical: expanded ? 5 : 8),
+      padding: EdgeInsets.symmetric(
+          horizontal: expanded ? 6 : 8, vertical: expanded ? 5 : 8),
       decoration: BoxDecoration(
         color: EposBrand.background,
         borderRadius: BorderRadius.circular(6),
@@ -455,13 +588,16 @@ class _TicketLine extends ConsumerWidget {
                   item.displayName,
                   maxLines: expanded ? 2 : 2,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: expanded ? 12 : 13),
+                  style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: expanded ? 12 : 13),
                 ),
                 if (!expanded) ...[
                   const SizedBox(height: 2),
                   Text(
                     '$symbol${item.unitPrice.toStringAsFixed(2)} c/u',
-                    style: const TextStyle(fontSize: 10, color: EposBrand.textSecondary),
+                    style: const TextStyle(
+                        fontSize: 10, color: EposBrand.textSecondary),
                   ),
                 ],
               ],
@@ -473,17 +609,24 @@ class _TicketLine extends ConsumerWidget {
           ] else
             Padding(
               padding: const EdgeInsets.only(right: 8),
-              child: Text('x${item.quantity.toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.w600)),
+              child: Text('x${item.quantity.toStringAsFixed(0)}',
+                  style: const TextStyle(fontWeight: FontWeight.w600)),
             ),
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text('$symbol${item.total.toStringAsFixed(2)}', style: TextStyle(fontWeight: FontWeight.bold, fontSize: expanded ? 12 : 13, color: EposBrand.navy)),
+              Text('$symbol${lineTotal.toStringAsFixed(2)}',
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: expanded ? 12 : 13,
+                      color: EposBrand.navy)),
               InkWell(
-                onTap: () => ref.read(cartProvider.notifier).removeItem(item.id),
+                onTap: () =>
+                    ref.read(cartProvider.notifier).removeItem(item.id),
                 child: Padding(
                   padding: const EdgeInsets.only(top: 2),
-                  child: Icon(Icons.close, size: expanded ? 14 : 16, color: Colors.red),
+                  child: Icon(Icons.close,
+                      size: expanded ? 14 : 16, color: Colors.red),
                 ),
               ),
             ],
@@ -516,19 +659,26 @@ class _QtyControl extends ConsumerWidget {
           _QtyBtn(
             icon: Icons.remove,
             compact: compact,
-            onTap: () => ref.read(cartProvider.notifier).updateQuantity(item.id, item.quantity - step),
+            onTap: () => ref
+                .read(cartProvider.notifier)
+                .updateQuantity(item.id, item.quantity - step),
           ),
           Padding(
             padding: EdgeInsets.symmetric(horizontal: compact ? 5 : 8),
             child: Text(
-              item.quantity % 1 == 0 ? item.quantity.toStringAsFixed(0) : item.quantity.toStringAsFixed(1),
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: compact ? 12 : 14),
+              item.quantity % 1 == 0
+                  ? item.quantity.toStringAsFixed(0)
+                  : item.quantity.toStringAsFixed(1),
+              style: TextStyle(
+                  fontWeight: FontWeight.bold, fontSize: compact ? 12 : 14),
             ),
           ),
           _QtyBtn(
             icon: Icons.add,
             compact: compact,
-            onTap: () => ref.read(cartProvider.notifier).updateQuantity(item.id, item.quantity + step),
+            onTap: () => ref
+                .read(cartProvider.notifier)
+                .updateQuantity(item.id, item.quantity + step),
           ),
         ],
       ),
@@ -541,7 +691,8 @@ class _QtyBtn extends StatelessWidget {
   final VoidCallback onTap;
   final bool compact;
 
-  const _QtyBtn({required this.icon, required this.onTap, this.compact = false});
+  const _QtyBtn(
+      {required this.icon, required this.onTap, this.compact = false});
 
   @override
   Widget build(BuildContext context) {
@@ -550,6 +701,82 @@ class _QtyBtn extends StatelessWidget {
       child: Padding(
         padding: EdgeInsets.all(compact ? 4 : 6),
         child: Icon(icon, size: compact ? 14 : 16, color: EposBrand.navy),
+      ),
+    );
+  }
+}
+
+/// Handle de swipe en celular — no se usa en tablet.
+class _PhoneSheetHandle extends StatelessWidget {
+  final bool open;
+  final int itemCount;
+  final VoidCallback? onExpand;
+  final VoidCallback? onCollapse;
+
+  const _PhoneSheetHandle({
+    required this.open,
+    required this.itemCount,
+    this.onExpand,
+    this.onCollapse,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () {
+        if (open) {
+          onCollapse?.call();
+        } else {
+          onExpand?.call();
+        }
+      },
+      onVerticalDragEnd: (details) {
+        final v = details.primaryVelocity ?? 0;
+        if (v < -200) {
+          onExpand?.call();
+        } else if (v > 200) {
+          onCollapse?.call();
+        }
+      },
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+        child: Column(
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: EposBrand.divider,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                Icon(
+                  open ? Icons.keyboard_arrow_down : Icons.keyboard_arrow_up,
+                  size: 20,
+                  color: EposBrand.navy,
+                ),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    open
+                        ? 'Desliza ↓ o toca para volver al catálogo'
+                        : 'Desliza ↑ para ver el pedido ($itemCount)',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: EposBrand.textSecondary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -579,7 +806,10 @@ class _TotalRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 1),
       child: Row(
         children: [
-          Text(label, style: TextStyle(fontSize: bold ? 14 : 12, color: bold ? EposBrand.navy : EposBrand.textSecondary)),
+          Text(label,
+              style: TextStyle(
+                  fontSize: bold ? 14 : 12,
+                  color: bold ? EposBrand.navy : EposBrand.textSecondary)),
           const Spacer(),
           Text(value, style: style),
         ],
@@ -614,18 +844,23 @@ class OpenTicketsButton extends ConsumerWidget {
               top: 6,
               child: Container(
                 padding: const EdgeInsets.all(4),
-                decoration: const BoxDecoration(color: EposBrand.orange, shape: BoxShape.circle),
+                decoration: const BoxDecoration(
+                    color: EposBrand.orange, shape: BoxShape.circle),
                 constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
                 child: Text(
                   count > 9 ? '9+' : '$count',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold),
                 ),
               ),
             ),
         ],
       ),
-      loading: () => IconButton(icon: const Icon(Icons.receipt_long_outlined), onPressed: null),
+      loading: () => IconButton(
+          icon: const Icon(Icons.receipt_long_outlined), onPressed: null),
       error: (_, __) => IconButton(
         icon: const Icon(Icons.receipt_long_outlined),
         onPressed: () => showOpenTicketsSheet(context, ref),

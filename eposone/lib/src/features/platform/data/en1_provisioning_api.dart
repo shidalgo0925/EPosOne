@@ -387,8 +387,10 @@ class En1ProvisioningApi {
       configVersion: configVersion,
       businessName: _str(configMap?['business_name']) ?? previous?.businessName,
       currency: _str(configMap?['currency']) ?? previous?.currency,
-      timezone: _str(configMap?['timezone']) ?? previous?.timezone,
-      provisionedAt: previous?.provisionedAt ?? DateTime.now(),
+      timezone: _str(configMap?['timezone']) ??
+          _str(orgMap?['timezone']) ??
+          previous?.timezone,
+      provisionedAt: previous?.provisionedAt ?? DateTime.now().toUtc(),
     );
   }
 

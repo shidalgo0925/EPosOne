@@ -13,6 +13,10 @@ class OpenTicketLine extends SyncEntity {
   final double quantity;
   final double unitPrice;
   final double discount;
+
+  /// Categoría fiscal del producto al guardar el ticket (snapshot).
+  final String? fiscalCategoryCode;
+
   /// JSON serializado de [SelectedModifier].
   final String? modifiersJson;
 
@@ -29,6 +33,7 @@ class OpenTicketLine extends SyncEntity {
     required this.quantity,
     required this.unitPrice,
     this.discount = 0,
+    this.fiscalCategoryCode,
     this.modifiersJson,
   });
 
@@ -39,12 +44,16 @@ class OpenTicketLine extends SyncEntity {
       copyWith(syncStatus: SyncStatus.modified, updatedAt: DateTime.now());
 
   @override
-  OpenTicketLine markAsSynced(String serverId) =>
-      copyWith(serverId: serverId, syncStatus: SyncStatus.synced, updatedAt: DateTime.now());
+  OpenTicketLine markAsSynced(String serverId) => copyWith(
+      serverId: serverId,
+      syncStatus: SyncStatus.synced,
+      updatedAt: DateTime.now());
 
   @override
-  OpenTicketLine markAsDeleted() =>
-      copyWith(deletedAt: DateTime.now(), syncStatus: SyncStatus.modified, updatedAt: DateTime.now());
+  OpenTicketLine markAsDeleted() => copyWith(
+      deletedAt: DateTime.now(),
+      syncStatus: SyncStatus.modified,
+      updatedAt: DateTime.now());
 
   OpenTicketLine copyWith({
     String? localId,
@@ -59,6 +68,7 @@ class OpenTicketLine extends SyncEntity {
     double? quantity,
     double? unitPrice,
     double? discount,
+    String? fiscalCategoryCode,
     String? modifiersJson,
     bool clearModifiersJson = false,
   }) =>
@@ -75,7 +85,9 @@ class OpenTicketLine extends SyncEntity {
         quantity: quantity ?? this.quantity,
         unitPrice: unitPrice ?? this.unitPrice,
         discount: discount ?? this.discount,
-        modifiersJson: clearModifiersJson ? null : (modifiersJson ?? this.modifiersJson),
+        fiscalCategoryCode: fiscalCategoryCode ?? this.fiscalCategoryCode,
+        modifiersJson:
+            clearModifiersJson ? null : (modifiersJson ?? this.modifiersJson),
       );
 
   factory OpenTicketLine.create({
@@ -85,6 +97,7 @@ class OpenTicketLine extends SyncEntity {
     required double quantity,
     required double unitPrice,
     double discount = 0,
+    String? fiscalCategoryCode,
     String? modifiersJson,
   }) {
     final now = DateTime.now();
@@ -96,6 +109,7 @@ class OpenTicketLine extends SyncEntity {
       quantity: quantity,
       unitPrice: unitPrice,
       discount: discount,
+      fiscalCategoryCode: fiscalCategoryCode,
       modifiersJson: modifiersJson,
       createdAt: now,
       updatedAt: now,

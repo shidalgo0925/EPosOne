@@ -4,7 +4,7 @@ enum SyncEntityKind {
   cashMovement,
   cashRegister,
   catalogPull,
-  /// Pedido Hito 3B — HTTP diferido hasta contrato en Doc/
+  /// Pedido Hito 3B — Order Domain HTTP
   order,
 }
 

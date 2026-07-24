@@ -1,6 +1,8 @@
 import 'dart:convert';
 
 import 'package:eposone/src/core/entities/sync_entity.dart';
+import 'package:eposone/src/core/time/en1_date_time_service.dart';
+import 'package:eposone/src/features/commercial_engine/commercial_engine.dart';
 import 'package:eposone/src/features/orders/data/en1_orders_api.dart';
 import 'package:eposone/src/features/orders/data/order_mapper.dart';
 import 'package:eposone/src/features/orders/data/order_repository.dart';
@@ -9,6 +11,8 @@ import 'package:eposone/src/features/orders/domain/entities/order.dart';
 import 'package:eposone/src/features/orders/domain/entities/order_event.dart';
 import 'package:eposone/src/features/orders/domain/entities/order_item.dart';
 import 'package:eposone/src/features/orders/domain/entities/order_payment.dart';
+import 'package:eposone/src/features/orders/domain/en1_tender_methods.dart';
+import 'package:eposone/src/features/pos/data/repositories/open_ticket_repository.dart';
 import 'package:eposone/src/features/settings/domain/entities/business_config.dart';
 import 'package:eposone/src/features/sync/data/repositories/sync_repository.dart';
 import 'package:eposone/src/features/sync/domain/entities/sync_entity_kind.dart';
@@ -39,14 +43,23 @@ class OrderService {
   OrderService({
     required OrderRepository repository,
     required SyncRepository syncRepository,
+    required CommercialEngineFacade commercialEngine,
+    OpenTicketRepository? openTicketRepository,
     En1OrdersApi? en1Api,
   })  : _repo = repository,
         _sync = syncRepository,
+        _commercialEngine = commercialEngine,
+        _openTickets = openTicketRepository,
         _api = en1Api ?? En1OrdersApi();
 
   final OrderRepository _repo;
   final SyncRepository _sync;
+  final CommercialEngineFacade _commercialEngine;
+  final OpenTicketRepository? _openTickets;
   final En1OrdersApi _api;
+
+  Future<List<OrderPayment>> paymentsOf(String orderLocalId) =>
+      _repo.paymentsOf(orderLocalId);
 
   Future<Order> createOrder({
     String? localNumber,
@@ -238,24 +251,82 @@ class OrderService {
     String? actorId,
     bool closeOrder = true,
   }) async {
-    final order = await _requireOpen(orderLocalId);
-    final payment = OrderPayment.create(
+    final payments = await collectPayments(
       orderLocalId: orderLocalId,
-      methodCode: methodCode,
-      amount: amount,
-      currency: currency ?? 'USD',
+      tenders: [TenderAmount(code: methodCode, amount: amount)],
+      currency: currency,
       notes: notes,
-      isPartial: isPartial,
+      actorId: actorId,
+      closeOrder: closeOrder,
+      forcePartial: isPartial,
     );
-    final updated = closeOrder && !isPartial
-        ? order.copyWith(isOpen: false, lifecycleStatus: 'paid').markAsModified()
+    return payments.first;
+  }
+
+  /// Pago mixto: N tenders → N `OrderPayment` → N× `POST /payments` en sync.
+  Future<List<OrderPayment>> collectPayments({
+    required String orderLocalId,
+    required List<TenderAmount> tenders,
+    String? currency,
+    String? notes,
+    String? actorId,
+    bool closeOrder = true,
+    bool forcePartial = false,
+  }) async {
+    final positive = tenders.where((t) => t.amount > 0.00001).toList();
+    if (positive.isEmpty) throw StateError('Sin montos de pago');
+
+    final order = await _requireOpen(orderLocalId);
+    final existing = await _repo.paymentsOf(orderLocalId);
+    final alreadyPaid =
+        _commercialEngine.sumPayments(existing.map((p) => p.amount));
+    final balanceDue = _commercialEngine.outstandingBalance(
+      total: order.total,
+      paid: alreadyPaid,
+    );
+
+    final settlement = _commercialEngine
+        .evaluatePayment(balanceDue: balanceDue, entered: positive)
+        .settlement;
+    if (settlement == null || settlement.paymentsToPost.isEmpty) {
+      throw StateError('Montos de pago no cubren el saldo ($balanceDue)');
+    }
+
+    final paySum = _commercialEngine
+        .sumPayments(settlement.paymentsToPost.map((t) => t.amount));
+    final covers = _commercialEngine.outstandingBalance(
+          total: balanceDue,
+          paid: paySum,
+        ) <=
+        0.009;
+    final isPartial = forcePartial || !covers;
+
+    final created = <OrderPayment>[];
+    for (final t in settlement.paymentsToPost) {
+      created.add(
+        OrderPayment.create(
+          orderLocalId: orderLocalId,
+          methodCode: t.code,
+          amount: t.amount,
+          currency: currency ?? 'USD',
+          notes: t.reference ?? notes,
+          isPartial: isPartial,
+        ),
+      );
+    }
+
+    final updated = closeOrder && covers && !isPartial
+        ? order
+            .copyWith(isOpen: false, lifecycleStatus: 'paid')
+            .markAsModified()
         : order.markAsModified();
-    await _repo.saveOrderBundle(order: updated, payment: payment);
+
+    await _repo.saveOrderBundle(order: updated, payments: created);
     await _enqueueSync(orderLocalId);
     try {
       await syncOrderToEn1(orderLocalId);
     } catch (_) {}
-    return payment;
+    return created;
   }
 
   /// Guardar ticket POS → Pedido abierto EN1 (nace antes del cobro).
@@ -398,9 +469,7 @@ class OrderService {
       ),
     );
     await _repo.putOrder(
-      order
-          .copyWith(isOpen: false, lifecycleStatus: 'voided')
-          .markAsModified(),
+      order.copyWith(isOpen: false, lifecycleStatus: 'voided').markAsModified(),
     );
     await _enqueueSync(orderLocalId);
     if (syncNow) {
@@ -439,11 +508,15 @@ class OrderService {
   }
 
   /// Cobro POS → Pedido Order Domain (Hito 3). Un solo sync al final.
+  ///
+  /// Preferir [paymentTenders] (pago mixto). Si viene vacío, usa
+  /// [methodCode] + [paymentAmount] (compat).
   Future<Order> createPaidOrderFromPosSale({
     required String localNumber,
     required List<PosOrderLineInput> lines,
-    required String methodCode,
-    required double paymentAmount,
+    String? methodCode,
+    double? paymentAmount,
+    List<TenderAmount> paymentTenders = const [],
     required double subtotal,
     required double taxAmount,
     required double discount,
@@ -458,6 +531,15 @@ class OrderService {
     String? existingOrderLocalId,
   }) async {
     if (lines.isEmpty) throw StateError('Pedido POS sin líneas');
+
+    final tenders = paymentTenders.isNotEmpty
+        ? paymentTenders
+        : [
+            TenderAmount(
+              code: methodCode ?? 'cash',
+              amount: paymentAmount ?? total,
+            ),
+          ];
 
     if (existingOrderLocalId != null) {
       final existing = await _repo.getByLocalId(existingOrderLocalId);
@@ -481,10 +563,9 @@ class OrderService {
         await _repo.putOrder(
           withTip.copyWith(tipAmount: tipAmount, total: total).markAsModified(),
         );
-        await collectPayment(
+        await collectPayments(
           orderLocalId: existingOrderLocalId,
-          methodCode: methodCode,
-          amount: paymentAmount,
+          tenders: tenders,
           currency: currency ?? config?.currency ?? 'USD',
           actorId: cashierId,
           closeOrder: true,
@@ -520,15 +601,18 @@ class OrderService {
 
     final lineBaseSum = lines.fold<double>(
       0,
-      (s, l) => s + ((l.unitPrice * l.quantity) - l.discount).clamp(0, double.infinity),
+      (s, l) =>
+          s +
+          ((l.unitPrice * l.quantity) - l.discount).clamp(0, double.infinity),
     );
 
     for (var i = 0; i < lines.length; i++) {
       final line = lines[i];
       final lineRef = 'L${i + 1}';
-      final lineBase =
-          ((line.unitPrice * line.quantity) - line.discount).clamp(0, double.infinity);
-      final lineTax = lineBaseSum > 0 ? taxAmount * (lineBase / lineBaseSum) : 0.0;
+      final lineBase = ((line.unitPrice * line.quantity) - line.discount)
+          .clamp(0, double.infinity);
+      final lineTax =
+          lineBaseSum > 0 ? taxAmount * (lineBase / lineBaseSum) : 0.0;
       final productRef = line.productRef ?? line.productLocalId;
 
       orderItems.add(
@@ -573,13 +657,25 @@ class OrderService {
       lifecycleStatus: 'paid',
     );
 
-    final payment = OrderPayment.create(
-      orderLocalId: draft.localId,
-      methodCode: methodCode,
-      amount: paymentAmount,
-      currency: currency ?? config?.currency ?? 'USD',
-      isPartial: false,
-    );
+    final settlement = _commercialEngine
+        .evaluatePayment(balanceDue: total, entered: tenders)
+        .settlement;
+    if (settlement == null || settlement.paymentsToPost.isEmpty) {
+      throw StateError('Montos de pago no cubren el total del pedido');
+    }
+
+    final orderPayments = settlement.paymentsToPost
+        .map(
+          (t) => OrderPayment.create(
+            orderLocalId: draft.localId,
+            methodCode: t.code,
+            amount: t.amount,
+            currency: currency ?? config?.currency ?? 'USD',
+            notes: t.reference,
+            isPartial: false,
+          ),
+        )
+        .toList();
 
     events.add(
       OrderEvent.record(
@@ -587,8 +683,10 @@ class OrderService {
         eventType: OrderEventTypes.paid,
         actorId: cashierId,
         payloadJson: jsonEncode({
-          'method': methodCode,
-          'amount': paymentAmount,
+          'payments': [
+            for (final t in settlement.paymentsToPost)
+              {'method': t.code, 'amount': t.amount},
+          ],
         }),
       ),
     );
@@ -597,7 +695,7 @@ class OrderService {
       order: paid,
       items: orderItems,
       events: events,
-      payment: payment,
+      payments: orderPayments,
     );
     await _enqueueSync(draft.localId);
     try {
@@ -613,7 +711,8 @@ class OrderService {
     final localId = 'en1_order_${remote['id']}';
     final existing = await _repo.getByLocalId(localId) ??
         await _findByServerId(remote['id']?.toString());
-    final base = existing ?? OrderMapper.orderFromRemote(remote, localId: localId);
+    final base =
+        existing ?? OrderMapper.orderFromRemote(remote, localId: localId);
     final mapped = OrderMapper.applyRemoteOrder(base, remote);
     await _repo.putOrder(mapped);
     final items = remote['items'];
@@ -625,11 +724,13 @@ class OrderService {
         }
       }
     }
+    await _closeLinkedOpenTicketsIfNeeded(mapped);
     return mapped;
   }
 
   /// Sincroniza un pedido pendiente con EN1 (idempotente vía event_id).
-  Future<void> syncOrderToEn1(String orderLocalId, {BusinessConfig? config}) async {
+  Future<void> syncOrderToEn1(String orderLocalId,
+      {BusinessConfig? config}) async {
     OrderSyncDiag.section('SYNC Pedido localId=$orderLocalId');
     final existing = await _repo.getByLocalId(orderLocalId);
     if (existing == null) {
@@ -666,14 +767,17 @@ class OrderService {
                 'unitPrice': i.unitPrice,
               })
           .toList(),
-      'events_pending': events.where((e) => !e.syncedToEn1).map((e) => e.eventType).toList(),
+      'events_pending':
+          events.where((e) => !e.syncedToEn1).map((e) => e.eventType).toList(),
       'payments_unsynced': payments.where((p) => !p.isSynced).length,
     });
 
     try {
       if (order.serverId == null || order.serverId!.isEmpty) {
         OrderSyncDiag.log('Paso: POST /orders (crear)');
-        final createEvt = events.where((e) => e.eventType == OrderEventTypes.created).firstOrNull;
+        final createEvt = events
+            .where((e) => e.eventType == OrderEventTypes.created)
+            .firstOrNull;
         final eventId = createEvt?.localId ?? OrderMapper.newEventId();
         final root = await _api.createOrder(
           OrderMapper.toCreateRequest(order: order, eventId: eventId),
@@ -681,30 +785,36 @@ class OrderService {
         );
         final remote = OrderMapper.unwrapOrder(root);
         if (remote == null) {
-          throw En1OrdersException(code: 'validation', message: 'create sin order');
+          throw En1OrdersException(
+              code: 'validation', message: 'create sin order');
         }
         order = OrderMapper.applyRemoteOrder(order, remote);
         await _repo.putOrder(order);
         if (createEvt != null && !createEvt.syncedToEn1) {
-          await _repo.putEvent(createEvt.copyWith(syncedToEn1: true, syncStatus: SyncStatus.synced));
+          await _repo.putEvent(createEvt.copyWith(
+              syncedToEn1: true, syncStatus: SyncStatus.synced));
         }
         OrderSyncDiag.log('Tras create: serverId=${order.serverId}');
       } else {
-        OrderSyncDiag.log('Pedido ya tiene serverId=${order.serverId} — skip create');
+        OrderSyncDiag.log(
+            'Pedido ya tiene serverId=${order.serverId} — skip create');
       }
 
       final en1Id = order.serverId!;
       for (final evt in events) {
         if (evt.syncedToEn1) continue;
         if (evt.eventType == OrderEventTypes.created) {
-          await _repo.putEvent(evt.copyWith(syncedToEn1: true, syncStatus: SyncStatus.synced));
+          await _repo.putEvent(
+              evt.copyWith(syncedToEn1: true, syncStatus: SyncStatus.synced));
           continue;
         }
         if (evt.eventType == OrderEventTypes.paid) {
-          await _repo.putEvent(evt.copyWith(syncedToEn1: true, syncStatus: SyncStatus.synced));
+          await _repo.putEvent(
+              evt.copyWith(syncedToEn1: true, syncStatus: SyncStatus.synced));
           continue;
         }
-        OrderSyncDiag.log('Paso: POST /orders/$en1Id/events type=${evt.eventType}');
+        OrderSyncDiag.log(
+            'Paso: POST /orders/$en1Id/events type=${evt.eventType}');
         final root = await _api.postEvent(
           en1Id,
           OrderMapper.toEventRequest(evt),
@@ -715,15 +825,21 @@ class OrderService {
           order = OrderMapper.applyRemoteOrder(order, remote);
           await _repo.putOrder(order);
         }
-        await _repo.putEvent(evt.copyWith(syncedToEn1: true, syncStatus: SyncStatus.synced));
+        await _repo.putEvent(
+            evt.copyWith(syncedToEn1: true, syncStatus: SyncStatus.synced));
       }
 
       for (final pay in payments) {
         if (pay.isSynced) continue;
-        OrderSyncDiag.log('Paso: POST /orders/$en1Id/payments amount=${pay.amount}');
+        OrderSyncDiag.log(
+            'Paso: POST /orders/$en1Id/payments amount=${pay.amount}');
         final root = await _api.postPayment(
           en1Id,
-          OrderMapper.toPaymentRequest(pay),
+          OrderMapper.toPaymentRequest(
+            pay,
+            cashierContactId:
+                OrderMapper.contactIdFromCashierRef(order.cashierId),
+          ),
           config: config,
         );
         final remote = OrderMapper.unwrapOrder(root);
@@ -736,7 +852,8 @@ class OrderService {
 
       try {
         OrderSyncDiag.log('Paso: GET /orders/$en1Id (confirmación)');
-        final root = await _api.getOrder(en1Id, includeEvents: true, config: config);
+        final root =
+            await _api.getOrder(en1Id, includeEvents: true, config: config);
         final remote = OrderMapper.unwrapOrder(root);
         if (remote != null) {
           order = OrderMapper.applyRemoteOrder(order, remote);
@@ -745,23 +862,78 @@ class OrderService {
         OrderSyncDiag.log('GET confirmación falló (no aborta): $e');
       }
       // Sync OK → dirty = false
-      await _repo.putOrder(
-        order.copyWith(
-          dirty: false,
-          syncStatus: SyncStatus.synced,
-          updatedAt: DateTime.now(),
-        ),
+      final finalized = order.copyWith(
+        dirty: false,
+        syncStatus: SyncStatus.synced,
+        updatedAt: En1DateTimeService.nowUtc(),
       );
-      OrderSyncDiag.log('Estado Sync pedido: OK serverId=${order.serverId} dirty=false');
+      await _repo.putOrder(finalized);
+      await _closeLinkedOpenTicketsIfNeeded(finalized);
+      OrderSyncDiag.log(
+          'Estado Sync pedido: OK serverId=${order.serverId} dirty=false');
     } catch (e) {
       OrderSyncDiag.log('Estado Sync pedido: FALLÓ → $e');
       try {
         await _repo.putOrder(
-          order.copyWith(dirty: true, syncStatus: SyncStatus.error, updatedAt: DateTime.now()),
+          order.copyWith(
+              dirty: true,
+              syncStatus: SyncStatus.error,
+              updatedAt: En1DateTimeService.nowUtc()),
         );
       } catch (_) {}
       rethrow;
     }
+  }
+
+  /// Si EN1 marcó el pedido cobrado/cerrado, saca Juanito/Pedrito de abiertos.
+  Future<void> _closeLinkedOpenTicketsIfNeeded(Order order) async {
+    if (order.isOpen || _openTickets == null) return;
+    final n = await _openTickets!.closeTicketsForClosedOrder(order.localId);
+    if (n > 0) {
+      OrderSyncDiag.log(
+        'E2E C20: $n ticket(s) abiertos cerrados (pedido ${order.localId} '
+        'status=${order.lifecycleStatus} isOpen=false)',
+      );
+    }
+  }
+
+  /// Pull estado EN1 de pedidos ligados a tickets abiertos (cobro en BO).
+  Future<int> reconcileOpenTicketsFromEn1({BusinessConfig? config}) async {
+    final ticketsRepo = _openTickets;
+    if (ticketsRepo == null) return 0;
+    final openTickets = await ticketsRepo.getAllOpenTickets();
+    var closed = 0;
+    for (final ticket in openTickets) {
+      final orderLocalId = ticket.linkedOrderLocalId;
+      if (orderLocalId == null || orderLocalId.isEmpty) continue;
+      final order = await _repo.getByLocalId(orderLocalId);
+      final serverId = order?.serverId;
+      if (order == null || serverId == null || serverId.isEmpty) continue;
+      try {
+        final root = await _api.getOrder(
+          serverId,
+          includeEvents: true,
+          config: config,
+        );
+        final remote = OrderMapper.unwrapOrder(root);
+        if (remote == null) continue;
+        final mapped = OrderMapper.applyRemoteOrder(order, remote);
+        await _repo.putOrder(mapped);
+        if (!mapped.isOpen) {
+          await ticketsRepo.deleteTicket(ticket.localId);
+          closed++;
+          OrderSyncDiag.log(
+            'E2E C20 reconcile: ticket "${ticket.label}" cerrado '
+            '(EN1 paid/financially_closed/closed)',
+          );
+        }
+      } catch (e) {
+        OrderSyncDiag.log(
+          'Reconcile ticket "${ticket.label}" falló: $e',
+        );
+      }
+    }
+    return closed;
   }
 
   /// Vacía cola de pedidos pendientes.
@@ -818,7 +990,10 @@ class OrderService {
         OrderSyncDiag.log('Continúa flush tras error en $id: $e');
       }
     }
-    OrderSyncDiag.log('FLUSH COLA — fin');
+    final closedTickets = await reconcileOpenTicketsFromEn1(config: config);
+    OrderSyncDiag.log(
+      'FLUSH COLA — fin · tickets cerrados por EN1: $closedTickets',
+    );
   }
 
   /// ¿Hay algo que justifique auto-sync?
@@ -843,14 +1018,17 @@ class OrderService {
   }) {
     final lineBaseSum = lines.fold<double>(
       0,
-      (s, l) => s + ((l.unitPrice * l.quantity) - l.discount).clamp(0, double.infinity),
+      (s, l) =>
+          s +
+          ((l.unitPrice * l.quantity) - l.discount).clamp(0, double.infinity),
     );
     for (var i = 0; i < lines.length; i++) {
       final line = lines[i];
       final lineRef = 'L${i + 1}';
-      final lineBase =
-          ((line.unitPrice * line.quantity) - line.discount).clamp(0, double.infinity);
-      final lineTax = lineBaseSum > 0 ? taxAmount * (lineBase / lineBaseSum) : 0.0;
+      final lineBase = ((line.unitPrice * line.quantity) - line.discount)
+          .clamp(0, double.infinity);
+      final lineTax =
+          lineBaseSum > 0 ? taxAmount * (lineBase / lineBaseSum) : 0.0;
       final productRef = line.productRef ?? line.productLocalId;
       orderItems.add(
         OrderItem.create(
@@ -940,18 +1118,20 @@ class OrderService {
       ),
     );
 
-    final updated = order.copyWith(
-      localNumber: localNumber,
-      customerId: customerId,
-      cashierId: cashierId,
-      tableRef: tableRef,
-      notes: notes,
-      subtotal: subtotal,
-      taxAmount: taxAmount,
-      discount: discount,
-      total: total,
-      dirty: true,
-    ).markAsModified();
+    final updated = order
+        .copyWith(
+          localNumber: localNumber,
+          customerId: customerId,
+          cashierId: cashierId,
+          tableRef: tableRef,
+          notes: notes,
+          subtotal: subtotal,
+          taxAmount: taxAmount,
+          discount: discount,
+          total: total,
+          dirty: true,
+        )
+        .markAsModified();
 
     await _repo.saveOrderBundle(order: updated, events: events);
     // Reemplazar líneas locales

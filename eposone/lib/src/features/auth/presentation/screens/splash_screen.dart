@@ -43,12 +43,6 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
         context.go('/onboarding');
       case StartupRoute.pin:
         context.go('/pin');
-      case StartupRoute.cashOpen:
-        context.go('/cash/open');
-      case StartupRoute.pos:
-        context.go('/pin');
-      case StartupRoute.splash:
-        context.go('/pin');
     }
   }
 
@@ -68,7 +62,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
             const EposOneLogo(fontSize: 36),
             const SizedBox(height: 8),
             if (businessName != null && businessName != 'Mi Negocio')
-              Text(businessName, style: const TextStyle(color: EposBrand.textSecondary, fontSize: 16))
+              Text(businessName,
+                  style: const TextStyle(
+                      color: EposBrand.textSecondary, fontSize: 16))
             else
               const Text(
                 'Punto de Venta Simple, Rápido y Poderoso',
@@ -78,7 +74,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
             const SizedBox(height: 12),
             const Text(
               'EasyTech Services',
-              style: TextStyle(fontSize: 12, color: EposBrand.navy, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                  fontSize: 12,
+                  color: EposBrand.navy,
+                  fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 40),
             const CircularProgressIndicator(),

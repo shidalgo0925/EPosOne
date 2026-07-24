@@ -1,5 +1,6 @@
 import 'package:isar/isar.dart';
 import 'package:eposone/src/core/entities/sync_entity.dart';
+import 'package:eposone/src/core/time/en1_date_time_service.dart';
 import 'package:eposone/src/features/pos/domain/entities/order_type.dart';
 
 part 'sale.g.dart';
@@ -66,13 +67,13 @@ class Sale extends SyncEntity {
   });
 
   @override
-  Sale markAsModified() => copyWith(syncStatus: SyncStatus.modified, updatedAt: DateTime.now());
+  Sale markAsModified() => copyWith(syncStatus: SyncStatus.modified, updatedAt: En1DateTimeService.nowUtc());
 
   @override
-  Sale markAsSynced(String serverId) => copyWith(serverId: serverId, syncStatus: SyncStatus.synced, updatedAt: DateTime.now());
+  Sale markAsSynced(String serverId) => copyWith(serverId: serverId, syncStatus: SyncStatus.synced, updatedAt: En1DateTimeService.nowUtc());
 
   @override
-  Sale markAsDeleted() => copyWith(deletedAt: DateTime.now(), syncStatus: SyncStatus.modified, updatedAt: DateTime.now());
+  Sale markAsDeleted() => copyWith(deletedAt: En1DateTimeService.nowUtc(), syncStatus: SyncStatus.modified, updatedAt: En1DateTimeService.nowUtc());
 
   Sale copyWith({
     String? localId,
@@ -152,9 +153,9 @@ class Sale extends SyncEntity {
     double couponDiscount = 0,
   }) =>
       Sale(
-        localId: DateTime.now().millisecondsSinceEpoch.toString(),
+        localId: En1DateTimeService.nowUtc().millisecondsSinceEpoch.toString(),
         receiptNumber: receiptNumber,
-        saleDate: DateTime.now(),
+        saleDate: En1DateTimeService.nowUtc(),
         customerId: customerId,
         subtotal: subtotal,
         discount: discount,
@@ -172,7 +173,7 @@ class Sale extends SyncEntity {
         openTicketLabel: openTicketLabel,
         couponCode: couponCode,
         couponDiscount: couponDiscount,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        createdAt: En1DateTimeService.nowUtc(),
+        updatedAt: En1DateTimeService.nowUtc(),
       );
 }

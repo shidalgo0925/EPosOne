@@ -1,5 +1,6 @@
 import 'package:isar/isar.dart';
 import 'package:eposone/src/core/entities/sync_entity.dart';
+import 'package:eposone/src/core/time/en1_date_time_service.dart';
 
 part 'cash_movement.g.dart';
 
@@ -62,15 +63,15 @@ class CashMovement extends SyncEntity {
 
   @override
   CashMovement markAsModified() =>
-      copyWith(syncStatus: SyncStatus.modified, updatedAt: DateTime.now());
+      copyWith(syncStatus: SyncStatus.modified, updatedAt: En1DateTimeService.nowUtc());
 
   @override
   CashMovement markAsSynced(String serverId) =>
-      copyWith(serverId: serverId, syncStatus: SyncStatus.synced, updatedAt: DateTime.now());
+      copyWith(serverId: serverId, syncStatus: SyncStatus.synced, updatedAt: En1DateTimeService.nowUtc());
 
   @override
   CashMovement markAsDeleted() =>
-      copyWith(deletedAt: DateTime.now(), syncStatus: SyncStatus.modified, updatedAt: DateTime.now());
+      copyWith(deletedAt: En1DateTimeService.nowUtc(), syncStatus: SyncStatus.modified, updatedAt: En1DateTimeService.nowUtc());
 
   CashMovement copyWith({
     String? localId,
@@ -114,7 +115,7 @@ class CashMovement extends SyncEntity {
     String? cashierId,
     String? cashierName,
   }) {
-    final now = DateTime.now();
+    final now = En1DateTimeService.nowUtc();
     return CashMovement(
       localId: now.millisecondsSinceEpoch.toString(),
       cashRegisterId: cashRegisterId,

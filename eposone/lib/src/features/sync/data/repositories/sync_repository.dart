@@ -1,16 +1,16 @@
 import 'package:isar/isar.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:eposone/src/core/database/database_provider.dart';
-import 'package:eposone/src/features/customers/domain/entities/customer.dart';
+import 'package:eposone/src/features/cash_register/data/cash_shift_sync_service.dart';
+import 'package:eposone/src/features/commercial_engine/commercial_engine.dart';
+import 'package:eposone/src/features/licensing/domain/license_service.dart';
 import 'package:eposone/src/features/orders/data/order_repository.dart';
 import 'package:eposone/src/features/orders/data/order_service.dart';
 import 'package:eposone/src/features/platform/data/en1_bootstrap_repository.dart';
 import 'package:eposone/src/features/platform/domain/en1_bootstrap_models.dart';
-import 'package:eposone/src/features/sales/domain/entities/sale.dart';
-import 'package:eposone/src/features/sales/domain/entities/sale_item.dart';
+import 'package:eposone/src/features/pos/data/repositories/open_ticket_repository.dart';
 import 'package:eposone/src/features/settings/data/repositories/business_config_repository.dart';
 import 'package:eposone/src/features/settings/domain/entities/business_config.dart';
-import 'package:eposone/src/features/sync/data/adapters/en1_api_adapter.dart';
 import 'package:eposone/src/features/sync/domain/entities/sync_entity_kind.dart';
 import 'package:eposone/src/features/sync/domain/entities/sync_operation.dart';
 
@@ -46,16 +46,17 @@ class SyncRepository {
   }
 
   Future<List<SyncOperation>> getRecent({int limit = 50}) async {
-    final items = await _isar.syncOperations.filter().isDeletedEqualTo(false).findAll();
-    // Hito 3: push Sale no aplica — no ensuciar historial.
-    items.removeWhere((o) => o.entityKind == SyncEntityKind.sale);
+    final items =
+        await _isar.syncOperations.filter().isDeletedEqualTo(false).findAll();
+    // Sin contrato activo: no ensuciar historial.
+    items.removeWhere((o) => _isUnsupportedPushKind(o.entityKind));
     items.sort((a, b) => b.createdAt.compareTo(a.createdAt));
     return items.take(limit).toList();
   }
 
   Future<void> enqueuePush(SyncEntityKind kind, String entityLocalId) async {
-    // Hito 3C: Order Domain (/api/v1/orders*), no Sale push.
-    if (kind == SyncEntityKind.sale) return;
+    // Push activo: Order Domain + Cash Shift HTTP v1.0.
+    if (!_isActivePushKind(kind)) return;
 
     final existing = await _isar.syncOperations
         .filter()
@@ -66,23 +67,47 @@ class SyncRepository {
         .findFirst();
     if (existing != null) return;
 
-    final op = SyncOperation.enqueuePush(entityKind: kind, entityLocalId: entityLocalId);
+    final op = SyncOperation.enqueuePush(
+        entityKind: kind, entityLocalId: entityLocalId);
     await _isar.writeTxn(() => _isar.syncOperations.put(op));
   }
 
-  /// Quita ops Sale legacy (pendientes o “Error diferido”) del historial/cola.
+  static bool _isActivePushKind(SyncEntityKind kind) =>
+      kind == SyncEntityKind.order || kind == SyncEntityKind.cashRegister;
+
+  static bool _isUnsupportedPushKind(SyncEntityKind kind) =>
+      kind == SyncEntityKind.sale ||
+      kind == SyncEntityKind.customer ||
+      kind == SyncEntityKind.cashMovement;
+
+  /// Quita pushes sin contrato activo (Sale legacy, Cliente, Caja) de la cola.
   Future<void> discardSalePushOps() async {
-    final sales = await _isar.syncOperations
+    final all = await _isar.syncOperations
         .filter()
-        .entityKindEqualTo(SyncEntityKind.sale)
         .isDeletedEqualTo(false)
         .findAll();
-    if (sales.isEmpty) return;
+    final junk = all.where((o) => _isUnsupportedPushKind(o.entityKind)).toList();
+    if (junk.isEmpty) return;
     await _isar.writeTxn(() async {
-      for (final op in sales) {
+      for (final op in junk) {
         await _isar.syncOperations.put(op.markAsDeleted());
       }
     });
+  }
+
+  /// Último error de cola (para UI EN1 Cloud).
+  Future<String?> latestQueueError() async {
+    final items =
+        await _isar.syncOperations.filter().isDeletedEqualTo(false).findAll();
+    items.removeWhere((o) => _isUnsupportedPushKind(o.entityKind));
+    items.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+    for (final op in items) {
+      final msg = op.errorMessage?.trim();
+      if (msg != null && msg.isNotEmpty) {
+        return '${syncEntityKindLabel(op.entityKind)}: $msg';
+      }
+    }
+    return null;
   }
 
   Future<void> enqueueCatalogPull() async {
@@ -94,13 +119,14 @@ class SyncRepository {
         .findFirst();
     if (existing != null) return;
 
-    await _isar.writeTxn(() => _isar.syncOperations.put(SyncOperation.enqueueCatalogPull()));
+    await _isar.writeTxn(
+        () => _isar.syncOperations.put(SyncOperation.enqueueCatalogPull()));
   }
 
-  /// [ensureCatalogPull]: si la cola está vacía, encola un pull de catálogo
-  /// (evita «Sync: 0 ok, 0 error» sin hacer nada).
+  /// [ensureCatalogPull]: solo si se pide explícitamente (no en sync de pedidos).
+  /// El menú Comida/Bar se reconstruye en bootstrap; no mezclar con cola de Orders.
   Future<SyncRunResult> runSyncCycle({
-    bool ensureCatalogPull = true,
+    bool ensureCatalogPull = false,
     En1BootstrapProgressCallback? onProgress,
   }) async {
     final configRepo = BusinessConfigRepository(_isar);
@@ -118,13 +144,12 @@ class SyncRepository {
       }
     }
 
-    final adapter = createEn1Adapter(config.en1SyncMode);
     final pending = await _pendingOperations();
     var succeeded = 0;
     var failed = 0;
 
     for (final op in pending) {
-      if (op.entityKind == SyncEntityKind.sale) continue;
+      if (_isUnsupportedPushKind(op.entityKind)) continue;
 
       final processing = op.copyWith(
         operationStatus: SyncOperationStatus.processing,
@@ -134,7 +159,7 @@ class SyncRepository {
       await _isar.writeTxn(() => _isar.syncOperations.put(processing));
 
       try {
-        await _processOperation(adapter, config, processing, onProgress: onProgress);
+        await _processOperation(config, processing, onProgress: onProgress);
         succeeded++;
       } catch (e) {
         failed++;
@@ -158,9 +183,28 @@ class SyncRepository {
       await configRepo.saveConfig(
         config.copyWith(en1LastSyncAt: DateTime.now()).markAsModified(),
       );
+      try {
+        await LicenseService().markValidatedFromEn1();
+      } catch (_) {}
     }
 
-    return SyncRunResult(processed: pending.length, succeeded: succeeded, failed: failed);
+    // Cobro en EN1 BO: sacar tickets locales (Juanito/Pedrito) de abiertos.
+    final commercialEngine = buildCommercialEngine(
+      config,
+      origin: CommercialDataOrigin.en1,
+    );
+    await OrderService(
+      repository: OrderRepository(
+        _isar,
+        commercialEngine: commercialEngine,
+      ),
+      syncRepository: this,
+      commercialEngine: commercialEngine,
+      openTicketRepository: OpenTicketRepository(_isar),
+    ).reconcileOpenTicketsFromEn1(config: config);
+
+    return SyncRunResult(
+        processed: pending.length, succeeded: succeeded, failed: failed);
   }
 
   Future<List<SyncOperation>> _pendingOperations() async {
@@ -169,35 +213,54 @@ class SyncRepository {
         .operationStatusEqualTo(SyncOperationStatus.pending)
         .isDeletedEqualTo(false)
         .findAll();
+    ops.removeWhere((o) => _isUnsupportedPushKind(o.entityKind));
     ops.sort((a, b) => a.createdAt.compareTo(b.createdAt));
     return ops;
   }
 
   Future<void> _processOperation(
-    En1ApiAdapter adapter,
     BusinessConfig config,
     SyncOperation op, {
     En1BootstrapProgressCallback? onProgress,
   }) async {
     switch (op.entityKind) {
       case SyncEntityKind.sale:
-        await _pushSale(adapter, config, op);
       case SyncEntityKind.customer:
-        await _pushCustomer(adapter, config, op);
+      case SyncEntityKind.cashMovement:
+        // Sin contrato: descartados en discardSalePushOps / continue del ciclo.
+        return;
+      case SyncEntityKind.cashRegister:
+        final registerId = op.entityLocalId;
+        if (registerId == null || registerId.isEmpty) {
+          throw StateError('Turno sin localId en SyncOperation');
+        }
+        await CashShiftSyncService(
+          isar: _isar,
+          syncRepository: this,
+        ).syncRegisterToEn1(registerId, config: config);
+        break;
       case SyncEntityKind.catalogPull:
         await _pullCatalog(config, onProgress: onProgress);
+        break;
       case SyncEntityKind.order:
         final orderId = op.entityLocalId;
         if (orderId == null || orderId.isEmpty) {
           throw StateError('Pedido sin localId en SyncOperation');
         }
+        final commercialEngine = buildCommercialEngine(
+          config,
+          origin: CommercialDataOrigin.en1,
+        );
         await OrderService(
-          repository: OrderRepository(_isar),
+          repository: OrderRepository(
+            _isar,
+            commercialEngine: commercialEngine,
+          ),
           syncRepository: this,
+          commercialEngine: commercialEngine,
+          openTicketRepository: OpenTicketRepository(_isar),
         ).syncOrderToEn1(orderId, config: config);
-      case SyncEntityKind.cashMovement:
-      case SyncEntityKind.cashRegister:
-        throw UnimplementedError('${syncEntityKindLabel(op.entityKind)} pendiente L9.1');
+        break;
     }
 
     await _isar.writeTxn(
@@ -210,39 +273,6 @@ class SyncRepository {
         ),
       ),
     );
-  }
-
-  Future<void> _pushSale(En1ApiAdapter adapter, BusinessConfig config, SyncOperation op) async {
-    final saleId = op.entityLocalId;
-    if (saleId == null) throw StateError('Venta sin ID local');
-
-    final sale = await _isar.sales.filter().localIdEqualTo(saleId).findFirst();
-    if (sale == null) throw StateError('Venta no encontrada');
-
-    if (sale.isSynced) return;
-
-    final items = await _isar.saleItems.filter().saleIdEqualTo(saleId).findAll();
-    final result = await adapter.pushSale(config: config, sale: sale, items: items);
-
-    await _isar.writeTxn(() async {
-      await _isar.sales.put(sale.markAsSynced(result.serverId));
-      for (final item in items) {
-        await _isar.saleItems.put(item.markAsSynced('${result.serverId}-item-${item.localId}'));
-      }
-    });
-  }
-
-  Future<void> _pushCustomer(En1ApiAdapter adapter, BusinessConfig config, SyncOperation op) async {
-    final customerId = op.entityLocalId;
-    if (customerId == null) throw StateError('Cliente sin ID local');
-
-    final customer = await _isar.customers.filter().localIdEqualTo(customerId).findFirst();
-    if (customer == null) throw StateError('Cliente no encontrado');
-
-    if (customer.isSynced && !customer.isPendingSync) return;
-
-    final result = await adapter.pushCustomer(config: config, customer: customer);
-    await _isar.writeTxn(() => _isar.customers.put(customer.markAsSynced(result.serverId)));
   }
 
   /// Device Bootstrap completo (productos, imágenes, stock, menú POS).

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:eposone/src/core/theme/eposone_theme.dart';
+import 'package:eposone/src/features/commercial_engine/commercial_engine.dart';
 import 'package:eposone/src/features/products/data/repositories/modifier_repository.dart';
 import 'package:eposone/src/features/products/domain/entities/modifier.dart';
 import 'package:eposone/src/features/products/domain/entities/selected_modifier.dart';
@@ -9,20 +10,28 @@ Future<List<SelectedModifier>?> showModifierPickerSheet(
   BuildContext context, {
   required List<ModifierGroupWithOptions> groups,
   required String symbol,
+  required CommercialEngineFacade engine,
 }) {
   return showModalBottomSheet<List<SelectedModifier>>(
     context: context,
     isScrollControlled: true,
-    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
-    builder: (ctx) => _ModifierPickerSheet(groups: groups, symbol: symbol),
+    shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+    builder: (ctx) =>
+        _ModifierPickerSheet(groups: groups, symbol: symbol, engine: engine),
   );
 }
 
 class _ModifierPickerSheet extends StatefulWidget {
   final List<ModifierGroupWithOptions> groups;
   final String symbol;
+  final CommercialEngineFacade engine;
 
-  const _ModifierPickerSheet({required this.groups, required this.symbol});
+  const _ModifierPickerSheet({
+    required this.groups,
+    required this.symbol,
+    required this.engine,
+  });
 
   @override
   State<_ModifierPickerSheet> createState() => _ModifierPickerSheetState();
@@ -36,7 +45,8 @@ class _ModifierPickerSheetState extends State<_ModifierPickerSheet> {
     super.initState();
     _selected = {
       for (final g in widget.groups)
-        g.group.localId: g.options.where((o) => o.isDefault).map((o) => o.localId).toSet(),
+        g.group.localId:
+            g.options.where((o) => o.isDefault).map((o) => o.localId).toSet(),
     };
   }
 
@@ -49,7 +59,8 @@ class _ModifierPickerSheetState extends State<_ModifierPickerSheet> {
         final next = Set<String>.from(set);
         if (next.contains(option.localId)) {
           next.remove(option.localId);
-        } else if (group.group.maxSelect <= 0 || next.length < group.group.maxSelect) {
+        } else if (group.group.maxSelect <= 0 ||
+            next.length < group.group.maxSelect) {
           next.add(option.localId);
         }
         _selected[group.group.localId] = next;
@@ -62,7 +73,9 @@ class _ModifierPickerSheetState extends State<_ModifierPickerSheet> {
       final count = _selected[g.group.localId]?.length ?? 0;
       if (g.group.minSelect > 0 && count < g.group.minSelect) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Elige al menos ${g.group.minSelect} en "${g.group.name}"')),
+          SnackBar(
+              content: Text(
+                  'Elige al menos ${g.group.minSelect} en "${g.group.name}"')),
         );
         return false;
       }
@@ -90,14 +103,14 @@ class _ModifierPickerSheetState extends State<_ModifierPickerSheet> {
   }
 
   double get _extraTotal {
-    var total = 0.0;
+    final amounts = <double>[];
     for (final g in widget.groups) {
       final ids = _selected[g.group.localId] ?? {};
       for (final opt in g.options) {
-        if (ids.contains(opt.localId)) total += opt.priceDelta;
+        if (ids.contains(opt.localId)) amounts.add(opt.priceDelta);
       }
     }
-    return total;
+    return widget.engine.sumPriceAdjustments(amounts);
   }
 
   @override
@@ -114,11 +127,14 @@ class _ModifierPickerSheetState extends State<_ModifierPickerSheet> {
               child: Container(
                 width: 40,
                 height: 4,
-                decoration: BoxDecoration(color: EposBrand.divider, borderRadius: BorderRadius.circular(2)),
+                decoration: BoxDecoration(
+                    color: EposBrand.divider,
+                    borderRadius: BorderRadius.circular(2)),
               ),
             ),
             const SizedBox(height: 12),
-            const Text('Modificadores', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const Text('Modificadores',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
             Flexible(
               child: SingleChildScrollView(
@@ -128,18 +144,24 @@ class _ModifierPickerSheetState extends State<_ModifierPickerSheet> {
                     for (final g in widget.groups) ...[
                       Text(
                         g.group.name + (g.group.isRequired ? ' *' : ''),
-                        style: const TextStyle(fontWeight: FontWeight.w600, color: EposBrand.navy),
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w600, color: EposBrand.navy),
                       ),
                       if (g.group.isSingleChoice)
                         const Padding(
                           padding: EdgeInsets.only(bottom: 4),
-                          child: Text('Elige una opción', style: TextStyle(fontSize: 11, color: EposBrand.textSecondary)),
+                          child: Text('Elige una opción',
+                              style: TextStyle(
+                                  fontSize: 11,
+                                  color: EposBrand.textSecondary)),
                         ),
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
                         children: g.options.map((opt) {
-                          final selected = _selected[g.group.localId]?.contains(opt.localId) ?? false;
+                          final selected = _selected[g.group.localId]
+                                  ?.contains(opt.localId) ??
+                              false;
                           final priceLabel = opt.priceDelta > 0
                               ? ' +${widget.symbol}${opt.priceDelta.toStringAsFixed(2)}'
                               : '';
@@ -147,7 +169,8 @@ class _ModifierPickerSheetState extends State<_ModifierPickerSheet> {
                             label: Text('${opt.name}$priceLabel'),
                             selected: selected,
                             onSelected: (_) => _toggle(g, opt),
-                            selectedColor: EposBrand.orange.withValues(alpha: 0.2),
+                            selectedColor:
+                                EposBrand.orange.withValues(alpha: 0.2),
                             checkmarkColor: EposBrand.orange,
                           );
                         }).toList(),

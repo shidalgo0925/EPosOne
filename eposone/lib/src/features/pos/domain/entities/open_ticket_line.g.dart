@@ -32,74 +32,79 @@ const OpenTicketLineSchema = CollectionSchema(
       name: r'discount',
       type: IsarType.double,
     ),
-    r'isDeleted': PropertySchema(
+    r'fiscalCategoryCode': PropertySchema(
       id: 3,
+      name: r'fiscalCategoryCode',
+      type: IsarType.string,
+    ),
+    r'isDeleted': PropertySchema(
+      id: 4,
       name: r'isDeleted',
       type: IsarType.bool,
     ),
     r'isPendingSync': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'isPendingSync',
       type: IsarType.bool,
     ),
     r'isSynced': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'isSynced',
       type: IsarType.bool,
     ),
     r'lineTotal': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'lineTotal',
       type: IsarType.double,
     ),
     r'localId': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'localId',
       type: IsarType.string,
     ),
     r'modifiersJson': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'modifiersJson',
       type: IsarType.string,
     ),
     r'openTicketId': PropertySchema(
-      id: 9,
+      id: 10,
       name: r'openTicketId',
       type: IsarType.string,
     ),
     r'productId': PropertySchema(
-      id: 10,
+      id: 11,
       name: r'productId',
       type: IsarType.string,
     ),
     r'productName': PropertySchema(
-      id: 11,
+      id: 12,
       name: r'productName',
       type: IsarType.string,
     ),
     r'quantity': PropertySchema(
-      id: 12,
+      id: 13,
       name: r'quantity',
       type: IsarType.double,
     ),
     r'serverId': PropertySchema(
-      id: 13,
+      id: 14,
       name: r'serverId',
       type: IsarType.string,
     ),
     r'syncStatus': PropertySchema(
-      id: 14,
+      id: 15,
       name: r'syncStatus',
       type: IsarType.byte,
       enumMap: _OpenTicketLinesyncStatusEnumValueMap,
     ),
     r'unitPrice': PropertySchema(
-      id: 15,
+      id: 16,
       name: r'unitPrice',
       type: IsarType.double,
     ),
     r'updatedAt': PropertySchema(
-      id: 16,
+      id: 17,
       name: r'updatedAt',
       type: IsarType.dateTime,
     )
@@ -124,6 +129,12 @@ int _openTicketLineEstimateSize(
   Map<Type, List<int>> allOffsets,
 ) {
   var bytesCount = offsets.last;
+  {
+    final value = object.fiscalCategoryCode;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   bytesCount += 3 + object.localId.length * 3;
   {
     final value = object.modifiersJson;
@@ -152,20 +163,21 @@ void _openTicketLineSerialize(
   writer.writeDateTime(offsets[0], object.createdAt);
   writer.writeDateTime(offsets[1], object.deletedAt);
   writer.writeDouble(offsets[2], object.discount);
-  writer.writeBool(offsets[3], object.isDeleted);
-  writer.writeBool(offsets[4], object.isPendingSync);
-  writer.writeBool(offsets[5], object.isSynced);
-  writer.writeDouble(offsets[6], object.lineTotal);
-  writer.writeString(offsets[7], object.localId);
-  writer.writeString(offsets[8], object.modifiersJson);
-  writer.writeString(offsets[9], object.openTicketId);
-  writer.writeString(offsets[10], object.productId);
-  writer.writeString(offsets[11], object.productName);
-  writer.writeDouble(offsets[12], object.quantity);
-  writer.writeString(offsets[13], object.serverId);
-  writer.writeByte(offsets[14], object.syncStatus.index);
-  writer.writeDouble(offsets[15], object.unitPrice);
-  writer.writeDateTime(offsets[16], object.updatedAt);
+  writer.writeString(offsets[3], object.fiscalCategoryCode);
+  writer.writeBool(offsets[4], object.isDeleted);
+  writer.writeBool(offsets[5], object.isPendingSync);
+  writer.writeBool(offsets[6], object.isSynced);
+  writer.writeDouble(offsets[7], object.lineTotal);
+  writer.writeString(offsets[8], object.localId);
+  writer.writeString(offsets[9], object.modifiersJson);
+  writer.writeString(offsets[10], object.openTicketId);
+  writer.writeString(offsets[11], object.productId);
+  writer.writeString(offsets[12], object.productName);
+  writer.writeDouble(offsets[13], object.quantity);
+  writer.writeString(offsets[14], object.serverId);
+  writer.writeByte(offsets[15], object.syncStatus.index);
+  writer.writeDouble(offsets[16], object.unitPrice);
+  writer.writeDateTime(offsets[17], object.updatedAt);
 }
 
 OpenTicketLine _openTicketLineDeserialize(
@@ -178,18 +190,19 @@ OpenTicketLine _openTicketLineDeserialize(
     createdAt: reader.readDateTime(offsets[0]),
     deletedAt: reader.readDateTimeOrNull(offsets[1]),
     discount: reader.readDoubleOrNull(offsets[2]) ?? 0,
-    localId: reader.readString(offsets[7]),
-    modifiersJson: reader.readStringOrNull(offsets[8]),
-    openTicketId: reader.readString(offsets[9]),
-    productId: reader.readString(offsets[10]),
-    productName: reader.readString(offsets[11]),
-    quantity: reader.readDouble(offsets[12]),
-    serverId: reader.readStringOrNull(offsets[13]),
+    fiscalCategoryCode: reader.readStringOrNull(offsets[3]),
+    localId: reader.readString(offsets[8]),
+    modifiersJson: reader.readStringOrNull(offsets[9]),
+    openTicketId: reader.readString(offsets[10]),
+    productId: reader.readString(offsets[11]),
+    productName: reader.readString(offsets[12]),
+    quantity: reader.readDouble(offsets[13]),
+    serverId: reader.readStringOrNull(offsets[14]),
     syncStatus: _OpenTicketLinesyncStatusValueEnumMap[
-            reader.readByteOrNull(offsets[14])] ??
+            reader.readByteOrNull(offsets[15])] ??
         SyncStatus.pending,
-    unitPrice: reader.readDouble(offsets[15]),
-    updatedAt: reader.readDateTime(offsets[16]),
+    unitPrice: reader.readDouble(offsets[16]),
+    updatedAt: reader.readDateTime(offsets[17]),
   );
   return object;
 }
@@ -208,34 +221,36 @@ P _openTicketLineDeserializeProp<P>(
     case 2:
       return (reader.readDoubleOrNull(offset) ?? 0) as P;
     case 3:
-      return (reader.readBool(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 4:
       return (reader.readBool(offset)) as P;
     case 5:
       return (reader.readBool(offset)) as P;
     case 6:
-      return (reader.readDouble(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 7:
-      return (reader.readString(offset)) as P;
+      return (reader.readDouble(offset)) as P;
     case 8:
-      return (reader.readStringOrNull(offset)) as P;
-    case 9:
       return (reader.readString(offset)) as P;
+    case 9:
+      return (reader.readStringOrNull(offset)) as P;
     case 10:
       return (reader.readString(offset)) as P;
     case 11:
       return (reader.readString(offset)) as P;
     case 12:
-      return (reader.readDouble(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 13:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDouble(offset)) as P;
     case 14:
+      return (reader.readStringOrNull(offset)) as P;
+    case 15:
       return (_OpenTicketLinesyncStatusValueEnumMap[
               reader.readByteOrNull(offset)] ??
           SyncStatus.pending) as P;
-    case 15:
-      return (reader.readDouble(offset)) as P;
     case 16:
+      return (reader.readDouble(offset)) as P;
+    case 17:
       return (reader.readDateTime(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -539,6 +554,160 @@ extension OpenTicketLineQueryFilter
         upper: upper,
         includeUpper: includeUpper,
         epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<OpenTicketLine, OpenTicketLine, QAfterFilterCondition>
+      fiscalCategoryCodeIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'fiscalCategoryCode',
+      ));
+    });
+  }
+
+  QueryBuilder<OpenTicketLine, OpenTicketLine, QAfterFilterCondition>
+      fiscalCategoryCodeIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'fiscalCategoryCode',
+      ));
+    });
+  }
+
+  QueryBuilder<OpenTicketLine, OpenTicketLine, QAfterFilterCondition>
+      fiscalCategoryCodeEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'fiscalCategoryCode',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OpenTicketLine, OpenTicketLine, QAfterFilterCondition>
+      fiscalCategoryCodeGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'fiscalCategoryCode',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OpenTicketLine, OpenTicketLine, QAfterFilterCondition>
+      fiscalCategoryCodeLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'fiscalCategoryCode',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OpenTicketLine, OpenTicketLine, QAfterFilterCondition>
+      fiscalCategoryCodeBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'fiscalCategoryCode',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OpenTicketLine, OpenTicketLine, QAfterFilterCondition>
+      fiscalCategoryCodeStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'fiscalCategoryCode',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OpenTicketLine, OpenTicketLine, QAfterFilterCondition>
+      fiscalCategoryCodeEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'fiscalCategoryCode',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OpenTicketLine, OpenTicketLine, QAfterFilterCondition>
+      fiscalCategoryCodeContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'fiscalCategoryCode',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OpenTicketLine, OpenTicketLine, QAfterFilterCondition>
+      fiscalCategoryCodeMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'fiscalCategoryCode',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OpenTicketLine, OpenTicketLine, QAfterFilterCondition>
+      fiscalCategoryCodeIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'fiscalCategoryCode',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<OpenTicketLine, OpenTicketLine, QAfterFilterCondition>
+      fiscalCategoryCodeIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'fiscalCategoryCode',
+        value: '',
       ));
     });
   }
@@ -1839,6 +2008,20 @@ extension OpenTicketLineQuerySortBy
     });
   }
 
+  QueryBuilder<OpenTicketLine, OpenTicketLine, QAfterSortBy>
+      sortByFiscalCategoryCode() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'fiscalCategoryCode', Sort.asc);
+    });
+  }
+
+  QueryBuilder<OpenTicketLine, OpenTicketLine, QAfterSortBy>
+      sortByFiscalCategoryCodeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'fiscalCategoryCode', Sort.desc);
+    });
+  }
+
   QueryBuilder<OpenTicketLine, OpenTicketLine, QAfterSortBy> sortByIsDeleted() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isDeleted', Sort.asc);
@@ -2068,6 +2251,20 @@ extension OpenTicketLineQuerySortThenBy
     });
   }
 
+  QueryBuilder<OpenTicketLine, OpenTicketLine, QAfterSortBy>
+      thenByFiscalCategoryCode() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'fiscalCategoryCode', Sort.asc);
+    });
+  }
+
+  QueryBuilder<OpenTicketLine, OpenTicketLine, QAfterSortBy>
+      thenByFiscalCategoryCodeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'fiscalCategoryCode', Sort.desc);
+    });
+  }
+
   QueryBuilder<OpenTicketLine, OpenTicketLine, QAfterSortBy> thenByIsDeleted() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isDeleted', Sort.asc);
@@ -2292,6 +2489,14 @@ extension OpenTicketLineQueryWhereDistinct
   }
 
   QueryBuilder<OpenTicketLine, OpenTicketLine, QDistinct>
+      distinctByFiscalCategoryCode({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'fiscalCategoryCode',
+          caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<OpenTicketLine, OpenTicketLine, QDistinct>
       distinctByIsDeleted() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'isDeleted');
@@ -2413,6 +2618,13 @@ extension OpenTicketLineQueryProperty
   QueryBuilder<OpenTicketLine, double, QQueryOperations> discountProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'discount');
+    });
+  }
+
+  QueryBuilder<OpenTicketLine, String?, QQueryOperations>
+      fiscalCategoryCodeProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'fiscalCategoryCode');
     });
   }
 

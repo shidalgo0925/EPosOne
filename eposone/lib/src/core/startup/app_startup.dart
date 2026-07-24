@@ -1,15 +1,17 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:eposone/src/core/database/database_provider.dart';
+import 'package:eposone/src/core/time/en1_date_time_service.dart';
 import 'package:eposone/src/features/auth/data/repositories/cashier_repository.dart';
 import 'package:eposone/src/features/cash_register/data/repositories/cash_register_repository.dart';
 import 'package:eposone/src/features/platform/data/device_registry.dart';
+import 'package:eposone/src/features/platform/data/en1_cashier_catalog_store.dart';
 import 'package:eposone/src/features/platform/data/platform_prefs.dart';
 import 'package:eposone/src/features/platform/data/provisioning_store.dart';
 import 'package:eposone/src/features/platform/domain/platform_mode.dart';
 import 'package:eposone/src/features/settings/data/repositories/business_config_repository.dart';
 import 'package:eposone/src/features/settings/domain/entities/business_config.dart';
 
-enum StartupRoute { splash, platformWelcome, onboarding, pin, cashOpen, pos }
+enum StartupRoute { platformWelcome, onboarding, pin }
 
 class AppStartupState {
   final StartupRoute route;
@@ -33,13 +35,23 @@ final appStartupProvider = FutureProvider<AppStartupState>((ref) async {
 
   final config = await configRepo.getConfig();
   final cashierCount = await cashierRepo.countCashiers();
+  final en1Cashiers = await En1CashierCatalogStore.listMetaOnly();
+  final hasEn1Cashiers = en1Cashiers.any((c) => c.isActive);
+  final hasCashiers = cashierCount > 0 || hasEn1Cashiers;
   final openRegister = await cashRepo.getOpenRegister();
 
   await DeviceRegistry.getOrCreateUuid();
   await ProvisioningStore.migrateIfNeeded();
 
+  final provisionedConfig = await ProvisioningStore.loadConfig();
+  if (provisionedConfig?.timezone != null) {
+    await En1DateTimeService.setBusinessTimezone(provisionedConfig!.timezone);
+  }
+  En1DateTimeService.detectDeviceTimezoneMismatch();
+
   // Hito 1: dispositivo ya provisionado en EN1 → omitir wizard de plataforma.
-  final provisioned = await ProvisioningStore.isProvisioned();
+  final provisioned = provisionedConfig?.isComplete == true ||
+      await ProvisioningStore.isProvisioned();
   if (provisioned && !await PlatformPrefs.isOnboardingDone()) {
     await PlatformPrefs.completeOnboarding(PlatformMode.platform);
   }
@@ -47,7 +59,7 @@ final appStartupProvider = FutureProvider<AppStartupState>((ref) async {
   var platformDone = await PlatformPrefs.isOnboardingDone() || provisioned;
 
   // Instalaciones locales ya operativas (p. ej. Istmo) no ven el wizard.
-  if (!platformDone && config.isSetupComplete && cashierCount > 0) {
+  if (!platformDone && config.isSetupComplete && hasCashiers) {
     await PlatformPrefs.markCompletedForExistingInstall();
     platformDone = true;
   }
@@ -56,23 +68,17 @@ final appStartupProvider = FutureProvider<AppStartupState>((ref) async {
     return AppStartupState(route: StartupRoute.platformWelcome, config: config);
   }
 
-  // Provisionado + setup completo + cajeros → PIN (criterio Hito 1).
-  if (!config.isSetupComplete || cashierCount == 0) {
+  // Setup + cajeros locales o EN1 → PIN. Sin cajeros → onboarding.
+  if (!config.isSetupComplete || !hasCashiers) {
     return AppStartupState(route: StartupRoute.onboarding, config: config);
   }
 
-  if (openRegister == null) {
-    return AppStartupState(
-      route: StartupRoute.cashOpen,
-      config: config,
-      hasCashiers: true,
-    );
-  }
-
+  // El cajero se autentica antes de abrir o continuar turno.
+  // PinScreen decide: turno abierto → POS; sin turno → apertura de caja.
   return AppStartupState(
     route: StartupRoute.pin,
     config: config,
     hasCashiers: true,
-    hasOpenRegister: true,
+    hasOpenRegister: openRegister != null,
   );
 });

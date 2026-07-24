@@ -1,0 +1,327 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:eposone/src/core/printing/print_engine.dart';
+import 'package:eposone/src/core/printing/sales_report_builder.dart';
+import 'package:eposone/src/core/providers/business_config_provider.dart';
+import 'package:eposone/src/core/theme/eposone_theme.dart';
+import 'package:eposone/src/core/time/en1_date_time_service.dart';
+import 'package:eposone/src/features/pos/presentation/providers/pos_provider.dart';
+import 'package:eposone/src/features/sales/data/repositories/sale_repository.dart';
+import 'package:eposone/src/features/sales/domain/entities/sale.dart';
+
+/// Reporte Ventas: Ver → Imprimir / PDF / Compartir.
+class SalesReportScreen extends ConsumerStatefulWidget {
+  const SalesReportScreen({super.key});
+
+  @override
+  ConsumerState<SalesReportScreen> createState() => _SalesReportScreenState();
+}
+
+class _SalesReportScreenState extends ConsumerState<SalesReportScreen> {
+  late DateTime _from;
+  late DateTime _to;
+  List<Sale> _sales = const [];
+  bool _loading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    final now = En1DateTimeService.nowUtc();
+    final local = En1DateTimeService.toBusinessLocal(now);
+    _from = DateTime(local.year, local.month, local.day);
+    _to = _from.add(const Duration(days: 1));
+    WidgetsBinding.instance.addPostFrameCallback((_) => _load());
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final fromUtc = En1DateTimeService.fromBusinessLocal(_from);
+      final toUtc = En1DateTimeService.fromBusinessLocal(_to);
+      final sales = await ref.read(saleRepositoryProvider).getAllSales(
+            from: fromUtc,
+            to: toUtc,
+          );
+      if (!mounted) return;
+      setState(() {
+        _sales = sales;
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = '$e';
+        _loading = false;
+      });
+    }
+  }
+
+  Future<void> _pickDay() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _from,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2100),
+    );
+    if (picked == null) return;
+    setState(() {
+      _from = DateTime(picked.year, picked.month, picked.day);
+      _to = _from.add(const Duration(days: 1));
+    });
+    await _load();
+  }
+
+  Future<void> _pickRange() async {
+    final range = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2100),
+      initialDateRange: DateTimeRange(
+        start: _from,
+        end: _to.subtract(const Duration(days: 1)),
+      ),
+    );
+    if (range == null) return;
+    setState(() {
+      _from = DateTime(range.start.year, range.start.month, range.start.day);
+      _to = DateTime(range.end.year, range.end.month, range.end.day)
+          .add(const Duration(days: 1));
+    });
+    await _load();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final config = ref.watch(businessConfigProvider);
+    final symbol = config?.currencySymbol ?? 'B/.';
+    final completed =
+        _sales.where((s) => s.status == SaleStatus.completed).toList();
+    final refunded =
+        _sales.where((s) => s.status == SaleStatus.refunded).toList();
+    final gross = completed.fold<double>(0, (a, s) => a + s.total);
+    final refunds = refunded.fold<double>(0, (a, s) => a + s.total);
+    final tips = completed.fold<double>(0, (a, s) => a + s.tipAmount);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Ventas'),
+        actions: [
+          IconButton(
+            tooltip: 'Hoy',
+            onPressed: () {
+              final now = En1DateTimeService.nowUtc();
+              final local = En1DateTimeService.toBusinessLocal(now);
+              setState(() {
+                _from = DateTime(local.year, local.month, local.day);
+                _to = _from.add(const Duration(days: 1));
+              });
+              _load();
+            },
+            icon: const Icon(Icons.today),
+          ),
+          IconButton(
+            tooltip: 'Día',
+            onPressed: _pickDay,
+            icon: const Icon(Icons.calendar_today),
+          ),
+          IconButton(
+            tooltip: 'Rango',
+            onPressed: _pickRange,
+            icon: const Icon(Icons.date_range),
+          ),
+        ],
+      ),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : _error != null
+              ? Center(child: Text(_error!))
+              : Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          '${En1DateTimeService.formatLocal(_from, 'dd/MM/yyyy')}'
+                          ' – '
+                          '${En1DateTimeService.formatLocal(_to.subtract(const Duration(days: 1)), 'dd/MM/yyyy')}',
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: EposBrand.navy),
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            children: [
+                              _row('Tickets', '${completed.length}'),
+                              _row('Bruto',
+                                  '$symbol${gross.toStringAsFixed(2)}'),
+                              if (tips > 0)
+                                _row('Propinas',
+                                    '$symbol${tips.toStringAsFixed(2)}'),
+                              if (refunded.isNotEmpty)
+                                _row('Devoluciones',
+                                    '-$symbol${refunds.toStringAsFixed(2)}'),
+                              const Divider(),
+                              _row(
+                                'Neto',
+                                '$symbol${(gross - refunds).toStringAsFixed(2)}',
+                                bold: true,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text('Por método',
+                            style: TextStyle(fontWeight: FontWeight.w600)),
+                      ),
+                    ),
+                    Expanded(
+                      child: ListView(
+                        padding: const EdgeInsets.all(16),
+                        children: [
+                          for (final m in PaymentMethod.values)
+                            if (completed
+                                .any((s) => s.paymentMethod == m))
+                              _row(
+                                paymentMethodLabel(m),
+                                '$symbol${completed.where((s) => s.paymentMethod == m).fold<double>(0, (a, s) => a + s.total).toStringAsFixed(2)}',
+                              ),
+                          const SizedBox(height: 12),
+                          const Text('Detalle',
+                              style: TextStyle(fontWeight: FontWeight.w600)),
+                          const SizedBox(height: 8),
+                          for (final s in completed.take(50))
+                            ListTile(
+                              dense: true,
+                              contentPadding: EdgeInsets.zero,
+                              title: Text(
+                                s.receiptNumber ?? s.localId,
+                                style: const TextStyle(fontSize: 13),
+                              ),
+                              subtitle: Text(
+                                '${En1DateTimeService.formatLocal(s.saleDate)}'
+                                '${s.cashierName != null ? ' · ${s.cashierName}' : ''}',
+                                style: const TextStyle(fontSize: 11),
+                              ),
+                              trailing: Text(
+                                '$symbol${s.total.toStringAsFixed(2)}',
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w600),
+                              ),
+                            ),
+                          if (completed.length > 50)
+                            Text(
+                              '… y ${completed.length - 50} más',
+                              style: const TextStyle(
+                                  color: EposBrand.textSecondary),
+                            ),
+                        ],
+                      ),
+                    ),
+                    SafeArea(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: completed.isEmpty && refunded.isEmpty
+                                    ? null
+                                    : () async {
+                                        final bytes =
+                                            await SalesReportBuilder.buildPdf(
+                                          config: config,
+                                          symbol: symbol,
+                                          from: _from,
+                                          to: _to.subtract(
+                                              const Duration(seconds: 1)),
+                                          sales: _sales,
+                                        );
+                                        await PrintEngine.sharePdf(
+                                          bytes: bytes,
+                                          fileName: 'ventas.pdf',
+                                          subject: 'Reporte de ventas',
+                                        );
+                                      },
+                                icon: const Icon(Icons.share_outlined),
+                                label: const Text('Compartir'),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: FilledButton.icon(
+                                onPressed: completed.isEmpty && refunded.isEmpty
+                                    ? null
+                                    : () {
+                                        PrintEngine.printDocument(
+                                          context: context,
+                                          textLines:
+                                              SalesReportBuilder.buildText(
+                                            config: config,
+                                            symbol: symbol,
+                                            from: _from,
+                                            to: _to.subtract(
+                                                const Duration(seconds: 1)),
+                                            sales: _sales,
+                                          ),
+                                          buildPdf: (format) =>
+                                              SalesReportBuilder.buildPdf(
+                                            config: config,
+                                            symbol: symbol,
+                                            from: _from,
+                                            to: _to.subtract(
+                                                const Duration(seconds: 1)),
+                                            sales: _sales,
+                                            pageFormat: format,
+                                          ),
+                                          thermalOkMessage:
+                                              'Reporte enviado a impresora',
+                                        );
+                                      },
+                                icon: const Icon(Icons.print),
+                                label: const Text('Imprimir'),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+    );
+  }
+
+  Widget _row(String label, String value, {bool bold = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(label,
+                style: TextStyle(
+                    fontWeight: bold ? FontWeight.bold : FontWeight.normal)),
+          ),
+          Text(value,
+              style: TextStyle(
+                  fontWeight: bold ? FontWeight.bold : FontWeight.w600,
+                  color: EposBrand.navy)),
+        ],
+      ),
+    );
+  }
+}

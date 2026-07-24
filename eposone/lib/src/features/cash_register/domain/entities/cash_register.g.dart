@@ -37,85 +37,110 @@ const CashRegisterSchema = CollectionSchema(
       name: r'createdAt',
       type: IsarType.dateTime,
     ),
-    r'deletedAt': PropertySchema(
+    r'currentCashierContactId': PropertySchema(
       id: 4,
+      name: r'currentCashierContactId',
+      type: IsarType.long,
+    ),
+    r'currentCashierId': PropertySchema(
+      id: 5,
+      name: r'currentCashierId',
+      type: IsarType.string,
+    ),
+    r'currentCashierName': PropertySchema(
+      id: 6,
+      name: r'currentCashierName',
+      type: IsarType.string,
+    ),
+    r'deletedAt': PropertySchema(
+      id: 7,
       name: r'deletedAt',
       type: IsarType.dateTime,
     ),
     r'difference': PropertySchema(
-      id: 5,
+      id: 8,
       name: r'difference',
       type: IsarType.double,
     ),
     r'expectedAmount': PropertySchema(
-      id: 6,
+      id: 9,
       name: r'expectedAmount',
       type: IsarType.double,
     ),
     r'isDeleted': PropertySchema(
-      id: 7,
+      id: 10,
       name: r'isDeleted',
       type: IsarType.bool,
     ),
     r'isOpen': PropertySchema(
-      id: 8,
+      id: 11,
       name: r'isOpen',
       type: IsarType.bool,
     ),
     r'isPendingSync': PropertySchema(
-      id: 9,
+      id: 12,
       name: r'isPendingSync',
       type: IsarType.bool,
     ),
     r'isSynced': PropertySchema(
-      id: 10,
+      id: 13,
       name: r'isSynced',
       type: IsarType.bool,
     ),
     r'localId': PropertySchema(
-      id: 11,
+      id: 14,
       name: r'localId',
       type: IsarType.string,
     ),
     r'notes': PropertySchema(
-      id: 12,
+      id: 15,
       name: r'notes',
       type: IsarType.string,
     ),
     r'openDate': PropertySchema(
-      id: 13,
+      id: 16,
       name: r'openDate',
       type: IsarType.dateTime,
     ),
     r'openedBy': PropertySchema(
-      id: 14,
+      id: 17,
       name: r'openedBy',
       type: IsarType.string,
     ),
+    r'openedByCashierContactId': PropertySchema(
+      id: 18,
+      name: r'openedByCashierContactId',
+      type: IsarType.long,
+    ),
+    r'openedByCashierId': PropertySchema(
+      id: 19,
+      name: r'openedByCashierId',
+      type: IsarType.string,
+    ),
     r'openingAmount': PropertySchema(
-      id: 15,
+      id: 20,
       name: r'openingAmount',
       type: IsarType.double,
     ),
     r'serverId': PropertySchema(
-      id: 16,
+      id: 21,
       name: r'serverId',
       type: IsarType.string,
     ),
     r'status': PropertySchema(
-      id: 17,
+      id: 22,
       name: r'status',
       type: IsarType.byte,
       enumMap: _CashRegisterstatusEnumValueMap,
     ),
     r'syncStatus': PropertySchema(
-      id: 18,
+      id: 23,
       name: r'syncStatus',
       type: IsarType.byte,
       enumMap: _CashRegistersyncStatusEnumValueMap,
     ),
     r'updatedAt': PropertySchema(
-      id: 19,
+      id: 24,
       name: r'updatedAt',
       type: IsarType.dateTime,
     )
@@ -146,6 +171,18 @@ int _cashRegisterEstimateSize(
       bytesCount += 3 + value.length * 3;
     }
   }
+  {
+    final value = object.currentCashierId;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.currentCashierName;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   bytesCount += 3 + object.localId.length * 3;
   {
     final value = object.notes;
@@ -155,6 +192,12 @@ int _cashRegisterEstimateSize(
   }
   {
     final value = object.openedBy;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.openedByCashierId;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
     }
@@ -178,22 +221,27 @@ void _cashRegisterSerialize(
   writer.writeString(offsets[1], object.closedBy);
   writer.writeDouble(offsets[2], object.closingAmount);
   writer.writeDateTime(offsets[3], object.createdAt);
-  writer.writeDateTime(offsets[4], object.deletedAt);
-  writer.writeDouble(offsets[5], object.difference);
-  writer.writeDouble(offsets[6], object.expectedAmount);
-  writer.writeBool(offsets[7], object.isDeleted);
-  writer.writeBool(offsets[8], object.isOpen);
-  writer.writeBool(offsets[9], object.isPendingSync);
-  writer.writeBool(offsets[10], object.isSynced);
-  writer.writeString(offsets[11], object.localId);
-  writer.writeString(offsets[12], object.notes);
-  writer.writeDateTime(offsets[13], object.openDate);
-  writer.writeString(offsets[14], object.openedBy);
-  writer.writeDouble(offsets[15], object.openingAmount);
-  writer.writeString(offsets[16], object.serverId);
-  writer.writeByte(offsets[17], object.status.index);
-  writer.writeByte(offsets[18], object.syncStatus.index);
-  writer.writeDateTime(offsets[19], object.updatedAt);
+  writer.writeLong(offsets[4], object.currentCashierContactId);
+  writer.writeString(offsets[5], object.currentCashierId);
+  writer.writeString(offsets[6], object.currentCashierName);
+  writer.writeDateTime(offsets[7], object.deletedAt);
+  writer.writeDouble(offsets[8], object.difference);
+  writer.writeDouble(offsets[9], object.expectedAmount);
+  writer.writeBool(offsets[10], object.isDeleted);
+  writer.writeBool(offsets[11], object.isOpen);
+  writer.writeBool(offsets[12], object.isPendingSync);
+  writer.writeBool(offsets[13], object.isSynced);
+  writer.writeString(offsets[14], object.localId);
+  writer.writeString(offsets[15], object.notes);
+  writer.writeDateTime(offsets[16], object.openDate);
+  writer.writeString(offsets[17], object.openedBy);
+  writer.writeLong(offsets[18], object.openedByCashierContactId);
+  writer.writeString(offsets[19], object.openedByCashierId);
+  writer.writeDouble(offsets[20], object.openingAmount);
+  writer.writeString(offsets[21], object.serverId);
+  writer.writeByte(offsets[22], object.status.index);
+  writer.writeByte(offsets[23], object.syncStatus.index);
+  writer.writeDateTime(offsets[24], object.updatedAt);
 }
 
 CashRegister _cashRegisterDeserialize(
@@ -207,22 +255,27 @@ CashRegister _cashRegisterDeserialize(
     closedBy: reader.readStringOrNull(offsets[1]),
     closingAmount: reader.readDoubleOrNull(offsets[2]),
     createdAt: reader.readDateTime(offsets[3]),
-    deletedAt: reader.readDateTimeOrNull(offsets[4]),
-    difference: reader.readDoubleOrNull(offsets[5]),
-    expectedAmount: reader.readDoubleOrNull(offsets[6]),
-    localId: reader.readString(offsets[11]),
-    notes: reader.readStringOrNull(offsets[12]),
-    openDate: reader.readDateTime(offsets[13]),
-    openedBy: reader.readStringOrNull(offsets[14]),
-    openingAmount: reader.readDouble(offsets[15]),
-    serverId: reader.readStringOrNull(offsets[16]),
+    currentCashierContactId: reader.readLongOrNull(offsets[4]),
+    currentCashierId: reader.readStringOrNull(offsets[5]),
+    currentCashierName: reader.readStringOrNull(offsets[6]),
+    deletedAt: reader.readDateTimeOrNull(offsets[7]),
+    difference: reader.readDoubleOrNull(offsets[8]),
+    expectedAmount: reader.readDoubleOrNull(offsets[9]),
+    localId: reader.readString(offsets[14]),
+    notes: reader.readStringOrNull(offsets[15]),
+    openDate: reader.readDateTime(offsets[16]),
+    openedBy: reader.readStringOrNull(offsets[17]),
+    openedByCashierContactId: reader.readLongOrNull(offsets[18]),
+    openedByCashierId: reader.readStringOrNull(offsets[19]),
+    openingAmount: reader.readDouble(offsets[20]),
+    serverId: reader.readStringOrNull(offsets[21]),
     status:
-        _CashRegisterstatusValueEnumMap[reader.readByteOrNull(offsets[17])] ??
+        _CashRegisterstatusValueEnumMap[reader.readByteOrNull(offsets[22])] ??
             CashRegisterStatus.open,
     syncStatus: _CashRegistersyncStatusValueEnumMap[
-            reader.readByteOrNull(offsets[18])] ??
+            reader.readByteOrNull(offsets[23])] ??
         SyncStatus.pending,
-    updatedAt: reader.readDateTime(offsets[19]),
+    updatedAt: reader.readDateTime(offsets[24]),
   );
   return object;
 }
@@ -243,39 +296,49 @@ P _cashRegisterDeserializeProp<P>(
     case 3:
       return (reader.readDateTime(offset)) as P;
     case 4:
-      return (reader.readDateTimeOrNull(offset)) as P;
+      return (reader.readLongOrNull(offset)) as P;
     case 5:
-      return (reader.readDoubleOrNull(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 6:
-      return (reader.readDoubleOrNull(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 7:
-      return (reader.readBool(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 8:
-      return (reader.readBool(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 9:
-      return (reader.readBool(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 10:
       return (reader.readBool(offset)) as P;
     case 11:
-      return (reader.readString(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 12:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 13:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 14:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 15:
-      return (reader.readDouble(offset)) as P;
-    case 16:
       return (reader.readStringOrNull(offset)) as P;
+    case 16:
+      return (reader.readDateTime(offset)) as P;
     case 17:
+      return (reader.readStringOrNull(offset)) as P;
+    case 18:
+      return (reader.readLongOrNull(offset)) as P;
+    case 19:
+      return (reader.readStringOrNull(offset)) as P;
+    case 20:
+      return (reader.readDouble(offset)) as P;
+    case 21:
+      return (reader.readStringOrNull(offset)) as P;
+    case 22:
       return (_CashRegisterstatusValueEnumMap[reader.readByteOrNull(offset)] ??
           CashRegisterStatus.open) as P;
-    case 18:
+    case 23:
       return (_CashRegistersyncStatusValueEnumMap[
               reader.readByteOrNull(offset)] ??
           SyncStatus.pending) as P;
-    case 19:
+    case 24:
       return (reader.readDateTime(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -761,6 +824,388 @@ extension CashRegisterQueryFilter
         includeLower: includeLower,
         upper: upper,
         includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QAfterFilterCondition>
+      currentCashierContactIdIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'currentCashierContactId',
+      ));
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QAfterFilterCondition>
+      currentCashierContactIdIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'currentCashierContactId',
+      ));
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QAfterFilterCondition>
+      currentCashierContactIdEqualTo(int? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'currentCashierContactId',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QAfterFilterCondition>
+      currentCashierContactIdGreaterThan(
+    int? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'currentCashierContactId',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QAfterFilterCondition>
+      currentCashierContactIdLessThan(
+    int? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'currentCashierContactId',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QAfterFilterCondition>
+      currentCashierContactIdBetween(
+    int? lower,
+    int? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'currentCashierContactId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QAfterFilterCondition>
+      currentCashierIdIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'currentCashierId',
+      ));
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QAfterFilterCondition>
+      currentCashierIdIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'currentCashierId',
+      ));
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QAfterFilterCondition>
+      currentCashierIdEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'currentCashierId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QAfterFilterCondition>
+      currentCashierIdGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'currentCashierId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QAfterFilterCondition>
+      currentCashierIdLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'currentCashierId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QAfterFilterCondition>
+      currentCashierIdBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'currentCashierId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QAfterFilterCondition>
+      currentCashierIdStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'currentCashierId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QAfterFilterCondition>
+      currentCashierIdEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'currentCashierId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QAfterFilterCondition>
+      currentCashierIdContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'currentCashierId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QAfterFilterCondition>
+      currentCashierIdMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'currentCashierId',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QAfterFilterCondition>
+      currentCashierIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'currentCashierId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QAfterFilterCondition>
+      currentCashierIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'currentCashierId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QAfterFilterCondition>
+      currentCashierNameIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'currentCashierName',
+      ));
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QAfterFilterCondition>
+      currentCashierNameIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'currentCashierName',
+      ));
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QAfterFilterCondition>
+      currentCashierNameEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'currentCashierName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QAfterFilterCondition>
+      currentCashierNameGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'currentCashierName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QAfterFilterCondition>
+      currentCashierNameLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'currentCashierName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QAfterFilterCondition>
+      currentCashierNameBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'currentCashierName',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QAfterFilterCondition>
+      currentCashierNameStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'currentCashierName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QAfterFilterCondition>
+      currentCashierNameEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'currentCashierName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QAfterFilterCondition>
+      currentCashierNameContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'currentCashierName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QAfterFilterCondition>
+      currentCashierNameMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'currentCashierName',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QAfterFilterCondition>
+      currentCashierNameIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'currentCashierName',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QAfterFilterCondition>
+      currentCashierNameIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'currentCashierName',
+        value: '',
       ));
     });
   }
@@ -1601,6 +2046,234 @@ extension CashRegisterQueryFilter
   }
 
   QueryBuilder<CashRegister, CashRegister, QAfterFilterCondition>
+      openedByCashierContactIdIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'openedByCashierContactId',
+      ));
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QAfterFilterCondition>
+      openedByCashierContactIdIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'openedByCashierContactId',
+      ));
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QAfterFilterCondition>
+      openedByCashierContactIdEqualTo(int? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'openedByCashierContactId',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QAfterFilterCondition>
+      openedByCashierContactIdGreaterThan(
+    int? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'openedByCashierContactId',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QAfterFilterCondition>
+      openedByCashierContactIdLessThan(
+    int? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'openedByCashierContactId',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QAfterFilterCondition>
+      openedByCashierContactIdBetween(
+    int? lower,
+    int? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'openedByCashierContactId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QAfterFilterCondition>
+      openedByCashierIdIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'openedByCashierId',
+      ));
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QAfterFilterCondition>
+      openedByCashierIdIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'openedByCashierId',
+      ));
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QAfterFilterCondition>
+      openedByCashierIdEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'openedByCashierId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QAfterFilterCondition>
+      openedByCashierIdGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'openedByCashierId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QAfterFilterCondition>
+      openedByCashierIdLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'openedByCashierId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QAfterFilterCondition>
+      openedByCashierIdBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'openedByCashierId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QAfterFilterCondition>
+      openedByCashierIdStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'openedByCashierId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QAfterFilterCondition>
+      openedByCashierIdEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'openedByCashierId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QAfterFilterCondition>
+      openedByCashierIdContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'openedByCashierId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QAfterFilterCondition>
+      openedByCashierIdMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'openedByCashierId',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QAfterFilterCondition>
+      openedByCashierIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'openedByCashierId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QAfterFilterCondition>
+      openedByCashierIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'openedByCashierId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QAfterFilterCondition>
       openingAmountEqualTo(
     double value, {
     double epsilon = Query.epsilon,
@@ -2045,6 +2718,48 @@ extension CashRegisterQuerySortBy
     });
   }
 
+  QueryBuilder<CashRegister, CashRegister, QAfterSortBy>
+      sortByCurrentCashierContactId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'currentCashierContactId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QAfterSortBy>
+      sortByCurrentCashierContactIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'currentCashierContactId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QAfterSortBy>
+      sortByCurrentCashierId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'currentCashierId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QAfterSortBy>
+      sortByCurrentCashierIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'currentCashierId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QAfterSortBy>
+      sortByCurrentCashierName() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'currentCashierName', Sort.asc);
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QAfterSortBy>
+      sortByCurrentCashierNameDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'currentCashierName', Sort.desc);
+    });
+  }
+
   QueryBuilder<CashRegister, CashRegister, QAfterSortBy> sortByDeletedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'deletedAt', Sort.asc);
@@ -2181,6 +2896,34 @@ extension CashRegisterQuerySortBy
     });
   }
 
+  QueryBuilder<CashRegister, CashRegister, QAfterSortBy>
+      sortByOpenedByCashierContactId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'openedByCashierContactId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QAfterSortBy>
+      sortByOpenedByCashierContactIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'openedByCashierContactId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QAfterSortBy>
+      sortByOpenedByCashierId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'openedByCashierId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QAfterSortBy>
+      sortByOpenedByCashierIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'openedByCashierId', Sort.desc);
+    });
+  }
+
   QueryBuilder<CashRegister, CashRegister, QAfterSortBy> sortByOpeningAmount() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'openingAmount', Sort.asc);
@@ -2292,6 +3035,48 @@ extension CashRegisterQuerySortThenBy
   QueryBuilder<CashRegister, CashRegister, QAfterSortBy> thenByCreatedAtDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'createdAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QAfterSortBy>
+      thenByCurrentCashierContactId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'currentCashierContactId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QAfterSortBy>
+      thenByCurrentCashierContactIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'currentCashierContactId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QAfterSortBy>
+      thenByCurrentCashierId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'currentCashierId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QAfterSortBy>
+      thenByCurrentCashierIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'currentCashierId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QAfterSortBy>
+      thenByCurrentCashierName() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'currentCashierName', Sort.asc);
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QAfterSortBy>
+      thenByCurrentCashierNameDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'currentCashierName', Sort.desc);
     });
   }
 
@@ -2443,6 +3228,34 @@ extension CashRegisterQuerySortThenBy
     });
   }
 
+  QueryBuilder<CashRegister, CashRegister, QAfterSortBy>
+      thenByOpenedByCashierContactId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'openedByCashierContactId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QAfterSortBy>
+      thenByOpenedByCashierContactIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'openedByCashierContactId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QAfterSortBy>
+      thenByOpenedByCashierId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'openedByCashierId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QAfterSortBy>
+      thenByOpenedByCashierIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'openedByCashierId', Sort.desc);
+    });
+  }
+
   QueryBuilder<CashRegister, CashRegister, QAfterSortBy> thenByOpeningAmount() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'openingAmount', Sort.asc);
@@ -2534,6 +3347,29 @@ extension CashRegisterQueryWhereDistinct
     });
   }
 
+  QueryBuilder<CashRegister, CashRegister, QDistinct>
+      distinctByCurrentCashierContactId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'currentCashierContactId');
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QDistinct>
+      distinctByCurrentCashierId({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'currentCashierId',
+          caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QDistinct>
+      distinctByCurrentCashierName({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'currentCashierName',
+          caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<CashRegister, CashRegister, QDistinct> distinctByDeletedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'deletedAt');
@@ -2606,6 +3442,21 @@ extension CashRegisterQueryWhereDistinct
   }
 
   QueryBuilder<CashRegister, CashRegister, QDistinct>
+      distinctByOpenedByCashierContactId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'openedByCashierContactId');
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QDistinct>
+      distinctByOpenedByCashierId({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'openedByCashierId',
+          caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<CashRegister, CashRegister, QDistinct>
       distinctByOpeningAmount() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'openingAmount');
@@ -2668,6 +3519,27 @@ extension CashRegisterQueryProperty
   QueryBuilder<CashRegister, DateTime, QQueryOperations> createdAtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'createdAt');
+    });
+  }
+
+  QueryBuilder<CashRegister, int?, QQueryOperations>
+      currentCashierContactIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'currentCashierContactId');
+    });
+  }
+
+  QueryBuilder<CashRegister, String?, QQueryOperations>
+      currentCashierIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'currentCashierId');
+    });
+  }
+
+  QueryBuilder<CashRegister, String?, QQueryOperations>
+      currentCashierNameProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'currentCashierName');
     });
   }
 
@@ -2735,6 +3607,20 @@ extension CashRegisterQueryProperty
   QueryBuilder<CashRegister, String?, QQueryOperations> openedByProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'openedBy');
+    });
+  }
+
+  QueryBuilder<CashRegister, int?, QQueryOperations>
+      openedByCashierContactIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'openedByCashierContactId');
+    });
+  }
+
+  QueryBuilder<CashRegister, String?, QQueryOperations>
+      openedByCashierIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'openedByCashierId');
     });
   }
 

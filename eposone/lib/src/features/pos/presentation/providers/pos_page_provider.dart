@@ -17,7 +17,8 @@ final posPagesAdminProvider = FutureProvider<List<PosPage>>((ref) async {
   return repo.getAllPages();
 });
 
-final posPageProductsProvider = FutureProvider.family<List<Product>, String>((ref, pageId) async {
+final posPageProductsProvider =
+    FutureProvider.family<List<Product>, String>((ref, pageId) async {
   final repo = ref.watch(posPageRepositoryProvider);
   final all = await ref.watch(productsListProvider.future);
   final active = all.where((p) => p.isActive).toList();
@@ -25,19 +26,36 @@ final posPageProductsProvider = FutureProvider.family<List<Product>, String>((re
 });
 
 /// Categorías visibles en una página POS (orden del menú Comida/Bar).
-final posPageCategoriesProvider = FutureProvider.family<List<Category>, String>((ref, pageId) async {
+///
+/// 1) Ítems tipo categoría de la página (preferido).
+/// 2) Fallback: categorías derivadas de los productos de la página
+///    (evita chips vacíos cuando el rebuild solo dejó productos).
+final posPageCategoriesProvider =
+    FutureProvider.family<List<Category>, String>((ref, pageId) async {
   final repo = ref.watch(posPageRepositoryProvider);
   final allCategories = await ref.watch(categoriesProvider.future);
   final byId = {for (final c in allCategories) c.localId: c};
   final items = await repo.getItems(pageId);
 
-  return [
+  final fromItems = [
     for (final item in items)
-      if (item.itemType == PosPageItemType.category && byId[item.refId] != null) byId[item.refId]!,
+      if (item.itemType == PosPageItemType.category && byId[item.refId] != null)
+        byId[item.refId]!,
   ];
-});
+  if (fromItems.isNotEmpty) return fromItems;
 
-final posPagesEnabledProvider = FutureProvider<bool>((ref) async {
-  final pages = await ref.watch(posPagesListProvider.future);
-  return pages.isNotEmpty;
+  final products = await ref.watch(posPageProductsProvider(pageId).future);
+  final seen = <String>{};
+  final derived = <Category>[];
+  for (final p in products) {
+    final cid = p.categoryId;
+    if (cid == null || !seen.add(cid)) continue;
+    final cat = byId[cid];
+    if (cat != null) derived.add(cat);
+  }
+  derived.sort((a, b) {
+    final order = (a.sortOrder ?? 0).compareTo(b.sortOrder ?? 0);
+    return order != 0 ? order : a.name.compareTo(b.name);
+  });
+  return derived;
 });

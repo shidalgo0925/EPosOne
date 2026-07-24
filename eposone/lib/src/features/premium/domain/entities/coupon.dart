@@ -49,15 +49,20 @@ class Coupon extends SyncEntity {
   bool get isUnlimitedUses => maxUses <= 0;
 
   @override
-  Coupon markAsModified() => copyWith(syncStatus: SyncStatus.modified, updatedAt: DateTime.now());
+  Coupon markAsModified() =>
+      copyWith(syncStatus: SyncStatus.modified, updatedAt: DateTime.now());
 
   @override
-  Coupon markAsSynced(String serverId) =>
-      copyWith(serverId: serverId, syncStatus: SyncStatus.synced, updatedAt: DateTime.now());
+  Coupon markAsSynced(String serverId) => copyWith(
+      serverId: serverId,
+      syncStatus: SyncStatus.synced,
+      updatedAt: DateTime.now());
 
   @override
-  Coupon markAsDeleted() =>
-      copyWith(deletedAt: DateTime.now(), syncStatus: SyncStatus.modified, updatedAt: DateTime.now());
+  Coupon markAsDeleted() => copyWith(
+      deletedAt: DateTime.now(),
+      syncStatus: SyncStatus.modified,
+      updatedAt: DateTime.now());
 
   Coupon copyWith({
     String? localId,
@@ -116,12 +121,5 @@ class Coupon extends SyncEntity {
       createdAt: now,
       updatedAt: now,
     );
-  }
-
-  double calculateDiscount(double subtotalAfterLineDiscounts) {
-    if (discountType == CouponDiscountType.percent) {
-      return (subtotalAfterLineDiscounts * (value / 100)).clamp(0, subtotalAfterLineDiscounts);
-    }
-    return value.clamp(0, subtotalAfterLineDiscounts);
   }
 }

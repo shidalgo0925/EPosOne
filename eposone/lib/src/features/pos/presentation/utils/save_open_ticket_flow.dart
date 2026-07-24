@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:eposone/src/core/printing/production_print_service.dart';
 import 'package:eposone/src/core/providers/business_config_provider.dart';
+import 'package:eposone/src/core/session/pos_session.dart';
 import 'package:eposone/src/core/widgets/blocking_progress_overlay.dart';
+import 'package:eposone/src/features/commercial_engine/commercial_engine.dart';
 import 'package:eposone/src/features/orders/data/order_service.dart';
 import 'package:eposone/src/features/orders/presentation/providers/order_providers.dart';
 import 'package:eposone/src/features/pos/data/repositories/open_ticket_repository.dart';
@@ -10,6 +13,7 @@ import 'package:eposone/src/features/pos/domain/entities/order_type.dart';
 import 'package:eposone/src/features/pos/presentation/providers/cart_provider.dart';
 import 'package:eposone/src/features/pos/presentation/providers/open_ticket_provider.dart';
 import 'package:eposone/src/features/pos/presentation/providers/pos_provider.dart';
+import 'package:eposone/src/features/customers/presentation/providers/customer_provider.dart';
 import 'package:eposone/src/features/sync/presentation/providers/en1_connection_status.dart';
 import 'package:eposone/src/features/sync/presentation/providers/sync_provider.dart';
 
@@ -25,7 +29,9 @@ Future<void> saveOpenTicketFlow(BuildContext context, WidgetRef ref) async {
   SaveOpenTicketParams params;
 
   if (cart.openTicketId != null) {
-    final existing = await ref.read(openTicketRepositoryProvider).getById(cart.openTicketId!);
+    final existing = await ref
+        .read(openTicketRepositoryProvider)
+        .getById(cart.openTicketId!);
     if (existing != null) {
       params = SaveOpenTicketParams(
         label: existing.label,
@@ -56,18 +62,15 @@ Future<void> saveOpenTicketFlow(BuildContext context, WidgetRef ref) async {
   final openTicketIdBefore = cartSnapshot.openTicketId;
   String? priorLinkedOrder;
   if (openTicketIdBefore != null) {
-    priorLinkedOrder =
-        (await ref.read(openTicketRepositoryProvider).getById(openTicketIdBefore))
-            ?.linkedOrderLocalId;
+    priorLinkedOrder = (await ref
+            .read(openTicketRepositoryProvider)
+            .getById(openTicketIdBefore))
+        ?.linkedOrderLocalId;
   }
 
-  final taxRate = config?.taxRate ?? 0;
-  final taxIncluded = config?.taxIncluded ?? false;
-  final totals = calculateSaleTotals(
-    cartSnapshot,
-    taxRate: taxRate,
-    taxIncluded: taxIncluded,
-  );
+  final totals = ref.read(commercialEngineProvider).calculateTotals(
+        commercialOrderFromCart(cartSnapshot),
+      );
 
   try {
     if (!context.mounted) return;
@@ -76,11 +79,13 @@ Future<void> saveOpenTicketFlow(BuildContext context, WidgetRef ref) async {
       message: 'Guardando pedido…',
       showCompletedFlash: false,
       action: () async {
-        final ticket = await ref.read(openTicketActionsProvider).saveCurrentCart(params);
+        final ticket =
+            await ref.read(openTicketActionsProvider).saveCurrentCart(params);
 
         if (config?.isEn1SyncReady == true) {
           String en1ProductRef(String localId, String? serverId) {
-            if (serverId != null && serverId.trim().isNotEmpty) return serverId.trim();
+            if (serverId != null && serverId.trim().isNotEmpty)
+              return serverId.trim();
             if (localId.startsWith('en1_')) return localId.substring(4);
             return localId;
           }
@@ -89,7 +94,8 @@ Future<void> saveOpenTicketFlow(BuildContext context, WidgetRef ref) async {
               .map(
                 (item) => PosOrderLineInput(
                   productLocalId: item.product.localId,
-                  productRef: en1ProductRef(item.product.localId, item.product.serverId),
+                  productRef: en1ProductRef(
+                      item.product.localId, item.product.serverId),
                   productName: item.displayName,
                   quantity: item.quantity,
                   unitPrice: item.unitPrice,
@@ -99,20 +105,26 @@ Future<void> saveOpenTicketFlow(BuildContext context, WidgetRef ref) async {
               )
               .toList();
 
-          final order = await ref.read(orderServiceProvider).upsertOpenOrderFromPosCart(
-                localNumber: params.label ?? ticket.label ?? ticket.localId,
-                lines: lines,
-                subtotal: totals.subtotal,
-                taxAmount: totals.taxAmount,
-                discount: totals.discount,
-                total: totals.total,
-                existingOrderLocalId: priorLinkedOrder ?? ticket.linkedOrderLocalId,
-                config: config,
-                customerId: cartSnapshot.customerId,
-                tableRef: params.label ?? ticket.label,
-                notes: params.comment ?? ticket.comment,
-                syncNow: true,
-              );
+          final session = ref.read(posSessionProvider);
+          final order =
+              await ref.read(orderServiceProvider).upsertOpenOrderFromPosCart(
+                    localNumber: params.label ?? ticket.label ?? ticket.localId,
+                    lines: lines,
+                    subtotal: totals.subtotal,
+                    taxAmount: totals.taxAmount,
+                    discount: totals.discount,
+                    total: totals.total,
+                    existingOrderLocalId:
+                        priorLinkedOrder ?? ticket.linkedOrderLocalId,
+                    config: config,
+                    customerId: cartSnapshot.customerId,
+                    cashierId: session?.cashierContactId != null
+                        ? 'en1_cashier_${session!.cashierContactId}'
+                        : session?.cashierId,
+                    tableRef: params.label ?? ticket.label,
+                    notes: params.comment ?? ticket.comment,
+                    syncNow: true,
+                  );
 
           await ref.read(openTicketRepositoryProvider).linkOrder(
                 ticketId: ticket.localId,
@@ -139,12 +151,51 @@ Future<void> saveOpenTicketFlow(BuildContext context, WidgetRef ref) async {
 
   if (!context.mounted) return;
 
+  // Comandas de producción (Cocina/Bar) — dominio separado de caja.
+  var saveMsg = '✓ Pedido guardado correctamente';
+  try {
+    String? customerName;
+    if (cartSnapshot.customerId != null) {
+      final c = await ref
+          .read(customerByIdProvider(cartSnapshot.customerId!).future);
+      customerName = c?.name;
+    }
+    final prodResults = await ProductionPrintService.printFromCart(
+      config: config,
+      cart: cartSnapshot,
+      orderLabel: params.label,
+      comment: params.comment,
+      customerName: customerName,
+    );
+    if (prodResults.isNotEmpty) {
+      final printed = prodResults
+          .where((r) => r.printed)
+          .map((r) => r.destinationName)
+          .toList();
+      final screens = prodResults
+          .where((r) => r.screenSkipped)
+          .map((r) => r.destinationName)
+          .toList();
+      final failed = prodResults
+          .where((r) => !r.printed && !r.screenSkipped)
+          .map((r) => r.destinationName)
+          .toList();
+      final bits = <String>[];
+      if (printed.isNotEmpty) bits.add('comanda ${printed.join(', ')}');
+      if (screens.isNotEmpty) bits.add('pantalla ${screens.join(', ')}');
+      if (failed.isNotEmpty) bits.add('falló ${failed.join(', ')}');
+      if (bits.isNotEmpty) saveMsg = '$saveMsg · ${bits.join(' · ')}';
+    }
+  } catch (_) {}
+
+  if (!context.mounted) return;
+
   // Cerrar hoja de tickets si sigue abierta → volver al POS.
   await Navigator.of(context).maybePop();
   if (!context.mounted) return;
 
   ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(content: Text('✓ Pedido guardado correctamente')),
+    SnackBar(content: Text(saveMsg)),
   );
 }
 
@@ -191,25 +242,34 @@ Future<SaveOpenTicketParams?> _customTicketDialog(
                   const SizedBox(height: 12),
                   DropdownButtonFormField<OrderType>(
                     initialValue: orderType,
-                    decoration: const InputDecoration(labelText: 'Tipo de orden'),
+                    decoration:
+                        const InputDecoration(labelText: 'Tipo de orden'),
                     items: OrderType.values
-                        .map((t) => DropdownMenuItem(value: t, child: Text(orderTypeLabel(t))))
+                        .map((t) => DropdownMenuItem(
+                            value: t, child: Text(orderTypeLabel(t))))
                         .toList(),
-                    onChanged: (v) => setState(() => orderType = v ?? OrderType.generic),
+                    onChanged: (v) =>
+                        setState(() => orderType = v ?? OrderType.generic),
                   ),
                 ],
               ),
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+            TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancelar')),
             FilledButton(
               onPressed: () {
                 Navigator.pop(
                   ctx,
                   SaveOpenTicketParams(
-                    label: labelCtrl.text.trim().isEmpty ? null : labelCtrl.text.trim(),
-                    comment: commentCtrl.text.trim().isEmpty ? null : commentCtrl.text.trim(),
+                    label: labelCtrl.text.trim().isEmpty
+                        ? null
+                        : labelCtrl.text.trim(),
+                    comment: commentCtrl.text.trim().isEmpty
+                        ? null
+                        : commentCtrl.text.trim(),
                     orderType: orderType,
                   ),
                 );

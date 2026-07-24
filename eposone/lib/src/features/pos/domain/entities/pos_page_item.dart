@@ -33,12 +33,16 @@ class PosPageItem extends SyncEntity {
       copyWith(syncStatus: SyncStatus.modified, updatedAt: DateTime.now());
 
   @override
-  PosPageItem markAsSynced(String serverId) =>
-      copyWith(serverId: serverId, syncStatus: SyncStatus.synced, updatedAt: DateTime.now());
+  PosPageItem markAsSynced(String serverId) => copyWith(
+      serverId: serverId,
+      syncStatus: SyncStatus.synced,
+      updatedAt: DateTime.now());
 
   @override
-  PosPageItem markAsDeleted() =>
-      copyWith(deletedAt: DateTime.now(), syncStatus: SyncStatus.modified, updatedAt: DateTime.now());
+  PosPageItem markAsDeleted() => copyWith(
+      deletedAt: DateTime.now(),
+      syncStatus: SyncStatus.modified,
+      updatedAt: DateTime.now());
 
   PosPageItem copyWith({
     String? localId,

@@ -50,6 +50,12 @@ class HomeScreen extends StatelessWidget {
               onTap: () => context.push('/sales'),
             ),
             _MenuCard(
+              icon: Icons.assessment_outlined,
+              label: 'Reportes',
+              color: EposBrand.navy,
+              onTap: () => context.push('/reports'),
+            ),
+            _MenuCard(
               icon: Icons.settings,
               label: 'Configuración',
               color: EposBrand.textSecondary,

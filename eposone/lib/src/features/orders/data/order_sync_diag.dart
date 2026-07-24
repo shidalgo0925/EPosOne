@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:eposone/src/core/time/en1_date_time_service.dart';
 
 /// Diagnóstico Hito 3C — solo instrumentación Sync Pedido.
 /// No cambia reglas de negocio.
@@ -17,7 +18,7 @@ class OrderSyncDiag {
   static void clear() => _lines.clear();
 
   static void log(String message) {
-    final line = '${DateTime.now().toIso8601String()}  $message';
+    final line = '${En1DateTimeService.toUtcIso(En1DateTimeService.nowUtc())}  $message';
     _lines.add(line);
     while (_lines.length > _max) {
       _lines.removeAt(0);

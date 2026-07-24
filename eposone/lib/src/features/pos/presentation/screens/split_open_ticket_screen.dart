@@ -14,7 +14,8 @@ class SplitOpenTicketScreen extends ConsumerStatefulWidget {
   const SplitOpenTicketScreen({super.key, required this.ticketId});
 
   @override
-  ConsumerState<SplitOpenTicketScreen> createState() => _SplitOpenTicketScreenState();
+  ConsumerState<SplitOpenTicketScreen> createState() =>
+      _SplitOpenTicketScreenState();
 }
 
 class _SplitOpenTicketScreenState extends ConsumerState<SplitOpenTicketScreen> {
@@ -29,7 +30,8 @@ class _SplitOpenTicketScreenState extends ConsumerState<SplitOpenTicketScreen> {
       appBar: AppBar(title: const Text('Dividir ticket')),
       body: detailAsync.when(
         data: (detail) {
-          if (detail == null) return const Center(child: Text('Ticket no encontrado'));
+          if (detail == null)
+            return const Center(child: Text('Ticket no encontrado'));
           final ticket = detail.ticket;
           final lines = detail.lines;
 
@@ -46,10 +48,14 @@ class _SplitOpenTicketScreenState extends ConsumerState<SplitOpenTicketScreen> {
                   children: [
                     Text(
                       ticket.label ?? 'Ticket',
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: EposBrand.navy),
+                      style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: EposBrand.navy),
                     ),
                     const SizedBox(height: 4),
-                    const Text('Selecciona productos para mover a otro ticket', style: TextStyle(color: EposBrand.textSecondary)),
+                    const Text('Selecciona productos para mover a otro ticket',
+                        style: TextStyle(color: EposBrand.textSecondary)),
                   ],
                 ),
               ),
@@ -80,7 +86,10 @@ class _SplitOpenTicketScreenState extends ConsumerState<SplitOpenTicketScreen> {
                       onPressed: _selectedLineIds.isEmpty
                           ? null
                           : () {
-                              final tickets = ref.read(openTicketsListProvider).valueOrNull ?? [];
+                              final tickets = ref
+                                      .read(openTicketsListProvider)
+                                      .valueOrNull ??
+                                  [];
                               _pickDestination(context, tickets);
                             },
                       icon: const Icon(Icons.call_split),
@@ -106,11 +115,13 @@ class _SplitOpenTicketScreenState extends ConsumerState<SplitOpenTicketScreen> {
     );
   }
 
-  Future<void> _pickDestination(BuildContext context, List<OpenTicket> tickets) async {
+  Future<void> _pickDestination(
+      BuildContext context, List<OpenTicket> tickets) async {
     final others = tickets.where((t) => t.localId != widget.ticketId).toList();
     if (others.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No hay otros tickets abiertos. Crea uno nuevo.')),
+        const SnackBar(
+            content: Text('No hay otros tickets abiertos. Crea uno nuevo.')),
       );
       return;
     }
@@ -123,7 +134,8 @@ class _SplitOpenTicketScreenState extends ConsumerState<SplitOpenTicketScreen> {
           for (final t in others)
             SimpleDialogOption(
               onPressed: () => Navigator.pop(ctx, t.localId),
-              child: Text(t.label ?? 'Ticket ${t.localId.substring(t.localId.length - 4)}'),
+              child: Text(t.label ??
+                  'Ticket ${t.localId.substring(t.localId.length - 4)}'),
             ),
         ],
       ),
@@ -138,7 +150,8 @@ class _SplitOpenTicketScreenState extends ConsumerState<SplitOpenTicketScreen> {
     if (params == null || !mounted) return;
 
     try {
-      final newTicket = await ref.read(openTicketActionsProvider).createEmptyTicket(params);
+      final newTicket =
+          await ref.read(openTicketActionsProvider).createEmptyTicket(params);
       await _moveLines(newTicket.localId);
     } catch (e) {
       if (mounted) {
@@ -191,13 +204,15 @@ class _LineTile extends StatelessWidget {
       child: CheckboxListTile(
         value: selected,
         onChanged: (v) => onChanged(v ?? false),
-        title: Text(line.productName, style: const TextStyle(fontWeight: FontWeight.w600)),
+        title: Text(line.productName,
+            style: const TextStyle(fontWeight: FontWeight.w600)),
         subtitle: Text(
           '${line.quantity % 1 == 0 ? line.quantity.toStringAsFixed(0) : line.quantity.toStringAsFixed(1)} x $symbol${line.unitPrice.toStringAsFixed(2)}',
         ),
         secondary: Text(
           '$symbol${line.lineTotal.toStringAsFixed(2)}',
-          style: const TextStyle(fontWeight: FontWeight.bold, color: EposBrand.orange),
+          style: const TextStyle(
+              fontWeight: FontWeight.bold, color: EposBrand.orange),
         ),
       ),
     );

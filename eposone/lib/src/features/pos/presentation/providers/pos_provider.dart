@@ -14,10 +14,13 @@ import 'package:eposone/src/features/pos/presentation/providers/open_ticket_prov
 import 'package:eposone/src/features/fiscal/data/repositories/fiscal_repository.dart';
 import 'package:eposone/src/features/fiscal/presentation/providers/fiscal_provider.dart';
 import 'package:eposone/src/features/orders/data/order_service.dart';
+import 'package:eposone/src/features/orders/domain/en1_tender_methods.dart';
 import 'package:eposone/src/features/orders/presentation/providers/order_providers.dart';
 import 'package:eposone/src/features/sync/presentation/providers/sync_provider.dart';
 import 'package:eposone/src/features/customers/data/repositories/customer_repository.dart';
 import 'package:eposone/src/features/premium/data/repositories/coupon_repository.dart';
+import 'package:eposone/src/features/commercial_engine/commercial_engine.dart';
+import 'package:eposone/src/features/auth/domain/cashier_display.dart';
 
 /// Estado del checkout
 class CheckoutState {
@@ -26,11 +29,15 @@ class CheckoutState {
   final String? customerId;
   final double tipAmount;
 
+  /// Pago mixto EN1 (códigos contrato). Vacío = un solo [paymentMethod].
+  final List<TenderAmount> paymentTenders;
+
   const CheckoutState({
     this.paymentMethod = PaymentMethod.cash,
     this.amountPaid = 0,
     this.customerId,
     this.tipAmount = 0,
+    this.paymentTenders = const [],
   });
 
   CheckoutState copyWith({
@@ -38,69 +45,99 @@ class CheckoutState {
     double? amountPaid,
     String? customerId,
     double? tipAmount,
+    List<TenderAmount>? paymentTenders,
   }) =>
       CheckoutState(
         paymentMethod: paymentMethod ?? this.paymentMethod,
         amountPaid: amountPaid ?? this.amountPaid,
         customerId: customerId ?? this.customerId,
         tipAmount: tipAmount ?? this.tipAmount,
+        paymentTenders: paymentTenders ?? this.paymentTenders,
       );
 }
 
 class CheckoutNotifier extends StateNotifier<CheckoutState> {
   CheckoutNotifier() : super(const CheckoutState());
 
-  void setPaymentMethod(PaymentMethod method) => state = state.copyWith(paymentMethod: method);
-  void setAmountPaid(double amount) => state = state.copyWith(amountPaid: amount);
-  void setCustomer(String? customerId) => state = state.copyWith(customerId: customerId);
-  void setTipAmount(double amount) => state = state.copyWith(tipAmount: amount.clamp(0, double.infinity));
+  void setPaymentMethod(PaymentMethod method) =>
+      state = state.copyWith(paymentMethod: method);
+
+  void setAmountPaid(double amount) =>
+      state = state.copyWith(amountPaid: amount);
+
+  void setCustomerId(String? id) => state = state.copyWith(customerId: id);
+
+  void setCustomer(String? customerId) => setCustomerId(customerId);
+
+  void setTipAmount(double amount) =>
+      state = state.copyWith(tipAmount: amount.clamp(0, double.infinity));
+
+  void setPaymentTenders(List<TenderAmount> tenders) =>
+      state = state.copyWith(paymentTenders: tenders);
+
   void reset() => state = const CheckoutState();
 }
 
-final checkoutProvider = StateNotifierProvider<CheckoutNotifier, CheckoutState>((ref) => CheckoutNotifier());
+final checkoutProvider = StateNotifierProvider<CheckoutNotifier, CheckoutState>(
+    (ref) => CheckoutNotifier());
 
-class SaleTotals {
-  final double subtotal;
-  final double discount;
-  final double taxAmount;
-  final double total;
+double _lineNet(CartItem item) =>
+    (item.quantity * item.unitPrice) - item.discount;
 
-  const SaleTotals({
-    required this.subtotal,
-    required this.discount,
-    required this.taxAmount,
-    required this.total,
-  });
-}
-
-SaleTotals calculateSaleTotals(CartState cart, {required double taxRate, required bool taxIncluded}) {
-  final subtotal = cart.subtotal;
-  final discount = cart.totalDiscount + cart.discountGlobal + cart.couponDiscount;
-  final taxable = (subtotal - discount).clamp(0, double.infinity);
-  final taxAmount = taxIncluded ? 0.0 : taxable * (taxRate / 100);
-  final total = taxable + taxAmount;
-  return SaleTotals(subtotal: subtotal, discount: discount, taxAmount: taxAmount, total: total);
-}
-
-SaleTotals calculateTotalsForItems(List<CartItem> items, CartState cart, {required double taxRate, required bool taxIncluded}) {
-  return calculateSaleTotals(
-    CartState(items: items, discountPercent: cart.discountPercent, customerId: cart.customerId),
-    taxRate: taxRate,
-    taxIncluded: taxIncluded,
+/// Cupón fijo del carrito: en cobro parcial se prorratea por base neta
+/// para no reaplicar el monto completo en cada split.
+double _allocatedCouponDiscount(CartState cart, List<CartItem> items) {
+  if (cart.couponDiscount <= 0 || cart.items.isEmpty || items.isEmpty) {
+    return 0;
+  }
+  if (items.length == cart.items.length &&
+      items.every((item) => cart.items.any((c) => c.id == item.id))) {
+    return cart.couponDiscount;
+  }
+  final fullBase =
+      cart.items.fold<double>(0, (sum, item) => sum + _lineNet(item));
+  if (fullBase <= 0) return 0;
+  final partBase = items.fold<double>(0, (sum, item) => sum + _lineNet(item));
+  return double.parse(
+    (cart.couponDiscount * partBase / fullBase).toStringAsFixed(2),
   );
 }
 
-final saleTotalsProvider = Provider<SaleTotals>((ref) {
+CommercialOrderInput commercialOrderFromCart(
+  CartState cart, {
+  List<CartItem>? itemsOverride,
+  double tipAmount = 0,
+  double? tipPercent,
+}) {
+  final items = itemsOverride ?? cart.items;
+  return CommercialOrderInput(
+    lines: [
+      for (final item in items)
+        CommercialLineInput(
+          lineId: item.id,
+          productId: item.product.localId,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          lineDiscount: item.discount,
+          fiscalCategoryCode: item.product.fiscalCategoryCode,
+        ),
+    ],
+    documentDiscountPercent: cart.discountPercent ?? 0,
+    couponDiscount: _allocatedCouponDiscount(cart, items),
+    tipAmount: tipAmount,
+    tipPercent: tipPercent,
+  );
+}
+
+final saleTotalsProvider = Provider<CalculationResult>((ref) {
   final cart = ref.watch(cartProvider);
-  final config = ref.watch(businessConfigProvider);
-  return calculateSaleTotals(
-    cart,
-    taxRate: config?.taxRate ?? 0,
-    taxIncluded: config?.taxIncluded ?? false,
-  );
+  final engine = ref.watch(commercialEngineProvider);
+  return engine.calculateTotals(commercialOrderFromCart(cart));
 });
 
-final completeSaleProvider = Provider<Future<Sale?> Function({List<CartItem>? itemsOverride, String? notes})>((ref) {
+final completeSaleProvider = Provider<
+    Future<Sale?> Function(
+        {List<CartItem>? itemsOverride, String? notes})>((ref) {
   return ({List<CartItem>? itemsOverride, String? notes}) async {
     final cart = ref.read(cartProvider);
     final itemsToSell = itemsOverride ?? cart.items;
@@ -116,27 +153,28 @@ final completeSaleProvider = Provider<Future<Sale?> Function({List<CartItem>? it
     final saleRepo = ref.read(saleRepositoryProvider);
     final configRepo = ref.read(businessConfigRepositoryProvider);
 
-    final totals = calculateSaleTotals(
-      CartState(
-        items: itemsToSell,
-        discountPercent: cart.discountPercent,
-        customerId: cart.customerId,
-      ),
-      taxRate: config.taxRate,
-      taxIncluded: config.taxIncluded,
+    final orderInput = commercialOrderFromCart(
+      cart,
+      itemsOverride: itemsToSell,
+      tipAmount: checkout.tipAmount,
     );
+    final totals =
+        ref.read(commercialEngineProvider).calculateTotals(orderInput);
 
-    final tip = checkout.tipAmount;
-    final saleTotal = totals.total + tip;
+    final tip = totals.tips;
+    final saleTotal = totals.total;
 
-    final amountPaid = checkout.paymentMethod == PaymentMethod.cash
-        ? (checkout.amountPaid > 0 ? checkout.amountPaid : saleTotal)
-        : saleTotal;
-    final change = checkout.paymentMethod == PaymentMethod.cash
-        ? (amountPaid - saleTotal).clamp(0, double.infinity)
-        : 0.0;
+    final hasMix = checkout.paymentTenders.isNotEmpty;
+    final hasCash = hasMix
+        ? checkout.paymentTenders.any((t) => t.code == 'cash')
+        : checkout.paymentMethod == PaymentMethod.cash;
+    final payment = ref.read(commercialEngineProvider).completePayment(
+          total: saleTotal,
+          enteredAmount: checkout.amountPaid,
+          allowsChange: hasCash,
+        );
 
-    if (checkout.paymentMethod == PaymentMethod.cash && amountPaid < saleTotal) {
+    if (!payment.isSufficient) {
       throw StateError('Monto recibido insuficiente');
     }
 
@@ -150,29 +188,38 @@ final completeSaleProvider = Provider<Future<Sale?> Function({List<CartItem>? it
 
     String? openTicketLabel;
     if (cart.openTicketId != null) {
-      final ot = await ref.read(openTicketRepositoryProvider).getById(cart.openTicketId!);
+      final ot = await ref
+          .read(openTicketRepositoryProvider)
+          .getById(cart.openTicketId!);
       openTicketLabel = ot?.label;
     }
+
+    final cashierName = await CashierDisplay.resolve(
+      name: session.cashierName,
+      contactId: session.cashierContactId,
+    );
 
     final sale = Sale.create(
       subtotal: totals.subtotal,
       taxAmount: totals.taxAmount,
       total: saleTotal,
-      amountPaid: amountPaid,
-      change: change.toDouble(),
+      amountPaid: payment.amountPaid,
+      change: payment.change,
       tipAmount: tip,
       paymentMethod: checkout.paymentMethod,
       customerId: checkout.customerId ?? cart.customerId,
       discount: totals.discount,
       receiptNumber: receiptNumber,
       notes: notes,
-      cashierName: session.cashierName,
-      cashierId: session.cashierId,
+      cashierName: cashierName,
+      cashierId: session.cashierContactId != null
+          ? 'en1_cashier_${session.cashierContactId}'
+          : session.cashierId,
       cashRegisterId: session.cashRegisterId,
       orderType: cart.orderType,
       openTicketLabel: openTicketLabel,
       couponCode: cart.appliedCouponCode,
-      couponDiscount: cart.couponDiscount,
+      couponDiscount: orderInput.couponDiscount,
     );
 
     final items = itemsToSell
@@ -184,8 +231,9 @@ final completeSaleProvider = Provider<Future<Sale?> Function({List<CartItem>? it
             quantity: item.quantity,
             unitPrice: item.unitPrice,
             discount: item.discount,
-            taxRate: config.taxRate,
-            modifiersJson: item.modifiersJson.isEmpty ? null : item.modifiersJson,
+            taxRate: totals.lineTaxRate(item.id),
+            modifiersJson:
+                item.modifiersJson.isEmpty ? null : item.modifiersJson,
           ),
         )
         .toList();
@@ -214,7 +262,9 @@ final completeSaleProvider = Provider<Future<Sale?> Function({List<CartItem>? it
     if (config.isEn1SyncReady) {
       try {
         String en1ProductRef(String localId, String? serverId) {
-          if (serverId != null && serverId.trim().isNotEmpty) return serverId.trim();
+          if (serverId != null && serverId.trim().isNotEmpty) {
+            return serverId.trim();
+          }
           if (localId.startsWith('en1_')) return localId.substring(4);
           return localId;
         }
@@ -226,6 +276,15 @@ final completeSaleProvider = Provider<Future<Sale?> Function({List<CartItem>? it
               PaymentMethod.yappy => 'yappy',
               PaymentMethod.other => 'other',
             };
+
+        final tenders = checkout.paymentTenders.isNotEmpty
+            ? checkout.paymentTenders
+            : [
+                TenderAmount(
+                  code: methodCode(checkout.paymentMethod),
+                  amount: payment.amountPaid,
+                ),
+              ];
 
         String? linkedOrderId;
         if (cart.openTicketId != null) {
@@ -241,17 +300,19 @@ final completeSaleProvider = Provider<Future<Sale?> Function({List<CartItem>? it
                   .map(
                     (item) => PosOrderLineInput(
                       productLocalId: item.product.localId,
-                      productRef: en1ProductRef(item.product.localId, item.product.serverId),
+                      productRef: en1ProductRef(
+                          item.product.localId, item.product.serverId),
                       productName: item.displayName,
                       quantity: item.quantity,
                       unitPrice: item.unitPrice,
                       discount: item.discount,
-                      notes: item.modifiersJson.isEmpty ? null : item.modifiersJson,
+                      notes: item.modifiersJson.isEmpty
+                          ? null
+                          : item.modifiersJson,
                     ),
                   )
                   .toList(),
-              methodCode: methodCode(checkout.paymentMethod),
-              paymentAmount: amountPaid,
+              paymentTenders: tenders,
               subtotal: totals.subtotal,
               taxAmount: totals.taxAmount,
               discount: totals.discount,
@@ -259,7 +320,9 @@ final completeSaleProvider = Provider<Future<Sale?> Function({List<CartItem>? it
               total: saleTotal,
               config: config,
               customerId: checkout.customerId ?? cart.customerId,
-              cashierId: session.cashierId,
+              cashierId: session.cashierContactId != null
+                  ? 'en1_cashier_${session.cashierContactId}'
+                  : session.cashierId,
               tableRef: openTicketLabel,
               notes: notes,
               currency: config.currency,
@@ -275,7 +338,9 @@ final completeSaleProvider = Provider<Future<Sale?> Function({List<CartItem>? it
 
     if (cart.appliedCouponId != null) {
       try {
-        await ref.read(couponRepositoryProvider).recordUse(cart.appliedCouponId!);
+        await ref
+            .read(couponRepositoryProvider)
+            .recordUse(cart.appliedCouponId!);
       } catch (_) {}
     }
 
@@ -288,7 +353,9 @@ final completeSaleProvider = Provider<Future<Sale?> Function({List<CartItem>? it
           final points = (saleTotal * config.loyaltyPointsPerUnit).floor();
           if (points > 0) {
             await customerRepo.saveCustomer(
-              customer.copyWith(loyaltyPoints: customer.loyaltyPoints + points).markAsModified(),
+              customer
+                  .copyWith(loyaltyPoints: customer.loyaltyPoints + points)
+                  .markAsModified(),
             );
           }
         }
@@ -301,12 +368,16 @@ final completeSaleProvider = Provider<Future<Sale?> Function({List<CartItem>? it
       }
       final remaining = ref.read(cartProvider);
       if (remaining.items.isEmpty && remaining.openTicketId != null) {
-        await ref.read(openTicketRepositoryProvider).deleteTicket(remaining.openTicketId!);
+        await ref
+            .read(openTicketRepositoryProvider)
+            .deleteTicket(remaining.openTicketId!);
         ref.invalidate(openTicketsCountProvider);
       }
     } else {
       if (cart.openTicketId != null) {
-        await ref.read(openTicketRepositoryProvider).deleteTicket(cart.openTicketId!);
+        await ref
+            .read(openTicketRepositoryProvider)
+            .deleteTicket(cart.openTicketId!);
         ref.invalidate(openTicketsCountProvider);
       }
       ref.read(cartProvider.notifier).clear();
@@ -317,7 +388,8 @@ final completeSaleProvider = Provider<Future<Sale?> Function({List<CartItem>? it
     ref.invalidate(salesHistoryProvider);
     ref.invalidate(productsListProvider);
 
-    if (checkout.paymentMethod == PaymentMethod.cash) {
+    if (checkout.paymentMethod == PaymentMethod.cash ||
+        checkout.paymentTenders.any((t) => t.code == 'cash')) {
       ThermalPrinterService.openDrawerIfConfigured(isCashPayment: true);
     }
 

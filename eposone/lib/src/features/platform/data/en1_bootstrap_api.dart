@@ -20,9 +20,16 @@ class En1BootstrapApi {
   Future<En1BootstrapPayload> fetchBootstrap({
     required String apiBaseUrl,
     required String accessToken,
+    int? knownCashiersVersion,
   }) async {
     final base = _normalizeBase(apiBaseUrl);
-    final uri = Uri.parse('$base/api/v1/devices/bootstrap');
+    final uri = knownCashiersVersion == null
+        ? Uri.parse('$base/api/v1/devices/bootstrap')
+        : Uri.parse('$base/api/v1/devices/bootstrap').replace(
+            queryParameters: {
+              'cashiers_version': '$knownCashiersVersion',
+            },
+          );
     final payload = await _getJson(uri, bearerToken: accessToken);
     return _parseBootstrap(payload);
   }
@@ -79,10 +86,35 @@ class En1BootstrapApi {
         .where((b) => b.productRef.isNotEmpty)
         .toList();
 
+    int? cashiersVersion;
+    final cv = body['cashiers_version'] ?? root['cashiers_version'];
+    if (cv is int) {
+      cashiersVersion = cv;
+    } else if (cv != null) {
+      cashiersVersion = int.tryParse(cv.toString());
+    }
+
+    final cashierMaps = _extractMaps(body, const ['cashiers']);
+    final cashiers = cashierMaps
+        .map(En1RemoteCashier.fromJson)
+        .where((c) => c.cashierContactId > 0)
+        .toList();
+
+    Map<String, dynamic>? license;
+    final lic = body['license'] ?? root['license'];
+    if (lic is Map<String, dynamic>) {
+      license = lic;
+    } else if (lic is Map) {
+      license = Map<String, dynamic>.from(lic);
+    }
+
     return En1BootstrapPayload(
       config: config,
       products: products,
       stockBalances: stockBalances,
+      cashiersVersion: cashiersVersion,
+      cashiers: cashiers,
+      license: license,
       raw: root,
     );
   }

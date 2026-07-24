@@ -1,5 +1,6 @@
 import 'package:isar/isar.dart';
 import 'package:eposone/src/core/entities/sync_entity.dart';
+import 'package:eposone/src/core/time/en1_date_time_service.dart';
 
 part 'order.g.dart';
 
@@ -70,7 +71,7 @@ class Order extends SyncEntity {
   Order markAsModified() => copyWith(
         syncStatus: SyncStatus.modified,
         dirty: true,
-        updatedAt: DateTime.now(),
+        updatedAt: En1DateTimeService.nowUtc(),
       );
 
   @override
@@ -78,14 +79,14 @@ class Order extends SyncEntity {
         serverId: serverId,
         syncStatus: SyncStatus.synced,
         dirty: false,
-        updatedAt: DateTime.now(),
+        updatedAt: En1DateTimeService.nowUtc(),
       );
 
   @override
   Order markAsDeleted() => copyWith(
-        deletedAt: DateTime.now(),
+        deletedAt: En1DateTimeService.nowUtc(),
         syncStatus: SyncStatus.modified,
-        updatedAt: DateTime.now(),
+        updatedAt: En1DateTimeService.nowUtc(),
       );
 
   Order copyWith({
@@ -150,7 +151,7 @@ class Order extends SyncEntity {
     String? cashierId,
     String? notes,
   }) {
-    final now = DateTime.now();
+    final now = En1DateTimeService.nowUtc();
     return Order(
       localId: now.microsecondsSinceEpoch.toString(),
       createdAt: now,

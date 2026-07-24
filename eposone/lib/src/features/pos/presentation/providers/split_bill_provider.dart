@@ -37,7 +37,9 @@ class SplitBillState {
       SplitBillState(
         mode: mode ?? this.mode,
         selectedItemIds: selectedItemIds ?? this.selectedItemIds,
-        equalSplitSnapshot: clearEqualSnapshot ? null : (equalSplitSnapshot ?? this.equalSplitSnapshot),
+        equalSplitSnapshot: clearEqualSnapshot
+            ? null
+            : (equalSplitSnapshot ?? this.equalSplitSnapshot),
         equalTotalParts: equalTotalParts ?? this.equalTotalParts,
         equalCurrentPart: equalCurrentPart ?? this.equalCurrentPart,
         groupId: clearGroupId ? null : (groupId ?? this.groupId),
@@ -78,12 +80,14 @@ class SplitBillNotifier extends StateNotifier<SplitBillState> {
   void finishEqualSplit() => reset();
 }
 
-final splitBillProvider = StateNotifierProvider<SplitBillNotifier, SplitBillState>((ref) {
+final splitBillProvider =
+    StateNotifierProvider<SplitBillNotifier, SplitBillState>((ref) {
   return SplitBillNotifier();
 });
 
 /// Ítems correspondientes a una parte de división igualitaria.
-List<CartItem> equalSplitPartItems(List<CartItem> items, int partIndex, int totalParts) {
+List<CartItem> equalSplitPartItems(
+    List<CartItem> items, int partIndex, int totalParts) {
   return items
       .map((item) {
         final perPart = item.quantity / totalParts;

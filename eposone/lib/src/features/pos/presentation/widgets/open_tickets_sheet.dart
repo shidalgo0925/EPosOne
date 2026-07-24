@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:eposone/src/core/providers/business_config_provider.dart';
 import 'package:eposone/src/core/theme/eposone_theme.dart';
+import 'package:eposone/src/core/time/en1_date_time_service.dart';
+import 'package:eposone/src/features/commercial_engine/commercial_engine.dart';
 import 'package:eposone/src/features/customers/presentation/providers/customer_provider.dart';
 import 'package:eposone/src/features/pos/domain/entities/open_ticket.dart';
 import 'package:eposone/src/features/pos/domain/entities/order_type.dart';
@@ -16,7 +17,8 @@ Future<void> showOpenTicketsSheet(BuildContext context, WidgetRef ref) async {
   await showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
-    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+    shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
     builder: (_) => const OpenTicketsSheet(),
   );
 }
@@ -38,14 +40,25 @@ class OpenTicketsSheet extends ConsumerWidget {
       builder: (_, scrollController) => Column(
         children: [
           const SizedBox(height: 8),
-          Container(width: 40, height: 4, decoration: BoxDecoration(color: EposBrand.divider, borderRadius: BorderRadius.circular(2))),
+          Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                  color: EposBrand.divider,
+                  borderRadius: BorderRadius.circular(2))),
           Padding(
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                const Text('Tickets abiertos', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: EposBrand.navy)),
+                const Text('Tickets abiertos',
+                    style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: EposBrand.navy)),
                 const Spacer(),
-                IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
+                IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(context)),
               ],
             ),
           ),
@@ -91,7 +104,6 @@ class _OpenTicketCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final detailAsync = ref.watch(openTicketDetailProvider(ticket.localId));
-    final dateFmt = DateFormat('dd/MM HH:mm');
     final config = ref.watch(businessConfigProvider);
 
     return Card(
@@ -115,40 +127,55 @@ class _OpenTicketCard extends ConsumerWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            ticket.label ?? 'Ticket ${ticket.localId.substring(ticket.localId.length - 4)}',
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                            ticket.label ??
+                                'Ticket ${ticket.localId.substring(ticket.localId.length - 4)}',
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 15),
                           ),
                           Text(
-                            '${dateFmt.format(ticket.savedAt)} · ${orderTypeLabel(ticket.orderType)}',
-                            style: const TextStyle(fontSize: 12, color: EposBrand.textSecondary),
+                            '${En1DateTimeService.formatLocal(ticket.savedAt, 'dd/MM HH:mm')} · ${orderTypeLabel(ticket.orderType)}',
+                            style: const TextStyle(
+                                fontSize: 12, color: EposBrand.textSecondary),
                           ),
                         ],
                       ),
                     ),
                     Text(
                       '$symbol${detail.total.toStringAsFixed(2)}',
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: EposBrand.orange),
+                      style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: EposBrand.orange),
                     ),
                   ],
                 ),
                 if (ticket.comment != null && ticket.comment!.isNotEmpty) ...[
                   const SizedBox(height: 4),
-                  Text(ticket.comment!, style: const TextStyle(fontSize: 12, color: EposBrand.textSecondary)),
+                  Text(ticket.comment!,
+                      style: const TextStyle(
+                          fontSize: 12, color: EposBrand.textSecondary)),
                 ],
                 const SizedBox(height: 6),
                 Text(
                   '$lineCount ${lineCount == 1 ? 'producto' : 'productos'}'
                   '${customerAsync.valueOrNull?.name != null ? ' · ${customerAsync.value!.name}' : ''}',
-                  style: const TextStyle(fontSize: 12, color: EposBrand.textSecondary),
+                  style: const TextStyle(
+                      fontSize: 12, color: EposBrand.textSecondary),
                 ),
                 const SizedBox(height: 10),
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
                   children: [
-                    FilledButton(onPressed: () => _charge(context, ref), child: const Text('Cobrar')),
-                    OutlinedButton(onPressed: () => _open(context, ref), child: const Text('Abrir')),
-                    OutlinedButton(onPressed: () => _edit(context, ref), child: const Text('Editar')),
+                    FilledButton(
+                        onPressed: () => _charge(context, ref),
+                        child: const Text('Cobrar')),
+                    OutlinedButton(
+                        onPressed: () => _open(context, ref),
+                        child: const Text('Abrir')),
+                    OutlinedButton(
+                        onPressed: () => _edit(context, ref),
+                        child: const Text('Editar')),
                     if (lineCount > 0)
                       OutlinedButton(
                         onPressed: () {
@@ -176,6 +203,7 @@ class _OpenTicketCard extends ConsumerWidget {
                         ticket: ticket,
                         lines: detail.lines,
                         config: config,
+                        engine: ref.read(commercialEngineProvider),
                       ),
                       child: const Text('Pre-cuenta'),
                     ),
@@ -189,26 +217,31 @@ class _OpenTicketCard extends ConsumerWidget {
             ),
           );
         },
-        loading: () => const Padding(padding: EdgeInsets.all(16), child: LinearProgressIndicator()),
-        error: (e, _) => Padding(padding: const EdgeInsets.all(12), child: Text('Error: $e')),
+        loading: () => const Padding(
+            padding: EdgeInsets.all(16), child: LinearProgressIndicator()),
+        error: (e, _) => Padding(
+            padding: const EdgeInsets.all(12), child: Text('Error: $e')),
       ),
     );
   }
 
   Future<void> _open(BuildContext context, WidgetRef ref) async {
-    if (!await confirmDiscardCartIfNeeded(context, ref, openingTicketId: ticket.localId)) return;
+    if (!await confirmDiscardCartIfNeeded(context, ref,
+        openingTicketId: ticket.localId)) return;
     try {
       await ref.read(openTicketActionsProvider).restoreTicket(ticket.localId);
       if (context.mounted) Navigator.pop(context);
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e'), backgroundColor: Colors.red));
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('$e'), backgroundColor: Colors.red));
       }
     }
   }
 
   Future<void> _charge(BuildContext context, WidgetRef ref) async {
-    if (!await confirmDiscardCartIfNeeded(context, ref, openingTicketId: ticket.localId)) return;
+    if (!await confirmDiscardCartIfNeeded(context, ref,
+        openingTicketId: ticket.localId)) return;
     try {
       await ref.read(openTicketActionsProvider).restoreTicket(ticket.localId);
       if (context.mounted) {
@@ -217,13 +250,15 @@ class _OpenTicketCard extends ConsumerWidget {
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e'), backgroundColor: Colors.red));
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('$e'), backgroundColor: Colors.red));
       }
     }
   }
 
   Future<void> _merge(BuildContext context, WidgetRef ref) async {
-    final others = allTickets.where((t) => t.localId != ticket.localId).toList();
+    final others =
+        allTickets.where((t) => t.localId != ticket.localId).toList();
     final destId = await showDialog<String>(
       context: context,
       builder: (ctx) => SimpleDialog(
@@ -235,7 +270,8 @@ class _OpenTicketCard extends ConsumerWidget {
           for (final t in others)
             SimpleDialogOption(
               onPressed: () => Navigator.pop(ctx, t.localId),
-              child: Text(t.label ?? 'Ticket ${t.localId.substring(t.localId.length - 4)}'),
+              child: Text(t.label ??
+                  'Ticket ${t.localId.substring(t.localId.length - 4)}'),
             ),
         ],
       ),
@@ -247,10 +283,15 @@ class _OpenTicketCard extends ConsumerWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Confirmar fusión'),
-        content: const Text('¿Fusionar este ticket en el destino? El ticket origen se eliminará.'),
+        content: const Text(
+            '¿Fusionar este ticket en el destino? El ticket origen se eliminará.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Fusionar')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancelar')),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Fusionar')),
         ],
       ),
     );
@@ -258,13 +299,17 @@ class _OpenTicketCard extends ConsumerWidget {
     if (ok != true) return;
 
     try {
-      await ref.read(openTicketActionsProvider).mergeInto(fromTicketId: ticket.localId, toTicketId: destId);
+      await ref
+          .read(openTicketActionsProvider)
+          .mergeInto(fromTicketId: ticket.localId, toTicketId: destId);
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Tickets fusionados')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Tickets fusionados')));
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e'), backgroundColor: Colors.red));
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('$e'), backgroundColor: Colors.red));
       }
     }
   }
@@ -282,23 +327,33 @@ class _OpenTicketCard extends ConsumerWidget {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(controller: labelCtrl, decoration: const InputDecoration(labelText: 'Nombre')),
+              TextField(
+                  controller: labelCtrl,
+                  decoration: const InputDecoration(labelText: 'Nombre')),
               const SizedBox(height: 12),
-              TextField(controller: commentCtrl, decoration: const InputDecoration(labelText: 'Comentario')),
+              TextField(
+                  controller: commentCtrl,
+                  decoration: const InputDecoration(labelText: 'Comentario')),
               const SizedBox(height: 12),
               DropdownButtonFormField<OrderType>(
                 initialValue: orderType,
                 decoration: const InputDecoration(labelText: 'Tipo de orden'),
                 items: OrderType.values
-                    .map((t) => DropdownMenuItem(value: t, child: Text(orderTypeLabel(t))))
+                    .map((t) => DropdownMenuItem(
+                        value: t, child: Text(orderTypeLabel(t))))
                     .toList(),
-                onChanged: (v) => setState(() => orderType = v ?? OrderType.generic),
+                onChanged: (v) =>
+                    setState(() => orderType = v ?? OrderType.generic),
               ),
             ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
-            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Guardar')),
+            TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Cancelar')),
+            FilledButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('Guardar')),
           ],
         ),
       ),
@@ -308,7 +363,9 @@ class _OpenTicketCard extends ConsumerWidget {
       await ref.read(openTicketActionsProvider).updateTicketMeta(
             ticketId: ticket.localId,
             label: labelCtrl.text.trim().isEmpty ? null : labelCtrl.text.trim(),
-            comment: commentCtrl.text.trim().isEmpty ? null : commentCtrl.text.trim(),
+            comment: commentCtrl.text.trim().isEmpty
+                ? null
+                : commentCtrl.text.trim(),
             orderType: orderType,
           );
     }
@@ -321,8 +378,12 @@ class _OpenTicketCard extends ConsumerWidget {
         title: const Text('Eliminar ticket'),
         content: const Text('¿Eliminar este ticket guardado?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Eliminar')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancelar')),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Eliminar')),
         ],
       ),
     );

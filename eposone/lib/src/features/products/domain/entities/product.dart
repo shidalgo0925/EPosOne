@@ -20,6 +20,9 @@ class Product extends SyncEntity {
   final bool allowDecimalQty;
   final double? minStockAlert;
 
+  /// Código de categoría fiscal (catálogo ITBMS), p. ej. EXENTO / ITBMS_7.
+  final String fiscalCategoryCode;
+
   const Product({
     required super.localId,
     super.serverId,
@@ -39,6 +42,7 @@ class Product extends SyncEntity {
     this.isActive = true,
     this.allowDecimalQty = false,
     this.minStockAlert,
+    this.fiscalCategoryCode = 'ITBMS_7',
   });
 
   double get marginPercent => cost != null && cost! > 0 ? ((price - cost!) / cost!) * 100 : 0;
@@ -71,6 +75,7 @@ class Product extends SyncEntity {
     bool? isActive,
     bool? allowDecimalQty,
     double? minStockAlert,
+    String? fiscalCategoryCode,
   }) =>
       Product(
         localId: localId ?? this.localId,
@@ -91,6 +96,7 @@ class Product extends SyncEntity {
         isActive: isActive ?? this.isActive,
         allowDecimalQty: allowDecimalQty ?? this.allowDecimalQty,
         minStockAlert: minStockAlert ?? this.minStockAlert,
+        fiscalCategoryCode: fiscalCategoryCode ?? this.fiscalCategoryCode,
       );
 
   factory Product.create({
@@ -104,6 +110,7 @@ class Product extends SyncEntity {
     String? categoryId,
     bool allowDecimalQty = false,
     double? minStockAlert,
+    String fiscalCategoryCode = 'ITBMS_7',
   }) =>
       Product(
         localId: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -117,6 +124,7 @@ class Product extends SyncEntity {
         categoryId: categoryId,
         allowDecimalQty: allowDecimalQty,
         minStockAlert: minStockAlert,
+        fiscalCategoryCode: fiscalCategoryCode,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );

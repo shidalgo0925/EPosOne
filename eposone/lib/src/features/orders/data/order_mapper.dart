@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:eposone/src/core/entities/sync_entity.dart';
+import 'package:eposone/src/core/time/en1_date_time_service.dart';
 import 'package:eposone/src/features/orders/domain/entities/order.dart';
 import 'package:eposone/src/features/orders/domain/entities/order_event.dart';
 import 'package:eposone/src/features/orders/domain/entities/order_item.dart';
@@ -21,30 +22,38 @@ class OrderMapper {
   static Map<String, dynamic> toCreateRequest({
     required Order order,
     required String eventId,
-  }) =>
-      {
-        'local_number': order.localNumber,
-        'table_ref': order.tableRef,
+  }) {
+    final cashierContactId = contactIdFromCashierRef(order.cashierId);
+    return {
+      'local_number': order.localNumber,
+      'table_ref': order.tableRef,
+      if (cashierContactId == null && order.cashierId != null)
         'user_ref': order.cashierId,
-        'customer_ref': order.customerId,
-        'notes': order.notes,
-        'tip': order.tipAmount,
-        'event_id': eventId,
-      };
+      if (cashierContactId != null) 'cashier_contact_id': cashierContactId,
+      'customer_ref': order.customerId,
+      'notes': order.notes,
+      'tip': order.tipAmount,
+      'event_id': eventId,
+    };
+  }
 
   /// Body `PATCH /api/v1/orders/{id}`
   static Map<String, dynamic> toPatchRequest({
     required Order order,
     String? eventId,
-  }) =>
-      {
+  }) {
+    final cashierContactId = contactIdFromCashierRef(order.cashierId);
+    return {
+      if (cashierContactId == null && order.cashierId != null)
         'user_ref': order.cashierId,
-        'customer_ref': order.customerId,
-        'notes': order.notes,
-        'tip': order.tipAmount,
-        'local_number': order.localNumber,
-        if (eventId != null) 'event_id': eventId,
-      };
+      if (cashierContactId != null) 'cashier_contact_id': cashierContactId,
+      'customer_ref': order.customerId,
+      'notes': order.notes,
+      'tip': order.tipAmount,
+      'local_number': order.localNumber,
+      if (eventId != null) 'event_id': eventId,
+    };
+  }
 
   /// Body `POST .../events` desde [OrderEvent] local (+ payloadJson).
   static Map<String, dynamic> toEventRequest(OrderEvent event) {
@@ -59,16 +68,22 @@ class OrderMapper {
         }
       } catch (_) {}
     }
+    final contact = contactIdFromCashierRef(event.actorId);
     return {
       'event_id': event.localId,
       'type': event.eventType,
-      if (event.actorId != null) 'actor_user_ref': event.actorId,
+      if (contact == null && event.actorId != null)
+        'actor_user_ref': event.actorId,
+      if (contact != null) 'cashier_contact_id': contact,
       'payload': payload,
     };
   }
 
   /// Body `POST .../payments`
-  static Map<String, dynamic> toPaymentRequest(OrderPayment payment) {
+  static Map<String, dynamic> toPaymentRequest(
+    OrderPayment payment, {
+    int? cashierContactId,
+  }) {
     final kind = payment.isPartial ? 'partial' : 'payment';
     return {
       'amount': payment.amount,
@@ -78,7 +93,38 @@ class OrderMapper {
       'customer_ref': null,
       'payment_ref': payment.localId,
       'event_id': _uuid.v4(),
+      if (cashierContactId != null) 'cashier_contact_id': cashierContactId,
     };
+  }
+
+  /// `en1_cashier_42` o `"42"` → 42. Público para sync de pagos.
+  static int? contactIdFromCashierRef(String? ref) {
+    if (ref == null || ref.isEmpty) return null;
+    if (ref.startsWith('en1_cashier_')) {
+      return int.tryParse(ref.substring('en1_cashier_'.length));
+    }
+    return int.tryParse(ref);
+  }
+
+  /// ¿El pedido remoto sigue abierto para el POS?
+  static bool isRemoteStillOpen(Map<String, dynamic> remote) {
+    final status = remote['status']?.toString().toLowerCase() ?? '';
+    final payment = remote['payment_status']?.toString().toLowerCase() ?? '';
+    final financiallyClosed = remote['financially_closed'] == true ||
+        remote['financially_closed']?.toString().toLowerCase() == 'true';
+    if (financiallyClosed) return false;
+    if (payment == 'paid' || payment == 'settled') return false;
+    const closedStatuses = {
+      'closed',
+      'paid',
+      'cancelled',
+      'canceled',
+      'returned',
+      'voided',
+      'refunded',
+    };
+    if (closedStatuses.contains(status)) return false;
+    return true;
   }
 
   /// Aplica `order` remoto al local (mantiene [Order.localId]).
@@ -86,13 +132,12 @@ class OrderMapper {
     final id = remote['id'];
     final serverId = id?.toString();
     final status = remote['status']?.toString() ?? local.lifecycleStatus;
-    final paid = remote['payment_status']?.toString() == 'paid' ||
-        remote['financially_closed'] == true;
     return local.copyWith(
       serverId: serverId ?? local.serverId,
       syncStatus: SyncStatus.synced,
       localNumber: remote['local_number']?.toString() ?? local.localNumber,
-      organizationId: remote['organization_id']?.toString() ?? local.organizationId,
+      organizationId:
+          remote['organization_id']?.toString() ?? local.organizationId,
       branchRef: remote['branch_ref']?.toString() ?? local.branchRef,
       posRef: remote['pos_ref']?.toString() ?? local.posRef,
       registerRef: remote['register_ref']?.toString() ?? local.registerRef,
@@ -106,16 +151,14 @@ class OrderMapper {
       discount: _d(remote['discount']) ?? local.discount,
       tipAmount: _d(remote['tip']) ?? local.tipAmount,
       total: _d(remote['total']) ?? local.total,
-      isOpen: !paid && status != 'cancelled' && status != 'returned',
-      updatedAt: DateTime.now(),
+      isOpen: isRemoteStillOpen(remote),
+      updatedAt: En1DateTimeService.nowUtc(),
     );
   }
 
   static Order orderFromRemote(Map<String, dynamic> remote, {String? localId}) {
-    final now = DateTime.now();
+    final now = En1DateTimeService.nowUtc();
     final id = remote['id']?.toString() ?? '';
-    final paid = remote['payment_status']?.toString() == 'paid' ||
-        remote['financially_closed'] == true;
     final status = remote['status']?.toString() ?? 'open';
     return Order(
       localId: localId ?? 'en1_order_$id',
@@ -138,13 +181,16 @@ class OrderMapper {
       discount: _d(remote['discount']) ?? 0,
       tipAmount: _d(remote['tip']) ?? 0,
       total: _d(remote['total']) ?? 0,
-      isOpen: !paid && status != 'cancelled' && status != 'returned',
+      isOpen: isRemoteStillOpen(remote),
     );
   }
 
-  static OrderItem itemFromRemote(Map<String, dynamic> remote, String orderLocalId) {
-    final now = DateTime.now();
-    final lineRef = remote['line_ref']?.toString() ?? remote['id']?.toString() ?? now.microsecondsSinceEpoch.toString();
+  static OrderItem itemFromRemote(
+      Map<String, dynamic> remote, String orderLocalId) {
+    final now = En1DateTimeService.nowUtc();
+    final lineRef = remote['line_ref']?.toString() ??
+        remote['id']?.toString() ??
+        now.microsecondsSinceEpoch.toString();
     final productRef = remote['product_ref']?.toString() ?? '';
     return OrderItem(
       localId: '${orderLocalId}_$lineRef',
@@ -181,6 +227,8 @@ class OrderMapper {
 
   static DateTime? _dt(dynamic v) {
     if (v == null) return null;
-    return DateTime.tryParse(v.toString());
+    final parsed = DateTime.tryParse(v.toString());
+    if (parsed == null) return null;
+    return En1DateTimeService.ensureUtc(parsed);
   }
 }

@@ -1,5 +1,6 @@
 import 'package:isar/isar.dart';
 import 'package:eposone/src/core/entities/sync_entity.dart';
+import 'package:eposone/src/core/time/en1_date_time_service.dart';
 
 part 'order_payment.g.dart';
 
@@ -36,20 +37,20 @@ class OrderPayment extends SyncEntity {
 
   @override
   OrderPayment markAsModified() =>
-      copyWith(syncStatus: SyncStatus.modified, updatedAt: DateTime.now());
+      copyWith(syncStatus: SyncStatus.modified, updatedAt: En1DateTimeService.nowUtc());
 
   @override
   OrderPayment markAsSynced(String serverId) => copyWith(
         serverId: serverId,
         syncStatus: SyncStatus.synced,
-        updatedAt: DateTime.now(),
+        updatedAt: En1DateTimeService.nowUtc(),
       );
 
   @override
   OrderPayment markAsDeleted() => copyWith(
-        deletedAt: DateTime.now(),
+        deletedAt: En1DateTimeService.nowUtc(),
         syncStatus: SyncStatus.modified,
-        updatedAt: DateTime.now(),
+        updatedAt: En1DateTimeService.nowUtc(),
       );
 
   OrderPayment copyWith({
@@ -91,7 +92,7 @@ class OrderPayment extends SyncEntity {
     String? notes,
     bool isPartial = false,
   }) {
-    final now = DateTime.now();
+    final now = En1DateTimeService.nowUtc();
     return OrderPayment(
       localId: '${orderLocalId}_pay_${now.microsecondsSinceEpoch}',
       createdAt: now,

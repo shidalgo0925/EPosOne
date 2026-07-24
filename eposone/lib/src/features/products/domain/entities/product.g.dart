@@ -52,79 +52,84 @@ const ProductSchema = CollectionSchema(
       name: r'description',
       type: IsarType.string,
     ),
-    r'imagePath': PropertySchema(
+    r'fiscalCategoryCode': PropertySchema(
       id: 7,
+      name: r'fiscalCategoryCode',
+      type: IsarType.string,
+    ),
+    r'imagePath': PropertySchema(
+      id: 8,
       name: r'imagePath',
       type: IsarType.string,
     ),
     r'isActive': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'isActive',
       type: IsarType.bool,
     ),
     r'isDeleted': PropertySchema(
-      id: 9,
+      id: 10,
       name: r'isDeleted',
       type: IsarType.bool,
     ),
     r'isPendingSync': PropertySchema(
-      id: 10,
+      id: 11,
       name: r'isPendingSync',
       type: IsarType.bool,
     ),
     r'isSynced': PropertySchema(
-      id: 11,
+      id: 12,
       name: r'isSynced',
       type: IsarType.bool,
     ),
     r'localId': PropertySchema(
-      id: 12,
+      id: 13,
       name: r'localId',
       type: IsarType.string,
     ),
     r'marginPercent': PropertySchema(
-      id: 13,
+      id: 14,
       name: r'marginPercent',
       type: IsarType.double,
     ),
     r'minStockAlert': PropertySchema(
-      id: 14,
+      id: 15,
       name: r'minStockAlert',
       type: IsarType.double,
     ),
     r'name': PropertySchema(
-      id: 15,
+      id: 16,
       name: r'name',
       type: IsarType.string,
     ),
     r'price': PropertySchema(
-      id: 16,
+      id: 17,
       name: r'price',
       type: IsarType.double,
     ),
     r'serverId': PropertySchema(
-      id: 17,
+      id: 18,
       name: r'serverId',
       type: IsarType.string,
     ),
     r'sku': PropertySchema(
-      id: 18,
+      id: 19,
       name: r'sku',
       type: IsarType.string,
     ),
     r'stock': PropertySchema(
-      id: 19,
+      id: 20,
       name: r'stock',
       type: IsarType.double,
     ),
     r'syncStatus': PropertySchema(
-      id: 20,
+      id: 21,
       name: r'syncStatus',
       type: IsarType.byte,
       enumMap: _ProductsyncStatusEnumValueMap,
     ),
     r'updatedAt': PropertySchema(
-      id: 21,
+      id: 22,
       name: r'updatedAt',
       type: IsarType.dateTime,
     )
@@ -167,6 +172,7 @@ int _productEstimateSize(
       bytesCount += 3 + value.length * 3;
     }
   }
+  bytesCount += 3 + object.fiscalCategoryCode.length * 3;
   {
     final value = object.imagePath;
     if (value != null) {
@@ -203,21 +209,22 @@ void _productSerialize(
   writer.writeDateTime(offsets[4], object.createdAt);
   writer.writeDateTime(offsets[5], object.deletedAt);
   writer.writeString(offsets[6], object.description);
-  writer.writeString(offsets[7], object.imagePath);
-  writer.writeBool(offsets[8], object.isActive);
-  writer.writeBool(offsets[9], object.isDeleted);
-  writer.writeBool(offsets[10], object.isPendingSync);
-  writer.writeBool(offsets[11], object.isSynced);
-  writer.writeString(offsets[12], object.localId);
-  writer.writeDouble(offsets[13], object.marginPercent);
-  writer.writeDouble(offsets[14], object.minStockAlert);
-  writer.writeString(offsets[15], object.name);
-  writer.writeDouble(offsets[16], object.price);
-  writer.writeString(offsets[17], object.serverId);
-  writer.writeString(offsets[18], object.sku);
-  writer.writeDouble(offsets[19], object.stock);
-  writer.writeByte(offsets[20], object.syncStatus.index);
-  writer.writeDateTime(offsets[21], object.updatedAt);
+  writer.writeString(offsets[7], object.fiscalCategoryCode);
+  writer.writeString(offsets[8], object.imagePath);
+  writer.writeBool(offsets[9], object.isActive);
+  writer.writeBool(offsets[10], object.isDeleted);
+  writer.writeBool(offsets[11], object.isPendingSync);
+  writer.writeBool(offsets[12], object.isSynced);
+  writer.writeString(offsets[13], object.localId);
+  writer.writeDouble(offsets[14], object.marginPercent);
+  writer.writeDouble(offsets[15], object.minStockAlert);
+  writer.writeString(offsets[16], object.name);
+  writer.writeDouble(offsets[17], object.price);
+  writer.writeString(offsets[18], object.serverId);
+  writer.writeString(offsets[19], object.sku);
+  writer.writeDouble(offsets[20], object.stock);
+  writer.writeByte(offsets[21], object.syncStatus.index);
+  writer.writeDateTime(offsets[22], object.updatedAt);
 }
 
 Product _productDeserialize(
@@ -234,19 +241,20 @@ Product _productDeserialize(
     createdAt: reader.readDateTime(offsets[4]),
     deletedAt: reader.readDateTimeOrNull(offsets[5]),
     description: reader.readStringOrNull(offsets[6]),
-    imagePath: reader.readStringOrNull(offsets[7]),
-    isActive: reader.readBoolOrNull(offsets[8]) ?? true,
-    localId: reader.readString(offsets[12]),
-    minStockAlert: reader.readDoubleOrNull(offsets[14]),
-    name: reader.readString(offsets[15]),
-    price: reader.readDouble(offsets[16]),
-    serverId: reader.readStringOrNull(offsets[17]),
-    sku: reader.readStringOrNull(offsets[18]),
-    stock: reader.readDoubleOrNull(offsets[19]) ?? 0,
+    fiscalCategoryCode: reader.readStringOrNull(offsets[7]) ?? 'ITBMS_7',
+    imagePath: reader.readStringOrNull(offsets[8]),
+    isActive: reader.readBoolOrNull(offsets[9]) ?? true,
+    localId: reader.readString(offsets[13]),
+    minStockAlert: reader.readDoubleOrNull(offsets[15]),
+    name: reader.readString(offsets[16]),
+    price: reader.readDouble(offsets[17]),
+    serverId: reader.readStringOrNull(offsets[18]),
+    sku: reader.readStringOrNull(offsets[19]),
+    stock: reader.readDoubleOrNull(offsets[20]) ?? 0,
     syncStatus:
-        _ProductsyncStatusValueEnumMap[reader.readByteOrNull(offsets[20])] ??
+        _ProductsyncStatusValueEnumMap[reader.readByteOrNull(offsets[21])] ??
             SyncStatus.pending,
-    updatedAt: reader.readDateTime(offsets[21]),
+    updatedAt: reader.readDateTime(offsets[22]),
   );
   return object;
 }
@@ -273,35 +281,37 @@ P _productDeserializeProp<P>(
     case 6:
       return (reader.readStringOrNull(offset)) as P;
     case 7:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readStringOrNull(offset) ?? 'ITBMS_7') as P;
     case 8:
-      return (reader.readBoolOrNull(offset) ?? true) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 9:
-      return (reader.readBool(offset)) as P;
+      return (reader.readBoolOrNull(offset) ?? true) as P;
     case 10:
       return (reader.readBool(offset)) as P;
     case 11:
       return (reader.readBool(offset)) as P;
     case 12:
-      return (reader.readString(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 13:
-      return (reader.readDouble(offset)) as P;
-    case 14:
-      return (reader.readDoubleOrNull(offset)) as P;
-    case 15:
       return (reader.readString(offset)) as P;
-    case 16:
+    case 14:
       return (reader.readDouble(offset)) as P;
+    case 15:
+      return (reader.readDoubleOrNull(offset)) as P;
+    case 16:
+      return (reader.readString(offset)) as P;
     case 17:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDouble(offset)) as P;
     case 18:
       return (reader.readStringOrNull(offset)) as P;
     case 19:
-      return (reader.readDoubleOrNull(offset) ?? 0) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 20:
+      return (reader.readDoubleOrNull(offset) ?? 0) as P;
+    case 21:
       return (_ProductsyncStatusValueEnumMap[reader.readByteOrNull(offset)] ??
           SyncStatus.pending) as P;
-    case 21:
+    case 22:
       return (reader.readDateTime(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -1053,6 +1063,142 @@ extension ProductQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.greaterThan(
         property: r'description',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<Product, Product, QAfterFilterCondition>
+      fiscalCategoryCodeEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'fiscalCategoryCode',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Product, Product, QAfterFilterCondition>
+      fiscalCategoryCodeGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'fiscalCategoryCode',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Product, Product, QAfterFilterCondition>
+      fiscalCategoryCodeLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'fiscalCategoryCode',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Product, Product, QAfterFilterCondition>
+      fiscalCategoryCodeBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'fiscalCategoryCode',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Product, Product, QAfterFilterCondition>
+      fiscalCategoryCodeStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'fiscalCategoryCode',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Product, Product, QAfterFilterCondition>
+      fiscalCategoryCodeEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'fiscalCategoryCode',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Product, Product, QAfterFilterCondition>
+      fiscalCategoryCodeContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'fiscalCategoryCode',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Product, Product, QAfterFilterCondition>
+      fiscalCategoryCodeMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'fiscalCategoryCode',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Product, Product, QAfterFilterCondition>
+      fiscalCategoryCodeIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'fiscalCategoryCode',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<Product, Product, QAfterFilterCondition>
+      fiscalCategoryCodeIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'fiscalCategoryCode',
         value: '',
       ));
     });
@@ -2314,6 +2460,18 @@ extension ProductQuerySortBy on QueryBuilder<Product, Product, QSortBy> {
     });
   }
 
+  QueryBuilder<Product, Product, QAfterSortBy> sortByFiscalCategoryCode() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'fiscalCategoryCode', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Product, Product, QAfterSortBy> sortByFiscalCategoryCodeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'fiscalCategoryCode', Sort.desc);
+    });
+  }
+
   QueryBuilder<Product, Product, QAfterSortBy> sortByImagePath() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'imagePath', Sort.asc);
@@ -2581,6 +2739,18 @@ extension ProductQuerySortThenBy
     });
   }
 
+  QueryBuilder<Product, Product, QAfterSortBy> thenByFiscalCategoryCode() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'fiscalCategoryCode', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Product, Product, QAfterSortBy> thenByFiscalCategoryCodeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'fiscalCategoryCode', Sort.desc);
+    });
+  }
+
   QueryBuilder<Product, Product, QAfterSortBy> thenByImagePath() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'imagePath', Sort.asc);
@@ -2821,6 +2991,14 @@ extension ProductQueryWhereDistinct
     });
   }
 
+  QueryBuilder<Product, Product, QDistinct> distinctByFiscalCategoryCode(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'fiscalCategoryCode',
+          caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<Product, Product, QDistinct> distinctByImagePath(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -2964,6 +3142,12 @@ extension ProductQueryProperty
   QueryBuilder<Product, String?, QQueryOperations> descriptionProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'description');
+    });
+  }
+
+  QueryBuilder<Product, String, QQueryOperations> fiscalCategoryCodeProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'fiscalCategoryCode');
     });
   }
 

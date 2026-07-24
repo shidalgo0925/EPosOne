@@ -5,8 +5,11 @@ import 'package:intl/intl.dart';
 import 'package:eposone/src/core/database/database_provider.dart';
 import 'package:eposone/src/core/providers/business_config_provider.dart';
 import 'package:eposone/src/core/theme/eposone_theme.dart';
+import 'package:eposone/src/features/auth/presentation/screens/pin_screen.dart';
+import 'package:eposone/src/features/auth/presentation/utils/cashier_session_guard.dart';
 import 'package:eposone/src/features/platform/data/en1_bootstrap_repository.dart';
 import 'package:eposone/src/features/platform/domain/en1_bootstrap_models.dart';
+import 'package:eposone/src/features/pos/presentation/providers/open_ticket_provider.dart';
 import 'package:eposone/src/features/pos/presentation/providers/pos_page_provider.dart';
 import 'package:eposone/src/features/products/presentation/providers/product_provider.dart';
 import 'package:eposone/src/features/settings/data/repositories/business_config_repository.dart';
@@ -78,6 +81,7 @@ class _SyncSettingsScreenState extends ConsumerState<SyncSettingsScreen> {
       );
       ref.invalidate(businessConfigAsyncProvider);
       ref.invalidate(syncPendingCountProvider);
+      ref.invalidate(syncLatestErrorProvider);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Configuración EN1 guardada')));
       }
@@ -98,9 +102,13 @@ class _SyncSettingsScreenState extends ConsumerState<SyncSettingsScreen> {
     ref.invalidate(productsListProvider);
     ref.invalidate(categoriesListProvider);
     ref.invalidate(posPagesListProvider);
-    ref.invalidate(posPagesEnabledProvider);
     ref.invalidate(syncOperationsProvider);
     ref.invalidate(syncPendingCountProvider);
+    ref.invalidate(syncLatestErrorProvider);
+    ref.invalidate(loginCashiersProvider);
+    ref.invalidate(openTicketsListProvider);
+    ref.invalidate(openTicketsCountProvider);
+    ref.invalidate(availablePredefinedSlotsProvider);
   }
 
   Future<void> _syncNow() async {
@@ -147,14 +155,15 @@ class _SyncSettingsScreenState extends ConsumerState<SyncSettingsScreen> {
         onProgress: _onProgress,
       );
       _invalidateCatalogProviders();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(result.message),
-            backgroundColor: Colors.green.shade700,
-          ),
-        );
-      }
+      if (!mounted) return;
+      await enforceActiveEn1CashierSession(ref, context: context);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result.message),
+          backgroundColor: Colors.green.shade700,
+        ),
+      );
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -257,6 +266,37 @@ class _SyncSettingsScreenState extends ConsumerState<SyncSettingsScreen> {
                   loading: () => const SizedBox.shrink(),
                   error: (_, __) => const SizedBox.shrink(),
                 ),
+                ref.watch(syncLatestErrorProvider).when(
+                      data: (err) {
+                        if (err == null || err.isEmpty) {
+                          return const SizedBox.shrink();
+                        }
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Material(
+                            color: Colors.red.shade50,
+                            borderRadius: BorderRadius.circular(8),
+                            child: ListTile(
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 4,
+                              ),
+                              leading: Icon(Icons.error_outline,
+                                  color: Colors.red.shade700),
+                              title: Text(
+                                err,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.red.shade900,
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                      loading: () => const SizedBox.shrink(),
+                      error: (_, __) => const SizedBox.shrink(),
+                    ),
                 if (config?.en1LastSyncAt != null)
                   ListTile(
                     contentPadding: EdgeInsets.zero,

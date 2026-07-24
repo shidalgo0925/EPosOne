@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:eposone/src/core/providers/business_config_provider.dart';
 import 'package:eposone/src/core/theme/eposone_theme.dart';
+import 'package:eposone/src/core/time/en1_date_time_service.dart';
 import 'package:eposone/src/features/inventory/domain/entities/stock_adjustment.dart';
 import 'package:eposone/src/features/inventory/presentation/providers/inventory_provider.dart';
 import 'package:eposone/src/features/inventory/presentation/widgets/stock_adjust_sheet.dart';
@@ -118,7 +118,6 @@ class _HistoryTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final historyAsync = ref.watch(stockAdjustmentsHistoryProvider);
-    final dateFmt = DateFormat('dd/MM HH:mm');
 
     return historyAsync.when(
       data: (items) {
@@ -138,7 +137,7 @@ class _HistoryTab extends ConsumerWidget {
             return ListTile(
               title: Text(adj.productName, maxLines: 1, overflow: TextOverflow.ellipsis),
               subtitle: Text(
-                '${stockAdjustmentTypeLabel(adj.type)} · ${dateFmt.format(adj.adjustmentDate)}'
+                '${stockAdjustmentTypeLabel(adj.type)} · ${En1DateTimeService.formatLocal(adj.adjustmentDate, 'dd/MM HH:mm')}'
                 '${adj.cashierName != null ? ' · ${adj.cashierName}' : ''}',
               ),
               trailing: Column(

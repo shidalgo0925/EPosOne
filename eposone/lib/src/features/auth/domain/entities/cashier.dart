@@ -1,4 +1,5 @@
 import 'package:isar/isar.dart';
+import 'package:uuid/uuid.dart';
 import 'package:eposone/src/core/entities/sync_entity.dart';
 
 part 'cashier.g.dart';
@@ -29,15 +30,20 @@ class Cashier extends SyncEntity {
   });
 
   @override
-  Cashier markAsModified() => copyWith(syncStatus: SyncStatus.modified, updatedAt: DateTime.now());
+  Cashier markAsModified() =>
+      copyWith(syncStatus: SyncStatus.modified, updatedAt: DateTime.now());
 
   @override
-  Cashier markAsSynced(String serverId) =>
-      copyWith(serverId: serverId, syncStatus: SyncStatus.synced, updatedAt: DateTime.now());
+  Cashier markAsSynced(String serverId) => copyWith(
+      serverId: serverId,
+      syncStatus: SyncStatus.synced,
+      updatedAt: DateTime.now());
 
   @override
-  Cashier markAsDeleted() =>
-      copyWith(deletedAt: DateTime.now(), syncStatus: SyncStatus.modified, updatedAt: DateTime.now());
+  Cashier markAsDeleted() => copyWith(
+      deletedAt: DateTime.now(),
+      syncStatus: SyncStatus.modified,
+      updatedAt: DateTime.now());
 
   Cashier copyWith({
     String? localId,
@@ -68,13 +74,15 @@ class Cashier extends SyncEntity {
     required String name,
     required String pinHash,
     CashierRole role = CashierRole.cashier,
-  }) =>
-      Cashier(
-        localId: DateTime.now().millisecondsSinceEpoch.toString(),
-        name: name,
-        pinHash: pinHash,
-        role: role,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      );
+  }) {
+    final now = DateTime.now();
+    return Cashier(
+      localId: const Uuid().v4(),
+      name: name,
+      pinHash: pinHash,
+      role: role,
+      createdAt: now,
+      updatedAt: now,
+    );
+  }
 }

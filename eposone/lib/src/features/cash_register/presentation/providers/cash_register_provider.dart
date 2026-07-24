@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:eposone/src/core/database/database_provider.dart';
 import 'package:eposone/src/core/session/pos_session.dart';
+import 'package:eposone/src/features/cash_register/data/cash_shift_sync_service.dart';
 import 'package:eposone/src/features/cash_register/data/repositories/cash_movement_repository.dart';
 import 'package:eposone/src/features/cash_register/data/repositories/cash_register_repository.dart';
 import 'package:eposone/src/features/cash_register/domain/entities/cash_movement.dart';
@@ -8,6 +9,8 @@ import 'package:eposone/src/features/cash_register/domain/entities/cash_register
 import 'package:eposone/src/features/cash_register/domain/shift_summary.dart';
 import 'package:eposone/src/features/sales/data/repositories/sale_repository.dart';
 import 'package:eposone/src/features/sales/domain/entities/sale.dart';
+import 'package:eposone/src/features/settings/data/repositories/business_config_repository.dart';
+import 'package:eposone/src/features/sync/data/repositories/sync_repository.dart';
 
 final currentCashRegisterProvider = FutureProvider<CashRegister?>((ref) async {
   final isar = await ref.read(databaseProvider.future);
@@ -54,13 +57,28 @@ final cashMovementsProvider = FutureProvider.family<List<CashMovement>, String>(
 });
 
 class CashRegisterNotifier extends StateNotifier<AsyncValue<void>> {
+  final Ref _ref;
   final CashRegisterRepository _repo;
-  CashRegisterNotifier(this._repo) : super(const AsyncValue.data(null));
 
-  Future<void> open(double openingAmount, {String? openedBy, String? notes}) async {
+  CashRegisterNotifier(this._ref, this._repo) : super(const AsyncValue.data(null));
+
+  Future<void> open(
+    double openingAmount, {
+    String? openedBy,
+    String? notes,
+    String? cashierId,
+    int? cashierContactId,
+  }) async {
     state = const AsyncValue.loading();
     try {
-      await _repo.openRegister(openingAmount, openedBy: openedBy, notes: notes);
+      final register = await _repo.openRegister(
+        openingAmount,
+        openedBy: openedBy,
+        notes: notes,
+        cashierId: cashierId,
+        cashierContactId: cashierContactId,
+      );
+      await _enqueueCashShiftSync(register.localId);
       state = const AsyncValue.data(null);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
@@ -83,9 +101,25 @@ class CashRegisterNotifier extends StateNotifier<AsyncValue<void>> {
         closedBy: closedBy,
         notes: notes,
       );
+      await _enqueueCashShiftSync(registerId);
       state = const AsyncValue.data(null);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
+    }
+  }
+
+  Future<void> _enqueueCashShiftSync(String registerLocalId) async {
+    final isar = await _ref.read(databaseProvider.future);
+    final config = await BusinessConfigRepository(isar).getConfig();
+    if (!config.isEn1SyncReady) return;
+
+    final sync = SyncRepository(isar);
+    final shiftSync = CashShiftSyncService(isar: isar, syncRepository: sync);
+    await shiftSync.enqueueIfReady(registerLocalId, config);
+    try {
+      await sync.runSyncCycle();
+    } catch (_) {
+      // Cola offline: se reintenta en "Sincronizar ahora".
     }
   }
 }
@@ -93,7 +127,7 @@ class CashRegisterNotifier extends StateNotifier<AsyncValue<void>> {
 final cashRegisterNotifierProvider = StateNotifierProvider<CashRegisterNotifier, AsyncValue<void>>((ref) {
   final dbAsync = ref.watch(databaseProvider);
   return dbAsync.when(
-    data: (isar) => CashRegisterNotifier(CashRegisterRepository(isar)),
+    data: (isar) => CashRegisterNotifier(ref, CashRegisterRepository(isar)),
     loading: () => throw StateError('Database not initialized'),
     error: (e, _) => throw StateError('Database error: $e'),
   );
@@ -103,7 +137,7 @@ class CashMovementActions {
   final Ref _ref;
   CashMovementActions(this._ref);
 
-  Future<void> addMovement({
+  Future<CashMovement> addMovement({
     required String cashRegisterId,
     required CashMovementType type,
     required double amount,
@@ -126,6 +160,7 @@ class CashMovementActions {
     );
     await CashMovementRepository(isar).save(movement);
     _invalidate(cashRegisterId);
+    return movement;
   }
 
   void _invalidate(String registerId) {

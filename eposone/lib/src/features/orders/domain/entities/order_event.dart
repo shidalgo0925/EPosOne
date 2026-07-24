@@ -1,5 +1,6 @@
 import 'package:isar/isar.dart';
 import 'package:eposone/src/core/entities/sync_entity.dart';
+import 'package:eposone/src/core/time/en1_date_time_service.dart';
 import 'package:uuid/uuid.dart';
 
 part 'order_event.g.dart';
@@ -34,21 +35,21 @@ class OrderEvent extends SyncEntity {
 
   @override
   OrderEvent markAsModified() =>
-      copyWith(syncStatus: SyncStatus.modified, updatedAt: DateTime.now());
+      copyWith(syncStatus: SyncStatus.modified, updatedAt: En1DateTimeService.nowUtc());
 
   @override
   OrderEvent markAsSynced(String serverId) => copyWith(
         serverId: serverId,
         syncStatus: SyncStatus.synced,
         syncedToEn1: true,
-        updatedAt: DateTime.now(),
+        updatedAt: En1DateTimeService.nowUtc(),
       );
 
   @override
   OrderEvent markAsDeleted() => copyWith(
-        deletedAt: DateTime.now(),
+        deletedAt: En1DateTimeService.nowUtc(),
         syncStatus: SyncStatus.modified,
-        updatedAt: DateTime.now(),
+        updatedAt: En1DateTimeService.nowUtc(),
       );
 
   OrderEvent copyWith({
@@ -87,7 +88,7 @@ class OrderEvent extends SyncEntity {
     String? payloadJson,
     String? eventId,
   }) {
-    final now = DateTime.now();
+    final now = En1DateTimeService.nowUtc();
     return OrderEvent(
       localId: eventId ?? const Uuid().v4(),
       createdAt: now,

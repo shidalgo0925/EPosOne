@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:eposone/src/core/providers/business_config_provider.dart';
 import 'package:eposone/src/core/utils/view_insets.dart';
+import 'package:eposone/src/features/commercial_engine/commercial_engine.dart';
 import 'package:eposone/src/features/pos/presentation/providers/cart_provider.dart';
 import 'package:eposone/src/features/pos/presentation/providers/pos_provider.dart';
 import 'package:eposone/src/features/pos/presentation/providers/split_bill_provider.dart';
@@ -14,7 +15,8 @@ class SplitBillScreen extends ConsumerStatefulWidget {
   ConsumerState<SplitBillScreen> createState() => _SplitBillScreenState();
 }
 
-class _SplitBillScreenState extends ConsumerState<SplitBillScreen> with SingleTickerProviderStateMixin {
+class _SplitBillScreenState extends ConsumerState<SplitBillScreen>
+    with SingleTickerProviderStateMixin {
   late final TabController _tabs;
   final _selectedIds = <String>{};
   int _equalParts = 2;
@@ -36,8 +38,7 @@ class _SplitBillScreenState extends ConsumerState<SplitBillScreen> with SingleTi
     final cart = ref.watch(cartProvider);
     final config = ref.watch(businessConfigProvider);
     final symbol = config?.currencySymbol ?? 'B/.';
-    final taxRate = config?.taxRate ?? 0;
-    final taxIncluded = config?.taxIncluded ?? false;
+    final engine = ref.watch(commercialEngineProvider);
 
     if (cart.items.isEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -46,13 +47,27 @@ class _SplitBillScreenState extends ConsumerState<SplitBillScreen> with SingleTi
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    final selectedItems = cart.items.where((i) => _selectedIds.contains(i.id)).toList();
+    final selectedItems =
+        cart.items.where((i) => _selectedIds.contains(i.id)).toList();
     final selectedTotals = selectedItems.isEmpty
-        ? const SaleTotals(subtotal: 0, discount: 0, taxAmount: 0, total: 0)
-        : calculateTotalsForItems(selectedItems, cart, taxRate: taxRate, taxIncluded: taxIncluded);
+        ? const CalculationResult(
+            subtotal: 0,
+            discounts: 0,
+            promotions: 0,
+            taxes: 0,
+            tips: 0,
+            rounding: 0,
+            total: 0,
+          )
+        : engine.calculateTotals(
+            commercialOrderFromCart(cart, itemsOverride: selectedItems),
+          );
 
-    final fullTotals = calculateTotalsForItems(cart.items, cart, taxRate: taxRate, taxIncluded: taxIncluded);
-    final perPartTotal = fullTotals.total / _equalParts;
+    final fullTotals = engine.calculateTotals(commercialOrderFromCart(cart));
+    final firstPartItems = equalSplitPartItems(cart.items, 1, _equalParts);
+    final firstPartTotals = engine.calculateTotals(
+      commercialOrderFromCart(cart, itemsOverride: firstPartItems),
+    );
 
     return Scaffold(
       appBar: AppBar(
@@ -73,6 +88,7 @@ class _SplitBillScreenState extends ConsumerState<SplitBillScreen> with SingleTi
             symbol: symbol,
             selectedIds: _selectedIds,
             selectedTotals: selectedTotals,
+            fullTotals: fullTotals,
             onToggle: (id, selected) => setState(() {
               if (selected) {
                 _selectedIds.add(id);
@@ -90,7 +106,7 @@ class _SplitBillScreenState extends ConsumerState<SplitBillScreen> with SingleTi
           _EqualSplitTab(
             symbol: symbol,
             parts: _equalParts,
-            perPartTotal: perPartTotal,
+            perPartTotal: firstPartTotals.total,
             fullTotal: fullTotals.total,
             onPartsChanged: (n) => setState(() => _equalParts = n),
           ),
@@ -101,9 +117,13 @@ class _SplitBillScreenState extends ConsumerState<SplitBillScreen> with SingleTi
         child: SizedBox(
           height: 52,
           child: FilledButton.icon(
-            onPressed: _tabs.index == 0 && _selectedIds.isEmpty ? null : () => _startPayment(cart),
+            onPressed: _tabs.index == 0 && _selectedIds.isEmpty
+                ? null
+                : () => _startPayment(cart),
             icon: const Icon(Icons.payments),
-            label: Text(_tabs.index == 0 ? 'Cobrar selección' : 'Cobrar parte 1 de $_equalParts'),
+            label: Text(_tabs.index == 0
+                ? 'Cobrar selección'
+                : 'Cobrar parte 1 de $_equalParts'),
           ),
         ),
       ),
@@ -120,7 +140,9 @@ class _SplitBillScreenState extends ConsumerState<SplitBillScreen> with SingleTi
       }
       ref.read(splitBillProvider.notifier).setSelectedItems(_selectedIds);
     } else {
-      ref.read(splitBillProvider.notifier).startEqualSplit(cart.items, _equalParts);
+      ref
+          .read(splitBillProvider.notifier)
+          .startEqualSplit(cart.items, _equalParts);
     }
     context.push('/payment');
   }
@@ -130,7 +152,8 @@ class _ItemsSplitTab extends StatelessWidget {
   final CartState cart;
   final String symbol;
   final Set<String> selectedIds;
-  final SaleTotals selectedTotals;
+  final CalculationResult selectedTotals;
+  final CalculationResult fullTotals;
   final void Function(String id, bool selected) onToggle;
   final VoidCallback onSelectAll;
   final VoidCallback onClear;
@@ -140,6 +163,7 @@ class _ItemsSplitTab extends StatelessWidget {
     required this.symbol,
     required this.selectedIds,
     required this.selectedTotals,
+    required this.fullTotals,
     required this.onToggle,
     required this.onSelectAll,
     required this.onClear,
@@ -175,12 +199,13 @@ class _ItemsSplitTab extends StatelessWidget {
                 child: CheckboxListTile(
                   value: selected,
                   onChanged: (v) => onToggle(item.id, v ?? false),
-                  title: Text(item.product.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+                  title: Text(item.product.name,
+                      style: const TextStyle(fontWeight: FontWeight.w600)),
                   subtitle: Text(
                     '${item.quantity.toStringAsFixed(item.quantity % 1 == 0 ? 0 : 1)} x $symbol${item.unitPrice.toStringAsFixed(2)}',
                   ),
                   secondary: Text(
-                    '$symbol${item.total.toStringAsFixed(2)}',
+                    '$symbol${fullTotals.lineTotal(item.id).toStringAsFixed(2)}',
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
@@ -216,14 +241,21 @@ class _EqualSplitTab extends StatelessWidget {
         children: [
           Text(
             'Total del ticket',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.grey),
+            style: Theme.of(context)
+                .textTheme
+                .titleMedium
+                ?.copyWith(color: Colors.grey),
           ),
           Text(
             '$symbol${fullTotal.toStringAsFixed(2)}',
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
+            style: Theme.of(context)
+                .textTheme
+                .headlineMedium
+                ?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 32),
-          Text('Número de partes', style: Theme.of(context).textTheme.titleMedium),
+          Text('Número de partes',
+              style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 16),
           Wrap(
             spacing: 8,
@@ -243,7 +275,10 @@ class _EqualSplitTab extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.4),
+              color: Theme.of(context)
+                  .colorScheme
+                  .primaryContainer
+                  .withOpacity(0.4),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Column(
@@ -252,7 +287,10 @@ class _EqualSplitTab extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(
                   '$symbol${perPartTotal.toStringAsFixed(2)}',
-                  style: Theme.of(context).textTheme.displaySmall?.copyWith(fontWeight: FontWeight.bold),
+                  style: Theme.of(context)
+                      .textTheme
+                      .displaySmall
+                      ?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
                 Text(

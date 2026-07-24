@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
+import 'package:eposone/src/core/printing/receipt_document_service.dart';
 import 'package:eposone/src/core/providers/business_config_provider.dart';
+import 'package:eposone/src/core/time/en1_date_time_service.dart';
 import 'package:eposone/src/features/cash_register/domain/entities/cash_movement.dart';
 import 'package:eposone/src/features/cash_register/presentation/providers/cash_register_provider.dart';
 
@@ -13,7 +14,6 @@ class TreasuryScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final registerAsync = ref.watch(currentCashRegisterProvider);
     final symbol = ref.watch(businessConfigProvider)?.currencySymbol ?? 'B/.';
-    final dateFmt = DateFormat('dd/MM HH:mm');
 
     return Scaffold(
       appBar: AppBar(title: const Text('Tesorería')),
@@ -67,7 +67,7 @@ class TreasuryScreen extends ConsumerWidget {
                       ),
                       title: Text(m.reason, style: const TextStyle(fontWeight: FontWeight.w600)),
                       subtitle: Text(
-                        '${cashMovementTypeLabel(m.type)} · ${dateFmt.format(m.movementDate)}'
+                        '${cashMovementTypeLabel(m.type)} · ${En1DateTimeService.formatLocal(m.movementDate, 'dd/MM HH:mm')}'
                         '${m.cashierName != null ? ' · ${m.cashierName}' : ''}',
                       ),
                       trailing: Text(
@@ -146,7 +146,7 @@ class TreasuryScreen extends ConsumerWidget {
     if (ok != true) return;
 
     try {
-      await ref.read(cashMovementActionsProvider).addMovement(
+      final movement = await ref.read(cashMovementActionsProvider).addMovement(
             cashRegisterId: registerId,
             type: type,
             amount: double.tryParse(amountCtrl.text) ?? 0,
@@ -154,9 +154,19 @@ class TreasuryScreen extends ConsumerWidget {
             notes: notesCtrl.text,
           );
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Movimiento registrado')),
+        final config = ref.read(businessConfigProvider);
+        final symbol = config?.currencySymbol ?? 'B/.';
+        await ReceiptDocumentService.printCashMovement(
+          context: context,
+          config: config,
+          movement: movement,
+          symbol: symbol,
         );
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Movimiento registrado')),
+          );
+        }
       }
     } catch (e) {
       if (context.mounted) {

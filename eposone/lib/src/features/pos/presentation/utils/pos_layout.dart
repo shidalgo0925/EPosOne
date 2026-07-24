@@ -7,12 +7,11 @@ abstract final class PosLayout {
   static bool isTablet(BuildContext context) =>
       MediaQuery.sizeOf(context).shortestSide >= 600;
 
-  /// Columnas del grid — densidad estilo Loyverse (5–6 en tablet landscape).
+  /// Columnas del grid — más densas en tablet (menos aire entre tiles).
   static int gridColumns(double catalogWidth) {
-    if (catalogWidth >= 1100) return 6;
-    if (catalogWidth >= 880) return 5;
-    if (catalogWidth >= 680) return 4;
-    if (catalogWidth >= 480) return 3;
+    if (catalogWidth >= 1100) return 5;
+    if (catalogWidth >= 700) return 4;
+    if (catalogWidth >= 460) return 3;
     return 2;
   }
 

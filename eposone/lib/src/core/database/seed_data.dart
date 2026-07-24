@@ -1,17 +1,12 @@
 import 'package:isar/isar.dart';
-import 'package:eposone/src/core/database/istmo_catalog_images.dart';
 import 'package:eposone/src/core/database/istmo_seed_data.dart';
 
-/// Carga el catálogo Istmo (borra catálogo previo si existe).
+/// Carga manual del catálogo Istmo (solo para demos / desarrollo).
+/// No se llama en instalación ni onboarding: el catálogo operativo viene de EN1.
 Future<void> seedClientCatalog(Isar isar) => seedIstmoCatalog(isar);
 
-/// Al abrir la app: migra demo/legacy → catálogo Istmo si hace falta.
+/// Al abrir la app: sin catálogo precargado.
+/// Productos, categorías y páginas Comida/Bar llegan con bootstrap EN1.
 Future<void> seedTestData(Isar isar) async {
-  if (await needsIstmoCatalog(isar)) {
-    await seedIstmoCatalog(isar);
-    return;
-  }
-  if (await needsIstmoImages(isar)) {
-    await attachIstmoProductImages(isar);
-  }
+  // Intencionalmente vacío: instalación limpia.
 }

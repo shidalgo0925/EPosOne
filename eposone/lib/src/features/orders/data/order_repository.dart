@@ -1,5 +1,6 @@
 import 'package:isar/isar.dart';
 import 'package:eposone/src/core/entities/sync_entity.dart';
+import 'package:eposone/src/features/commercial_engine/commercial_engine.dart';
 import 'package:eposone/src/features/orders/domain/entities/order.dart';
 import 'package:eposone/src/features/orders/domain/entities/order_event.dart';
 import 'package:eposone/src/features/orders/domain/entities/order_item.dart';
@@ -7,9 +8,13 @@ import 'package:eposone/src/features/orders/domain/entities/order_payment.dart';
 
 /// Persistencia local del Pedido (Isar). Sin I/O HTTP.
 class OrderRepository {
-  OrderRepository(this._isar);
+  OrderRepository(
+    this._isar, {
+    required CommercialEngineFacade commercialEngine,
+  }) : _commercialEngine = commercialEngine;
 
   final Isar _isar;
+  final CommercialEngineFacade _commercialEngine;
 
   Future<List<Order>> listOpen() async {
     final all = await _isar.orders.filter().isDeletedEqualTo(false).findAll();
@@ -34,7 +39,11 @@ class OrderRepository {
   }
 
   Future<int> countDirty() async {
-    return _isar.orders.filter().isDeletedEqualTo(false).dirtyEqualTo(true).count();
+    return _isar.orders
+        .filter()
+        .isDeletedEqualTo(false)
+        .dirtyEqualTo(true)
+        .count();
   }
 
   Future<Order?> getByLocalId(String localId) =>
@@ -102,6 +111,7 @@ class OrderRepository {
     OrderEvent? event,
     List<OrderEvent>? events,
     OrderPayment? payment,
+    List<OrderPayment>? payments,
   }) async {
     await _isar.writeTxn(() async {
       await _isar.orders.put(order);
@@ -117,6 +127,11 @@ class OrderRepository {
         }
       }
       if (payment != null) await _isar.orderPayments.put(payment);
+      if (payments != null) {
+        for (final p in payments) {
+          await _isar.orderPayments.put(p);
+        }
+      }
     });
   }
 
@@ -124,16 +139,28 @@ class OrderRepository {
     final order = await getByLocalId(orderLocalId);
     if (order == null) return;
     final items = await itemsOf(orderLocalId);
-    final subtotal = items.fold<double>(0, (s, i) => s + (i.unitPrice * i.quantity));
-    final discount = items.fold<double>(0, (s, i) => s + i.discount);
-    final tax = items.fold<double>(0, (s, i) => s + i.taxAmount);
-    final total = subtotal - discount + tax + order.tipAmount;
+    final result = _commercialEngine.calculateTotals(
+      CommercialOrderInput(
+        lines: [
+          for (final item in items)
+            CommercialLineInput(
+              lineId: item.localId,
+              productId: item.productLocalId,
+              quantity: item.quantity,
+              unitPrice: item.unitPrice,
+              lineDiscount: item.discount,
+              precalculatedTaxAmount: item.taxAmount,
+            ),
+        ],
+        tipAmount: order.tipAmount,
+      ),
+    );
     await putOrder(
       order.copyWith(
-        subtotal: subtotal,
-        discount: discount,
-        taxAmount: tax,
-        total: total,
+        subtotal: result.subtotal,
+        discount: result.discount,
+        taxAmount: result.taxAmount,
+        total: result.total,
         syncStatus: SyncStatus.modified,
         updatedAt: DateTime.now(),
       ),

@@ -10,7 +10,8 @@ Future<bool> confirmDiscardCartIfNeeded(
 }) async {
   final cart = ref.read(cartProvider);
   if (cart.items.isEmpty) return true;
-  if (openingTicketId != null && cart.openTicketId == openingTicketId) return true;
+  if (openingTicketId != null && cart.openTicketId == openingTicketId)
+    return true;
 
   final result = await showDialog<bool>(
     context: context,
@@ -21,7 +22,9 @@ Future<bool> confirmDiscardCartIfNeeded(
         '¿Descartarlos y continuar?',
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+        TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar')),
         FilledButton(
           onPressed: () => Navigator.pop(ctx, true),
           style: FilledButton.styleFrom(backgroundColor: Colors.red),
