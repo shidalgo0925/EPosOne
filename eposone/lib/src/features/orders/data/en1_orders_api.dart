@@ -3,8 +3,8 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:eposone/src/features/orders/data/order_sync_diag.dart';
+import 'package:eposone/src/features/platform/data/en1_device_credentials.dart';
 import 'package:eposone/src/features/platform/data/en1_provisioning_api.dart';
-import 'package:eposone/src/features/platform/data/provisioning_store.dart';
 import 'package:eposone/src/features/settings/domain/entities/business_config.dart';
 
 /// Cliente HTTP Order Domain — contrato Hito 3B congelado.
@@ -21,25 +21,19 @@ class En1OrdersApi {
     String? accessToken,
     BusinessConfig? config,
   }) async {
-    final provisioned = await ProvisioningStore.loadConfig();
-    final base = (apiBaseUrl ??
-            config?.en1ApiUrl ??
-            provisioned?.apiBaseUrl ??
-            '')
-        .trim();
-    final token = (accessToken ??
-            config?.en1ApiToken ??
-            provisioned?.accessToken ??
-            '')
-        .trim();
-    if (base.isEmpty || token.isEmpty) {
+    final c = await En1DeviceCredentials.resolve(
+      apiBaseUrl: apiBaseUrl,
+      accessToken: accessToken,
+      config: config,
+    );
+    if (c.base.isEmpty || c.token.isEmpty) {
       throw En1OrdersException(
         code: 'unauthorized',
         message: 'Sin Device Token / URL. Provisiona el dispositivo (Hito 1).',
         statusCode: 401,
       );
     }
-    return (base: _normalizeBase(base), token: token);
+    return c;
   }
 
   Future<Map<String, dynamic>> createOrder(
@@ -258,18 +252,16 @@ class En1OrdersApi {
         message = code;
       }
     } catch (_) {}
+    if (code == 'installation_incomplete') {
+      message =
+          'installation_incomplete — completa bootstrap EN1 (Descargar catálogo) y reintenta';
+    }
     return En1OrdersException(
       code: code,
       message: message,
       statusCode: status,
       technicalDetail: '${uri.path} $text',
     );
-  }
-
-  String _normalizeBase(String url) {
-    var b = url.trim();
-    if (b.endsWith('/')) b = b.substring(0, b.length - 1);
-    return b;
   }
 }
 

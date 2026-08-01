@@ -8,6 +8,7 @@ import 'package:eposone/src/core/theme/eposone_theme.dart';
 import 'package:eposone/src/features/auth/presentation/screens/pin_screen.dart';
 import 'package:eposone/src/features/auth/presentation/utils/cashier_session_guard.dart';
 import 'package:eposone/src/features/platform/data/en1_bootstrap_repository.dart';
+import 'package:eposone/src/features/platform/data/en1_device_credentials.dart';
 import 'package:eposone/src/features/platform/domain/en1_bootstrap_models.dart';
 import 'package:eposone/src/features/pos/presentation/providers/open_ticket_provider.dart';
 import 'package:eposone/src/features/pos/presentation/providers/pos_page_provider.dart';
@@ -45,7 +46,13 @@ class _SyncSettingsScreenState extends ConsumerState<SyncSettingsScreen> {
   }
 
   Future<void> _load() async {
-    final config = await ref.read(businessConfigRepositoryProvider).getConfig();
+    final raw = await ref.read(businessConfigRepositoryProvider).getConfig();
+    final config = await En1DeviceCredentials.alignBusinessConfig(raw);
+    if (config.en1ApiToken != raw.en1ApiToken ||
+        config.en1ApiUrl != raw.en1ApiUrl ||
+        config.en1BranchId != raw.en1BranchId) {
+      await ref.read(businessConfigRepositoryProvider).saveConfig(config);
+    }
     if (!mounted) return;
     setState(() {
       _enabled = config.en1SyncEnabled;

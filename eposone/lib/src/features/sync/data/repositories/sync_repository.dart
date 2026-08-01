@@ -7,6 +7,9 @@ import 'package:eposone/src/features/licensing/domain/license_service.dart';
 import 'package:eposone/src/features/orders/data/order_repository.dart';
 import 'package:eposone/src/features/orders/data/order_service.dart';
 import 'package:eposone/src/features/platform/data/en1_bootstrap_repository.dart';
+import 'package:eposone/src/features/platform/data/en1_device_credentials.dart';
+import 'package:eposone/src/features/platform/data/installation_lifecycle.dart';
+import 'package:eposone/src/features/platform/data/provisioning_store.dart';
 import 'package:eposone/src/features/platform/domain/en1_bootstrap_models.dart';
 import 'package:eposone/src/features/pos/data/repositories/open_ticket_repository.dart';
 import 'package:eposone/src/features/settings/data/repositories/business_config_repository.dart';
@@ -130,12 +133,30 @@ class SyncRepository {
     En1BootstrapProgressCallback? onProgress,
   }) async {
     final configRepo = BusinessConfigRepository(_isar);
-    final config = await configRepo.getConfig();
+    var config = await configRepo.getConfig();
     if (!config.isEn1SyncReady) {
       throw StateError('Sincronización EN1 no configurada');
     }
 
+    // Device Token del provisioning gana sobre token manual en EN1 Cloud.
+    final aligned = await En1DeviceCredentials.alignBusinessConfig(config);
+    if (aligned.en1ApiToken != config.en1ApiToken ||
+        aligned.en1ApiUrl != config.en1ApiUrl ||
+        aligned.en1BranchId != config.en1BranchId) {
+      await configRepo.saveConfig(aligned);
+      config = aligned;
+    }
+
     await discardSalePushOps();
+
+    // ADR-014: si el device está provisionado, bootstrap antes de push operativo.
+    final provisioned = await ProvisioningStore.isProvisioned();
+    if (provisioned) {
+      config = await _ensureBootstrapForOperationalSync(
+        config,
+        onProgress: onProgress,
+      );
+    }
 
     if (ensureCatalogPull) {
       final pendingNow = await _pendingOperations();
@@ -162,6 +183,32 @@ class SyncRepository {
         await _processOperation(config, processing, onProgress: onProgress);
         succeeded++;
       } catch (e) {
+        // EN1: installation_incomplete → bootstrap y un reintento.
+        if (En1DeviceCredentials.isInstallationIncomplete(e) &&
+            op.entityKind != SyncEntityKind.catalogPull) {
+          try {
+            await _pullCatalog(config, onProgress: onProgress);
+            await _processOperation(config, processing, onProgress: onProgress);
+            succeeded++;
+            continue;
+          } catch (e2) {
+            failed++;
+            final status = processing.attemptCount >= maxAttempts
+                ? SyncOperationStatus.failed
+                : SyncOperationStatus.pending;
+            await _isar.writeTxn(
+              () => _isar.syncOperations.put(
+                processing.copyWith(
+                  operationStatus: status,
+                  errorMessage: e2.toString(),
+                  processedAt: DateTime.now(),
+                  updatedAt: DateTime.now(),
+                ),
+              ),
+            );
+            continue;
+          }
+        }
         failed++;
         final status = processing.attemptCount >= maxAttempts
             ? SyncOperationStatus.failed
@@ -205,6 +252,25 @@ class SyncRepository {
 
     return SyncRunResult(
         processed: pending.length, succeeded: succeeded, failed: failed);
+  }
+
+  /// Completa bootstrap si falta (ADR-014) antes de subir pedidos/turnos.
+  Future<BusinessConfig> _ensureBootstrapForOperationalSync(
+    BusinessConfig config, {
+    En1BootstrapProgressCallback? onProgress,
+  }) async {
+    if (await InstallationLifecycle.allowsPosOperation()) {
+      return config;
+    }
+    await InstallationLifecycle.onBootstrapStarted();
+    await _pullCatalog(config, onProgress: onProgress);
+    if (!await InstallationLifecycle.allowsPosOperation()) {
+      throw StateError(
+        'Instalación incompleta: el bootstrap EN1 no dejó el dispositivo listo. '
+        'Usa «Descargar catálogo EN1» y reintenta.',
+      );
+    }
+    return config;
   }
 
   Future<List<SyncOperation>> _pendingOperations() async {
@@ -281,9 +347,9 @@ class SyncRepository {
     BusinessConfig config, {
     En1BootstrapProgressCallback? onProgress,
   }) async {
+    // No forzar token de BusinessConfig: el repo usa Device Token provisionado.
     await En1BootstrapRepository(isar: _isar).runBootstrap(
       apiBaseUrl: config.en1ApiUrl,
-      accessToken: config.en1ApiToken,
       onProgress: onProgress,
       recordInSyncHistory: false,
     );
