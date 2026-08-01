@@ -6,6 +6,9 @@ import 'package:eposone/src/core/theme/eposone_theme.dart';
 import 'package:eposone/src/features/commercial_engine/commercial_engine.dart';
 import 'package:eposone/src/features/orders/data/order_sync_diag.dart';
 import 'package:eposone/src/features/orders/domain/entities/order.dart';
+import 'package:eposone/src/features/orders/domain/entities/order_event.dart';
+import 'package:eposone/src/features/orders/domain/order_event_audit.dart';
+import 'package:eposone/src/features/orders/domain/order_lifecycle.dart';
 import 'package:eposone/src/features/orders/presentation/providers/order_providers.dart';
 import 'package:eposone/src/features/orders/presentation/widgets/multi_tender_payment_dialog.dart';
 import 'package:eposone/src/features/sync/presentation/providers/sync_provider.dart';
@@ -168,6 +171,70 @@ class _OrderOperationScreenState extends ConsumerState<OrderOperationScreen> {
     }
   }
 
+  Future<void> _cancelOrder(Order o) async {
+    if (!OrderLifecycle.canCancel(o.lifecycleStatus)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'No se puede cancelar en estado ${OrderLifecycle.label(o.lifecycleStatus)}',
+          ),
+        ),
+      );
+      return;
+    }
+    final reasonCtrl = TextEditingController();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Cancelar pedido'),
+        content: TextField(
+          controller: reasonCtrl,
+          decoration: const InputDecoration(
+            labelText: 'Motivo',
+            border: OutlineInputBorder(),
+          ),
+          maxLines: 2,
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Volver')),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red.shade700),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Cancelar pedido'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) {
+      reasonCtrl.dispose();
+      return;
+    }
+    final reason = reasonCtrl.text.trim();
+    reasonCtrl.dispose();
+    if (reason.isEmpty) return;
+
+    setState(() {
+      _busy = true;
+      _status = 'Cancelando…';
+    });
+    try {
+      await ref.read(orderServiceProvider).cancelOrder(
+            orderLocalId: o.localId,
+            reason: reason,
+          );
+      ref.invalidate(localOrdersProvider);
+      ref.invalidate(syncPendingCountProvider);
+      setState(() => _status = 'Cancelado · evento pedido.anulado en cola/sync');
+    } catch (e) {
+      setState(() => _status = 'ERROR: $e');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final ordersAsync = ref.watch(localOrdersProvider);
@@ -264,30 +331,86 @@ class _OrderOperationScreenState extends ConsumerState<OrderOperationScreen> {
                   separatorBuilder: (_, __) => const Divider(height: 1),
                   itemBuilder: (_, i) {
                     final o = orders[i];
-                    return ListTile(
-                      title: Text(o.localNumber ?? o.localId),
-                      subtitle: Text(
-                        '${o.lifecycleStatus} · ${o.total.toStringAsFixed(2)}'
-                        '${o.serverId != null ? ' · EN1 #${o.serverId}' : ' · pendiente sync'}',
-                      ),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (o.isOpen)
-                            IconButton(
-                              tooltip: 'Agregar pago',
-                              onPressed: _busy ? null : () => _addPayment(o),
-                              icon: const Icon(Icons.payments_outlined),
-                            ),
-                          Icon(
-                            o.isOpen ? Icons.lock_open : Icons.lock,
-                            color: o.isOpen ? EposBrand.orange : Colors.green,
+                    final cancelled =
+                        OrderLifecycle.isCancelledLike(o.lifecycleStatus);
+                    final refunded = OrderLifecycle.normalize(o.lifecycleStatus) ==
+                            OrderLifecycle.refunded ||
+                        OrderLifecycle.normalize(o.lifecycleStatus) ==
+                            OrderLifecycle.returned;
+                    return FutureBuilder<List<OrderEvent>>(
+                      future: ref
+                          .read(orderServiceProvider)
+                          .eventsOf(o.localId),
+                      builder: (context, snap) {
+                        final events = snap.data ?? const <OrderEvent>[];
+                        OrderEvent? lastAdmin;
+                        for (var j = events.length - 1; j >= 0; j--) {
+                          final e = events[j];
+                          if (e.eventType == OrderEventTypes.voided ||
+                              e.eventType == OrderEventTypes.returned) {
+                            lastAdmin = e;
+                            break;
+                          }
+                        }
+                        final reason = OrderEventAudit.reasonFromPayload(
+                            lastAdmin?.payloadJson);
+                        final by = OrderEventAudit.createdByFromPayload(
+                                lastAdmin?.payloadJson) ??
+                            lastAdmin?.actorId;
+                        return ListTile(
+                          tileColor: cancelled
+                              ? Colors.red.withValues(alpha: 0.06)
+                              : null,
+                          title: Text(o.localNumber ?? o.localId),
+                          subtitle: Text(
+                            [
+                              OrderLifecycle.label(o.lifecycleStatus),
+                              o.total.toStringAsFixed(2),
+                              if (o.serverId != null) 'EN1 #${o.serverId}',
+                              if (o.serverId == null) 'pendiente sync',
+                              if (reason != null) 'Motivo: $reason',
+                              if (by != null) 'Por: $by',
+                            ].join(' · '),
                           ),
-                        ],
-                      ),
-                      onTap: _busy ? null : () => _syncOne(o),
-                      onLongPress:
-                          _busy || !o.isOpen ? null : () => _addPayment(o),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (o.isOpen &&
+                                  OrderLifecycle.canCancel(o.lifecycleStatus))
+                                IconButton(
+                                  tooltip: 'Cancelar pedido',
+                                  onPressed:
+                                      _busy ? null : () => _cancelOrder(o),
+                                  icon: const Icon(Icons.cancel_outlined,
+                                      color: Colors.red),
+                                ),
+                              if (o.isOpen)
+                                IconButton(
+                                  tooltip: 'Agregar pago',
+                                  onPressed:
+                                      _busy ? null : () => _addPayment(o),
+                                  icon: const Icon(Icons.payments_outlined),
+                                ),
+                              Icon(
+                                cancelled || refunded
+                                    ? Icons.block
+                                    : (o.isOpen
+                                        ? Icons.lock_open
+                                        : Icons.lock),
+                                color: cancelled
+                                    ? Colors.red
+                                    : (o.isOpen
+                                        ? EposBrand.orange
+                                        : Colors.green),
+                              ),
+                            ],
+                          ),
+                          onTap: _busy ? null : () => _syncOne(o),
+                          onLongPress: _busy || !o.isOpen
+                              ? null
+                              : () => _addPayment(o),
+                        );
+                      },
                     );
                   },
                 );

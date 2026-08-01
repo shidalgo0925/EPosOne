@@ -8,6 +8,7 @@ import 'package:eposone/src/features/commercial_engine/commercial_engine.dart';
 import 'package:eposone/src/features/auth/domain/cashier_display.dart';
 import 'package:eposone/src/features/auth/domain/entities/cashier.dart';
 import 'package:eposone/src/features/auth/presentation/utils/cashier_session_guard.dart';
+import 'package:eposone/src/features/platform/presentation/utils/installation_gate.dart';
 import 'package:eposone/src/features/pos/presentation/providers/cart_provider.dart';
 import 'package:eposone/src/features/pos/presentation/utils/save_open_ticket_flow.dart';
 import 'package:eposone/src/features/pos/presentation/widgets/pos_product_grid.dart';
@@ -54,8 +55,11 @@ class _PosScreenState extends ConsumerState<PosScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) PosLayout.lockLandscapeIfTablet(context);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      if (!await ensureInstallationReadyForPos(ref, context)) return;
+      if (!mounted) return;
+      PosLayout.lockLandscapeIfTablet(context);
       _maybeRepairEmptyEn1Pages();
       enforceActiveEn1CashierSession(ref, context: context);
     });

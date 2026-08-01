@@ -5,25 +5,29 @@ import 'package:eposone/src/features/auth/data/repositories/cashier_repository.d
 import 'package:eposone/src/features/cash_register/data/repositories/cash_register_repository.dart';
 import 'package:eposone/src/features/platform/data/device_registry.dart';
 import 'package:eposone/src/features/platform/data/en1_cashier_catalog_store.dart';
+import 'package:eposone/src/features/platform/data/installation_lifecycle.dart';
 import 'package:eposone/src/features/platform/data/platform_prefs.dart';
 import 'package:eposone/src/features/platform/data/provisioning_store.dart';
+import 'package:eposone/src/features/platform/domain/installation_lifecycle_state.dart';
 import 'package:eposone/src/features/platform/domain/platform_mode.dart';
 import 'package:eposone/src/features/settings/data/repositories/business_config_repository.dart';
 import 'package:eposone/src/features/settings/domain/entities/business_config.dart';
 
-enum StartupRoute { platformWelcome, onboarding, pin }
+enum StartupRoute { platformWelcome, bootstrap, onboarding, pin }
 
 class AppStartupState {
   final StartupRoute route;
   final BusinessConfig? config;
   final bool hasCashiers;
   final bool hasOpenRegister;
+  final InstallationLifecycleState lifecycle;
 
   const AppStartupState({
     required this.route,
     this.config,
     this.hasCashiers = false,
     this.hasOpenRegister = false,
+    this.lifecycle = InstallationLifecycleState.notProvisioned,
   });
 }
 
@@ -65,12 +69,34 @@ final appStartupProvider = FutureProvider<AppStartupState>((ref) async {
   }
 
   if (!platformDone) {
-    return AppStartupState(route: StartupRoute.platformWelcome, config: config);
+    return AppStartupState(
+      route: StartupRoute.platformWelcome,
+      config: config,
+      lifecycle: InstallationLifecycleState.notProvisioned,
+    );
+  }
+
+  // ADR-014: modo integrado sin bootstrap/licencia OK → pantalla bloqueante.
+  final lifecycle = await InstallationLifecycle.evaluate();
+  final mode = await PlatformPrefs.getMode();
+  final isPlatform = mode == PlatformMode.platform || provisioned;
+  if (isPlatform && lifecycle != InstallationLifecycleState.readyToOperate) {
+    return AppStartupState(
+      route: StartupRoute.bootstrap,
+      config: config,
+      hasCashiers: hasCashiers,
+      hasOpenRegister: openRegister != null,
+      lifecycle: lifecycle,
+    );
   }
 
   // Setup + cajeros locales o EN1 → PIN. Sin cajeros → onboarding.
   if (!config.isSetupComplete || !hasCashiers) {
-    return AppStartupState(route: StartupRoute.onboarding, config: config);
+    return AppStartupState(
+      route: StartupRoute.onboarding,
+      config: config,
+      lifecycle: lifecycle,
+    );
   }
 
   // El cajero se autentica antes de abrir o continuar turno.
@@ -80,5 +106,6 @@ final appStartupProvider = FutureProvider<AppStartupState>((ref) async {
     config: config,
     hasCashiers: true,
     hasOpenRegister: openRegister != null,
+    lifecycle: lifecycle,
   );
 });

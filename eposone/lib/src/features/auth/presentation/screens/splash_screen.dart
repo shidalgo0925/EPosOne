@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:eposone/src/core/session/pos_session.dart';
 import 'package:eposone/src/core/startup/app_startup.dart';
 import 'package:eposone/src/core/theme/eposone_theme.dart';
+import 'package:eposone/src/features/platform/data/installation_lifecycle.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -23,8 +24,17 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     await Future.delayed(const Duration(milliseconds: 1200));
     if (!mounted) return;
 
+    // ADR-014: sesión existente no bypasea bootstrap pendiente.
+    if (await InstallationLifecycle.requiresBlockingBootstrap()) {
+      ref.read(posSessionProvider.notifier).logout();
+      if (!mounted) return;
+      context.go('/platform/bootstrap');
+      return;
+    }
+
     final session = ref.read(posSessionProvider);
     if (session != null) {
+      if (!mounted) return;
       if (session.cashRegisterId != null) {
         context.go('/pos');
       } else {
@@ -39,6 +49,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     switch (startup.route) {
       case StartupRoute.platformWelcome:
         context.go('/platform/welcome');
+      case StartupRoute.bootstrap:
+        context.go('/platform/bootstrap');
       case StartupRoute.onboarding:
         context.go('/onboarding');
       case StartupRoute.pin:

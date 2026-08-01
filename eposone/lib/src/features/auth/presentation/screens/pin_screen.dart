@@ -14,6 +14,7 @@ import 'package:eposone/src/features/auth/domain/entities/cashier.dart';
 import 'package:eposone/src/features/cash_register/data/repositories/cash_register_repository.dart';
 import 'package:eposone/src/core/theme/eposone_theme.dart';
 import 'package:eposone/src/features/platform/data/en1_cashier_catalog_store.dart';
+import 'package:eposone/src/features/platform/presentation/utils/installation_gate.dart';
 import 'package:eposone/src/features/pos/presentation/utils/pos_layout.dart';
 
 /// Cajero seleccionable: EN1 o local.
@@ -86,7 +87,20 @@ class _PinScreenState extends ConsumerState<PinScreen> {
   int _failCount = 0;
   DateTime? _lockedUntil;
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      PosLayout.unlockOrientations();
+    });
+    Future.microtask(() async {
+      if (!mounted) return;
+      await ensureInstallationReadyForPos(ref, context);
+    });
+  }
+
   Future<void> _submit() async {
+    if (!await ensureInstallationReadyForPos(ref, context)) return;
     if (_lockedUntil != null && DateTime.now().isBefore(_lockedUntil!)) {
       final sec = _lockedUntil!.difference(DateTime.now()).inSeconds;
       setState(() => _error = 'Demasiados intentos. Espera ${sec}s');
@@ -262,13 +276,6 @@ class _PinScreenState extends ConsumerState<PinScreen> {
   }
 
   @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      PosLayout.unlockOrientations();
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     final config = ref.watch(businessConfigProvider);

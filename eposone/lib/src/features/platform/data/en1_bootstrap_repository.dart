@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:eposone/src/core/entities/sync_entity.dart';
 import 'package:eposone/src/features/platform/data/en1_bootstrap_api.dart';
 import 'package:eposone/src/features/platform/data/en1_cashier_catalog_store.dart';
+import 'package:eposone/src/features/platform/data/installation_lifecycle.dart';
 import 'package:eposone/src/features/platform/data/provisioning_store.dart';
 import 'package:eposone/src/features/platform/domain/en1_bootstrap_models.dart';
 import 'package:eposone/src/features/platform/domain/provisioning_config.dart';
@@ -347,6 +348,8 @@ class En1BootstrapRepository {
       if (meta.isNotEmpty) {
         await prefs.setString(_prefsMetaKey, jsonEncode(meta));
       }
+
+      await InstallationLifecycle.onBootstrapPersisted();
 
       final stockUpdated = stockByRef.length;
       final result = En1BootstrapResult(

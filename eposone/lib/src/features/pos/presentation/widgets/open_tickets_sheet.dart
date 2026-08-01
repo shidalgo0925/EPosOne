@@ -372,23 +372,80 @@ class _OpenTicketCard extends ConsumerWidget {
   }
 
   Future<void> _delete(BuildContext context, WidgetRef ref) async {
+    final linked = ticket.linkedOrderLocalId;
+    final isConfirmed = linked != null && linked.isNotEmpty;
+    final reasonCtrl = TextEditingController();
+
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Eliminar ticket'),
-        content: const Text('¿Eliminar este ticket guardado?'),
+        title: Text(isConfirmed ? 'Cancelar pedido' : 'Descartar borrador'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              isConfirmed
+                  ? 'El pedido ya está confirmado. No se elimina: se cancela '
+                      'con evento y queda en historial.'
+                  : '¿Descartar este ticket en borrador? Se eliminará solo localmente.',
+            ),
+            if (isConfirmed) ...[
+              const SizedBox(height: 12),
+              TextField(
+                controller: reasonCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Motivo de cancelación',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 2,
+                autofocus: true,
+              ),
+            ],
+          ],
+        ),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancelar')),
+              child: const Text('Volver')),
           FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Eliminar')),
+            style: FilledButton.styleFrom(backgroundColor: Colors.red.shade700),
+            onPressed: () {
+              if (isConfirmed && reasonCtrl.text.trim().isEmpty) return;
+              Navigator.pop(ctx, true);
+            },
+            child: Text(isConfirmed ? 'Cancelar pedido' : 'Descartar'),
+          ),
         ],
       ),
     );
+
     if (ok == true) {
-      await ref.read(openTicketActionsProvider).deleteTicket(ticket.localId);
+      try {
+        await ref.read(openTicketActionsProvider).deleteTicket(
+              ticket.localId,
+              cancelReason:
+                  isConfirmed ? reasonCtrl.text.trim() : null,
+            );
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                isConfirmed
+                    ? 'Pedido cancelado (evento registrado)'
+                    : 'Borrador descartado',
+              ),
+            ),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('$e'), backgroundColor: Colors.red),
+          );
+        }
+      }
     }
+    reasonCtrl.dispose();
   }
 }

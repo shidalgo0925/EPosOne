@@ -100,8 +100,8 @@ class _ConnectEn1ScreenState extends ConsumerState<ConnectEn1Screen> {
         ),
       );
 
-      // Siguiente: cajero local si hace falta; si ya hay setup → PIN vía splash/startup.
-      context.go('/onboarding');
+      // ADR-014: bootstrap obligatorio antes de onboarding/PIN/POS.
+      context.go('/platform/bootstrap');
     } catch (e) {
       final message = e is En1ProvisioningException
           ? e.userMessage

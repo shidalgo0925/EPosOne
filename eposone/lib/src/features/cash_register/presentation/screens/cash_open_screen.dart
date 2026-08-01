@@ -7,6 +7,7 @@ import 'package:eposone/src/core/providers/business_config_provider.dart';
 import 'package:eposone/src/core/session/pos_session.dart';
 import 'package:eposone/src/features/cash_register/data/cash_shift_sync_service.dart';
 import 'package:eposone/src/features/cash_register/data/repositories/cash_register_repository.dart';
+import 'package:eposone/src/features/platform/presentation/utils/installation_gate.dart';
 import 'package:eposone/src/features/settings/data/repositories/business_config_repository.dart';
 import 'package:eposone/src/features/sync/data/repositories/sync_repository.dart';
 
@@ -21,6 +22,15 @@ class _CashOpenScreenState extends ConsumerState<CashOpenScreen> {
   final _amountController = TextEditingController(text: '0');
   bool _loading = false;
   bool _printOpen = true;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() async {
+      if (!mounted) return;
+      await ensureInstallationReadyForPos(ref, context);
+    });
+  }
 
   @override
   void dispose() {
@@ -41,6 +51,7 @@ class _CashOpenScreenState extends ConsumerState<CashOpenScreen> {
   }
 
   Future<void> _open() async {
+    if (!await ensureInstallationReadyForPos(ref, context)) return;
     final amount = double.tryParse(_amountController.text) ?? 0;
     if (amount < 0) return;
 

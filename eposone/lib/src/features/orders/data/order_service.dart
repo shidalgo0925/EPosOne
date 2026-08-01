@@ -12,6 +12,8 @@ import 'package:eposone/src/features/orders/domain/entities/order_event.dart';
 import 'package:eposone/src/features/orders/domain/entities/order_item.dart';
 import 'package:eposone/src/features/orders/domain/entities/order_payment.dart';
 import 'package:eposone/src/features/orders/domain/en1_tender_methods.dart';
+import 'package:eposone/src/features/orders/domain/order_event_audit.dart';
+import 'package:eposone/src/features/orders/domain/order_lifecycle.dart';
 import 'package:eposone/src/features/pos/data/repositories/open_ticket_repository.dart';
 import 'package:eposone/src/features/settings/domain/entities/business_config.dart';
 import 'package:eposone/src/features/sync/data/repositories/sync_repository.dart';
@@ -60,6 +62,9 @@ class OrderService {
 
   Future<List<OrderPayment>> paymentsOf(String orderLocalId) =>
       _repo.paymentsOf(orderLocalId);
+
+  Future<List<OrderEvent>> eventsOf(String orderLocalId) =>
+      _repo.eventsOf(orderLocalId);
 
   Future<Order> createOrder({
     String? localNumber,
@@ -457,19 +462,139 @@ class OrderService {
     String? actorId,
     BusinessConfig? config,
     bool syncNow = true,
+    String? organizationId,
+    String? registerId,
+    String? deviceId,
+    String? shiftId,
+  }) =>
+      cancelOrder(
+        orderLocalId: orderLocalId,
+        reason: reason,
+        actorId: actorId,
+        config: config,
+        syncNow: syncNow,
+        organizationId: organizationId,
+        registerId: registerId,
+        deviceId: deviceId,
+        shiftId: shiftId,
+      );
+
+  /// Cancela un pedido confirmado: status CANCELLED + evento `pedido.anulado`.
+  /// Nunca elimina registros físicos del Order Domain.
+  Future<Order> cancelOrder({
+    required String orderLocalId,
+    required String reason,
+    String? actorId,
+    BusinessConfig? config,
+    bool syncNow = true,
+    String? organizationId,
+    String? registerId,
+    String? deviceId,
+    String? shiftId,
   }) async {
+    final trimmed = reason.trim();
+    if (trimmed.isEmpty) {
+      throw ArgumentError('Cancelación requiere motivo');
+    }
+    if (!OrderActionPolicy.cashierMayCancelConfirmed(hasReason: true)) {
+      throw StateError('Sin permiso para cancelar');
+    }
+
     final order = await _repo.getByLocalId(orderLocalId);
     if (order == null) throw StateError('Pedido no encontrado: $orderLocalId');
+    if (OrderLifecycle.isCancelledLike(order.lifecycleStatus)) {
+      return order;
+    }
+    if (!OrderLifecycle.canCancel(order.lifecycleStatus) &&
+        OrderLifecycle.isTerminal(order.lifecycleStatus)) {
+      throw StateError(
+        'No se puede cancelar un pedido en estado ${order.lifecycleStatus}',
+      );
+    }
+
+    final audit = OrderEventAudit(
+      reason: trimmed,
+      origin: OrderEventOriginCode.eposone,
+      organizationId: organizationId ?? order.organizationId,
+      registerId: registerId ?? order.registerRef,
+      deviceId: deviceId,
+      shiftId: shiftId,
+      createdBy: actorId,
+    );
+
     await _repo.putEvent(
       OrderEvent.record(
         orderLocalId: orderLocalId,
         eventType: OrderEventTypes.voided,
         actorId: actorId,
-        payloadJson: jsonEncode({'reason': reason}),
+        payloadJson: audit.toPayloadJson(),
       ),
     );
     await _repo.putOrder(
-      order.copyWith(isOpen: false, lifecycleStatus: 'voided').markAsModified(),
+      order
+          .copyWith(
+            isOpen: false,
+            lifecycleStatus: OrderLifecycle.cancelled,
+          )
+          .markAsModified(),
+    );
+    await _enqueueSync(orderLocalId);
+    if (syncNow) {
+      try {
+        await syncOrderToEn1(orderLocalId, config: config);
+      } catch (_) {}
+    }
+    return (await _repo.getByLocalId(orderLocalId)) ?? order;
+  }
+
+  /// Reembolso / devolución post-cobro: evento `pedido.devuelto` (contrato).
+  Future<Order> refundOrder({
+    required String orderLocalId,
+    required String reason,
+    String? actorId,
+    BusinessConfig? config,
+    bool syncNow = true,
+    double? amount,
+    String? organizationId,
+    String? registerId,
+    String? deviceId,
+    String? shiftId,
+  }) async {
+    final trimmed = reason.trim();
+    if (!OrderActionPolicy.mayRefund(hasReason: trimmed.isNotEmpty)) {
+      throw ArgumentError('Reembolso requiere motivo');
+    }
+    final order = await _repo.getByLocalId(orderLocalId);
+    if (order == null) throw StateError('Pedido no encontrado: $orderLocalId');
+
+    final audit = OrderEventAudit(
+      reason: trimmed,
+      origin: OrderEventOriginCode.eposone,
+      organizationId: organizationId ?? order.organizationId,
+      registerId: registerId ?? order.registerRef,
+      deviceId: deviceId,
+      shiftId: shiftId,
+      createdBy: actorId,
+      extra: {
+        if (amount != null) 'amount': amount,
+      },
+    );
+
+    await _repo.putEvent(
+      OrderEvent.record(
+        orderLocalId: orderLocalId,
+        eventType: OrderEventTypes.returned,
+        actorId: actorId,
+        payloadJson: audit.toPayloadJson(),
+      ),
+    );
+    await _repo.putOrder(
+      order
+          .copyWith(
+            isOpen: false,
+            lifecycleStatus: OrderLifecycle.refunded,
+          )
+          .markAsModified(),
     );
     await _enqueueSync(orderLocalId);
     if (syncNow) {
@@ -857,6 +982,8 @@ class OrderService {
         final remote = OrderMapper.unwrapOrder(root);
         if (remote != null) {
           order = OrderMapper.applyRemoteOrder(order, remote);
+          await ingestRemoteEventsFromOrderJson(order: order, remote: remote);
+          order = (await _repo.getByLocalId(order.localId)) ?? order;
         }
       } catch (e) {
         OrderSyncDiag.log('GET confirmación falló (no aborta): $e');
@@ -897,6 +1024,69 @@ class OrderService {
     }
   }
 
+  /// Ingesta eventos administrativos EN1 (cancel/reopen/refund) sin duplicar.
+  Future<void> ingestRemoteEventsFromOrderJson({
+    required Order order,
+    required Map<String, dynamic> remote,
+  }) async {
+    final raw = remote['events'];
+    if (raw is! List || raw.isEmpty) return;
+
+    final existing = await _repo.eventsOf(order.localId);
+    final known = <String>{
+      for (final e in existing) e.localId,
+      for (final e in existing)
+        if (e.serverId != null && e.serverId!.isNotEmpty) e.serverId!,
+    };
+
+    var latest = order;
+    for (final item in raw) {
+      if (item is! Map) continue;
+      final map = Map<String, dynamic>.from(item);
+      final eventId =
+          map['event_id']?.toString() ?? map['id']?.toString() ?? '';
+      if (eventId.isEmpty || known.contains(eventId)) continue;
+
+      final type =
+          map['type']?.toString() ?? map['event_type']?.toString() ?? '';
+      if (type.isEmpty) continue;
+
+      final payload = <String, dynamic>{
+        'origin': OrderEventOriginCode.en1,
+      };
+      final p = map['payload'];
+      if (p is Map) payload.addAll(Map<String, dynamic>.from(p));
+      if (map['reason'] != null) payload['reason'] = map['reason'];
+
+      final evt = OrderEvent.record(
+        orderLocalId: order.localId,
+        eventType: type,
+        eventId: eventId,
+        actorId: map['actor_user_ref']?.toString() ??
+            map['cashier_contact_id']?.toString(),
+        payloadJson: jsonEncode(payload),
+      ).markAsSynced(eventId);
+      await _repo.putEvent(evt);
+      known.add(eventId);
+
+      if (type == OrderEventTypes.voided) {
+        latest = latest.copyWith(
+          isOpen: false,
+          lifecycleStatus: OrderLifecycle.cancelled,
+          updatedAt: En1DateTimeService.nowUtc(),
+        );
+        await _repo.putOrder(latest);
+      } else if (type == OrderEventTypes.returned) {
+        latest = latest.copyWith(
+          isOpen: false,
+          lifecycleStatus: OrderLifecycle.refunded,
+          updatedAt: En1DateTimeService.nowUtc(),
+        );
+        await _repo.putOrder(latest);
+      }
+    }
+  }
+
   /// Pull estado EN1 de pedidos ligados a tickets abiertos (cobro en BO).
   Future<int> reconcileOpenTicketsFromEn1({BusinessConfig? config}) async {
     final ticketsRepo = _openTickets;
@@ -919,8 +1109,10 @@ class OrderService {
         if (remote == null) continue;
         final mapped = OrderMapper.applyRemoteOrder(order, remote);
         await _repo.putOrder(mapped);
-        if (!mapped.isOpen) {
-          await ticketsRepo.deleteTicket(ticket.localId);
+        await ingestRemoteEventsFromOrderJson(order: mapped, remote: remote);
+        final refreshed = (await _repo.getByLocalId(orderLocalId)) ?? mapped;
+        if (!refreshed.isOpen) {
+          await ticketsRepo.markTicketCancelled(ticket.localId);
           closed++;
           OrderSyncDiag.log(
             'E2E C20 reconcile: ticket "${ticket.label}" cerrado '

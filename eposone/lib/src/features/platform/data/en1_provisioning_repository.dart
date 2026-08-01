@@ -1,6 +1,7 @@
 import 'package:eposone/src/features/platform/data/device_registry.dart';
 import 'package:eposone/src/features/platform/data/en1_cashier_catalog_store.dart';
 import 'package:eposone/src/features/platform/data/en1_provisioning_api.dart';
+import 'package:eposone/src/features/platform/data/installation_lifecycle.dart';
 import 'package:eposone/src/features/platform/data/platform_prefs.dart';
 import 'package:eposone/src/features/platform/data/provisioning_store.dart';
 import 'package:eposone/src/features/platform/domain/connection_status.dart';
@@ -61,6 +62,8 @@ class En1ProvisioningRepository {
       // Reprovision: siempre persiste el nuevo token (el anterior deja de valer).
       await ProvisioningStore.saveConfig(config);
       await PlatformPrefs.completeOnboarding(PlatformMode.platform);
+      // ADR-014: register/reprovision exige bootstrap de nuevo.
+      await InstallationLifecycle.onDeviceRegistered();
       return config;
     } catch (e) {
       if (e is En1ProvisioningException) {
@@ -117,5 +120,6 @@ class En1ProvisioningRepository {
   Future<void> disconnect() async {
     await En1CashierCatalogStore.clearAll();
     await ProvisioningStore.clearConfig();
+    await InstallationLifecycle.reset();
   }
 }

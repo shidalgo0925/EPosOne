@@ -172,31 +172,55 @@ class OpenTicketActions {
     _invalidate();
   }
 
-  Future<void> deleteTicket(String ticketId) async {
+  /// Descarta borrador local O cancela pedido confirmado (event-driven).
+  ///
+  /// - Sin Order Domain ligado → eliminación física del ticket (DRAFT).
+  /// - Con pedido ligado → `cancelOrder` + ticket `cancelled` (nunca borra Order).
+  Future<void> deleteTicket(String ticketId, {String? cancelReason}) async {
     final repo = _ref.read(openTicketRepositoryProvider);
     final ticket = await repo.getById(ticketId);
-    final linkedOrderId = ticket?.linkedOrderLocalId;
+    if (ticket == null) return;
 
-    await repo.deleteTicket(ticketId);
-
+    final linkedOrderId = ticket.linkedOrderLocalId;
     final cart = _ref.read(cartProvider);
     if (cart.openTicketId == ticketId) {
       _ref.read(cartProvider.notifier).clear();
     }
 
-    if (linkedOrderId != null && linkedOrderId.isNotEmpty) {
-      try {
-        await _ref.read(orderServiceProvider).voidOrder(
-              orderLocalId: linkedOrderId,
-              reason: 'ticket_deleted',
-              syncNow: true,
-            );
-        _ref.invalidate(syncPendingCountProvider);
-        _ref.invalidate(syncOperationsProvider);
-        _ref.invalidate(localOrdersProvider);
-      } catch (_) {}
+    if (linkedOrderId == null || linkedOrderId.isEmpty) {
+      // DRAFT: descartable.
+      await repo.deleteTicket(ticketId);
+      _invalidate();
+      _ref.invalidate(openTicketDetailProvider(ticketId));
+      return;
     }
 
+    final reason = (cancelReason ?? '').trim().isEmpty
+        ? 'Cancelado desde ticket abierto'
+        : cancelReason!.trim();
+
+    final session = _ref.read(posSessionProvider);
+    try {
+      await _ref.read(orderServiceProvider).cancelOrder(
+            orderLocalId: linkedOrderId,
+            reason: reason,
+            actorId: session?.cashierId ?? session?.cashierName,
+            shiftId: session?.cashRegisterId,
+            syncNow: true,
+          );
+    } catch (e) {
+      // Si ya estaba cancelado, igual sacamos el ticket de abiertos.
+      if (e is! StateError) rethrow;
+    }
+
+    await repo.markTicketCancelled(
+      ticketId,
+      comment: reason,
+    );
+
+    _ref.invalidate(syncPendingCountProvider);
+    _ref.invalidate(syncOperationsProvider);
+    _ref.invalidate(localOrdersProvider);
     _invalidate();
     _ref.invalidate(openTicketDetailProvider(ticketId));
   }

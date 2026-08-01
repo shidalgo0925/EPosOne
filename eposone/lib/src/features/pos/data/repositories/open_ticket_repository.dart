@@ -202,6 +202,26 @@ class OpenTicketRepository {
         .findFirst();
   }
 
+  /// Marca ticket cancelado (sigue visible en historial; sale de abiertos).
+  Future<void> markTicketCancelled(
+    String localId, {
+    String? comment,
+  }) async {
+    await _isar.writeTxn(() async {
+      final ticket = await getById(localId);
+      if (ticket == null) return;
+      await _isar.openTickets.put(
+        ticket
+            .copyWith(
+              status: OpenTicketStatus.cancelled,
+              comment: comment ?? ticket.comment,
+              clearPredefinedSlot: true,
+            )
+            .markAsModified(),
+      );
+    });
+  }
+
   /// Cierra tickets POS vinculados a un pedido ya cobrado/cerrado en EN1.
   /// No anula el pedido remoto (solo saca el slot de abiertos).
   Future<int> closeTicketsForClosedOrder(String orderLocalId) async {
@@ -212,9 +232,20 @@ class OpenTicketRepository {
         .isDeletedEqualTo(false)
         .findAll();
     for (final ticket in tickets) {
-      await deleteTicket(ticket.localId);
+      // Soft-close: no borrado físico (auditoría / lista cancelados).
+      await markTicketCancelled(ticket.localId, comment: ticket.comment);
     }
     return tickets.length;
+  }
+
+  Future<List<OpenTicket>> getRecentCancelledTickets({int limit = 30}) async {
+    final all = await _isar.openTickets
+        .filter()
+        .statusEqualTo(OpenTicketStatus.cancelled)
+        .isDeletedEqualTo(false)
+        .findAll();
+    all.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+    return all.take(limit).toList();
   }
 
   Future<void> deleteTicket(String localId) async {

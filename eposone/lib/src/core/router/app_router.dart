@@ -44,6 +44,7 @@ import 'package:eposone/src/features/premium/presentation/screens/coupons_settin
 import 'package:eposone/src/features/customers/presentation/screens/customer_detail_screen.dart';
 import 'package:eposone/src/features/platform/presentation/screens/platform_welcome_screen.dart';
 import 'package:eposone/src/features/platform/presentation/screens/connect_en1_screen.dart';
+import 'package:eposone/src/features/platform/presentation/screens/platform_bootstrap_screen.dart';
 import 'package:eposone/src/features/platform/presentation/screens/device_info_screen.dart';
 import 'package:eposone/src/features/licensing/presentation/screens/license_status_screen.dart';
 import 'package:eposone/src/features/orders/presentation/screens/order_operation_screen.dart';
@@ -83,10 +84,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         '/splash',
         '/platform/welcome',
         '/platform/connect',
+        '/platform/bootstrap',
         '/onboarding',
         '/pin',
       ];
       final isPublic = publicRoutes.contains(path);
+
+      // ADR-014: bootstrap no debe redirigirse a /pos aunque haya sesión residual.
+      if (path == '/platform/bootstrap') {
+        return null;
+      }
 
       if (session == null) {
         if (path == '/pos' || path == '/payment' || path.startsWith('/receipt')) {
@@ -113,6 +120,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/splash', builder: (_, __) => const SplashScreen()),
       GoRoute(path: '/platform/welcome', builder: (_, __) => const PlatformWelcomeScreen()),
       GoRoute(path: '/platform/connect', builder: (_, __) => const ConnectEn1Screen()),
+      GoRoute(path: '/platform/bootstrap', builder: (_, __) => const PlatformBootstrapScreen()),
       GoRoute(path: '/platform/device', builder: (_, __) => const DeviceInfoScreen()),
       GoRoute(path: '/platform/license', builder: (_, __) => const LicenseStatusScreen()),
       GoRoute(path: '/onboarding', builder: (_, __) => const OnboardingScreen()),

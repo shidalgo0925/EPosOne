@@ -104,7 +104,7 @@ class OrderEvent extends SyncEntity {
   }
 }
 
-/// Tipos `event.type` del contrato v1.0.
+/// Tipos `event.type` del contrato v1.0 (no inventar fuera de Spec).
 abstract final class OrderEventTypes {
   static const created = 'pedido.creado';
   static const updated = 'pedido.actualizado';
@@ -114,4 +114,5 @@ abstract final class OrderEventTypes {
   static const sent = 'pedido.enviado';
   static const paid = 'pedido.cobrado';
   static const voided = 'pedido.anulado';
+  static const returned = 'pedido.devuelto';
 }
