@@ -1,4 +1,4 @@
-package com.example.eposone
+package services.easytech.eposone
 
 import android.os.Bundle
 import androidx.core.view.WindowCompat

@@ -5,7 +5,8 @@
 | **Fecha** | 19 jul 2026 |
 | **Origen** | Analista — cierre Hito 2.5 + cadena operativa |
 | **Precondición** | APK limpia: desinstalar + reinstalar (no update-over-install) |
-| **Estado** | 🟡 Bloque A OK en tablet · B–E pendientes |
+| **Estado** | 🟡 Bloque A OK · **B en curso (1 ago 2026)** · C–E pendientes |
+| **Run log** | [`EPOSONE_E2E_HITO25_RUN_LOG.md`](EPOSONE_E2E_HITO25_RUN_LOG.md) |
 
 ---
 
