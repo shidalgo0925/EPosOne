@@ -171,27 +171,41 @@ class _OrderOperationScreenState extends ConsumerState<OrderOperationScreen> {
     }
   }
 
-  Future<void> _cancelOrder(Order o) async {
-    if (!OrderLifecycle.canCancel(o.lifecycleStatus)) {
+  Future<void> _abortOrder(Order o) async {
+    final action = OrderLifecycle.abortAction(o.lifecycleStatus);
+    if (action == OrderAbortAction.none) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'No se puede cancelar en estado ${OrderLifecycle.label(o.lifecycleStatus)}',
+            'No hay acción disponible en estado ${OrderLifecycle.label(o.lifecycleStatus)}',
           ),
         ),
       );
       return;
     }
+
+    final isVoid = action == OrderAbortAction.voidOrder;
+    final isRefund = action == OrderAbortAction.refund;
+    final title = isRefund
+        ? 'Reembolsar pedido'
+        : (isVoid ? 'Anular pedido' : 'Cancelar pedido');
+    final confirmLabel = isRefund
+        ? 'Reembolsar'
+        : (isVoid ? 'Anular pedido' : 'Cancelar pedido');
+    final hint = isRefund
+        ? 'Motivo del reembolso'
+        : (isVoid ? 'Motivo de anulación' : 'Motivo de cancelación');
+
     final reasonCtrl = TextEditingController();
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Cancelar pedido'),
+        title: Text(title),
         content: TextField(
           controller: reasonCtrl,
-          decoration: const InputDecoration(
-            labelText: 'Motivo',
-            border: OutlineInputBorder(),
+          decoration: InputDecoration(
+            labelText: hint,
+            border: const OutlineInputBorder(),
           ),
           maxLines: 2,
           autofocus: true,
@@ -203,7 +217,7 @@ class _OrderOperationScreenState extends ConsumerState<OrderOperationScreen> {
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Colors.red.shade700),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Cancelar pedido'),
+            child: Text(confirmLabel),
           ),
         ],
       ),
@@ -218,16 +232,28 @@ class _OrderOperationScreenState extends ConsumerState<OrderOperationScreen> {
 
     setState(() {
       _busy = true;
-      _status = 'Cancelando…';
+      _status = isRefund
+          ? 'Reembolsando…'
+          : (isVoid ? 'Anulando…' : 'Cancelando…');
     });
     try {
-      await ref.read(orderServiceProvider).cancelOrder(
-            orderLocalId: o.localId,
-            reason: reason,
-          );
+      final svc = ref.read(orderServiceProvider);
+      if (isRefund) {
+        await svc.refundOrder(orderLocalId: o.localId, reason: reason);
+      } else if (isVoid) {
+        await svc.voidOrder(orderLocalId: o.localId, reason: reason);
+      } else {
+        await svc.cancelOrder(orderLocalId: o.localId, reason: reason);
+      }
       ref.invalidate(localOrdersProvider);
       ref.invalidate(syncPendingCountProvider);
-      setState(() => _status = 'Cancelado · evento pedido.anulado en cola/sync');
+      setState(() {
+        _status = isRefund
+            ? 'Reembolsado · evento pedido.devuelto en cola/sync'
+            : (isVoid
+                ? 'Anulado · evento pedido.anulado en cola/sync'
+                : 'Cancelado · evento pedido.anulado en cola/sync');
+      });
     } catch (e) {
       setState(() => _status = 'ERROR: $e');
     } finally {
@@ -375,14 +401,33 @@ class _OrderOperationScreenState extends ConsumerState<OrderOperationScreen> {
                           trailing: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              if (o.isOpen &&
-                                  OrderLifecycle.canCancel(o.lifecycleStatus))
+                              if (OrderLifecycle.abortAction(
+                                      o.lifecycleStatus) !=
+                                  OrderAbortAction.none)
                                 IconButton(
-                                  tooltip: 'Cancelar pedido',
+                                  tooltip: switch (OrderLifecycle.abortAction(
+                                      o.lifecycleStatus)) {
+                                    OrderAbortAction.cancel =>
+                                      'Cancelar pedido',
+                                    OrderAbortAction.voidOrder =>
+                                      'Anular pedido',
+                                    OrderAbortAction.refund =>
+                                      'Reembolsar pedido',
+                                    OrderAbortAction.none => '',
+                                  },
                                   onPressed:
-                                      _busy ? null : () => _cancelOrder(o),
-                                  icon: const Icon(Icons.cancel_outlined,
-                                      color: Colors.red),
+                                      _busy ? null : () => _abortOrder(o),
+                                  icon: Icon(
+                                    switch (OrderLifecycle.abortAction(
+                                        o.lifecycleStatus)) {
+                                      OrderAbortAction.refund =>
+                                        Icons.replay_circle_filled_outlined,
+                                      OrderAbortAction.voidOrder =>
+                                        Icons.block,
+                                      _ => Icons.cancel_outlined,
+                                    },
+                                    color: Colors.red,
+                                  ),
                                 ),
                               if (o.isOpen)
                                 IconButton(

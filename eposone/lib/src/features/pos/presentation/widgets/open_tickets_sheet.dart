@@ -6,6 +6,8 @@ import 'package:eposone/src/core/theme/eposone_theme.dart';
 import 'package:eposone/src/core/time/en1_date_time_service.dart';
 import 'package:eposone/src/features/commercial_engine/commercial_engine.dart';
 import 'package:eposone/src/features/customers/presentation/providers/customer_provider.dart';
+import 'package:eposone/src/features/orders/domain/order_lifecycle.dart';
+import 'package:eposone/src/features/orders/presentation/providers/order_providers.dart';
 import 'package:eposone/src/features/pos/domain/entities/open_ticket.dart';
 import 'package:eposone/src/features/pos/domain/entities/order_type.dart';
 import 'package:eposone/src/features/pos/presentation/providers/open_ticket_provider.dart';
@@ -374,29 +376,52 @@ class _OpenTicketCard extends ConsumerWidget {
   Future<void> _delete(BuildContext context, WidgetRef ref) async {
     final linked = ticket.linkedOrderLocalId;
     final isConfirmed = linked != null && linked.isNotEmpty;
+    var abort = OrderAbortAction.cancel;
+    if (isConfirmed) {
+      final order =
+          await ref.read(orderRepositoryProvider).getByLocalId(linked);
+      abort = OrderLifecycle.abortAction(order?.lifecycleStatus);
+      if (abort == OrderAbortAction.none) {
+        abort = OrderLifecycle.canVoid(order?.lifecycleStatus)
+            ? OrderAbortAction.voidOrder
+            : OrderAbortAction.cancel;
+      }
+    }
+    final isVoid = abort == OrderAbortAction.voidOrder;
+    final actionTitle = !isConfirmed
+        ? 'Descartar borrador'
+        : (isVoid ? 'Anular pedido' : 'Cancelar pedido');
+    final actionBtn = !isConfirmed
+        ? 'Descartar'
+        : (isVoid ? 'Anular pedido' : 'Cancelar pedido');
     final reasonCtrl = TextEditingController();
 
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(isConfirmed ? 'Cancelar pedido' : 'Descartar borrador'),
+        title: Text(actionTitle),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              isConfirmed
-                  ? 'El pedido ya está confirmado. No se elimina: se cancela '
-                      'con evento y queda en historial.'
-                  : '¿Descartar este ticket en borrador? Se eliminará solo localmente.',
+              !isConfirmed
+                  ? '¿Descartar este ticket en borrador? Se eliminará solo localmente.'
+                  : (isVoid
+                      ? 'El pedido ya fue a cocina. No se elimina: se anula '
+                          'con evento y queda en historial.'
+                      : 'El pedido está confirmado. No se elimina: se cancela '
+                          'con evento y queda en historial.'),
             ),
             if (isConfirmed) ...[
               const SizedBox(height: 12),
               TextField(
                 controller: reasonCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Motivo de cancelación',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: isVoid
+                      ? 'Motivo de anulación'
+                      : 'Motivo de cancelación',
+                  border: const OutlineInputBorder(),
                 ),
                 maxLines: 2,
                 autofocus: true,
@@ -414,7 +439,7 @@ class _OpenTicketCard extends ConsumerWidget {
               if (isConfirmed && reasonCtrl.text.trim().isEmpty) return;
               Navigator.pop(ctx, true);
             },
-            child: Text(isConfirmed ? 'Cancelar pedido' : 'Descartar'),
+            child: Text(actionBtn),
           ),
         ],
       ),
@@ -431,9 +456,11 @@ class _OpenTicketCard extends ConsumerWidget {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                isConfirmed
-                    ? 'Pedido cancelado (evento registrado)'
-                    : 'Borrador descartado',
+                !isConfirmed
+                    ? 'Borrador descartado'
+                    : (isVoid
+                        ? 'Pedido anulado (evento registrado)'
+                        : 'Pedido cancelado (evento registrado)'),
               ),
             ),
           );

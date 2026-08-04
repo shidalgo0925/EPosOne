@@ -2,37 +2,44 @@
 
 | Campo | Valor |
 |-------|--------|
-| Estado | Implementado APK · 28 jul 2026 |
+| Estado | Implementado APK · actualizado 4 ago 2026 (Cancelar / Anular / Reembolsar) |
 | Contrato HTTP | [`EN1_EPOSONE_HITO3_ORDER_HTTP_CONTRACT.md`](EN1_EPOSONE_HITO3_ORDER_HTTP_CONTRACT.md) |
 | Spec | [`EN1_EPOSONE_ORDER_DOMAIN_SPEC_V1.md`](EN1_EPOSONE_ORDER_DOMAIN_SPEC_V1.md) |
 
 ---
 
-## Reglas
+## Principio (cerrado)
 
-| Estado | Eliminar físico | Acción |
-|--------|-----------------|--------|
-| Ticket **sin** Order Domain (borrador) | ✔ Descartar | Borrado local del ticket |
-| Pedido confirmado (`open` / `sent` / …) | ✘ | **Cancelar** → `pedido.anulado` + `lifecycle=cancelled` |
-| Cobrado / cerrado | ✘ | Reembolso → `pedido.devuelto` |
-
-Nadie elimina físicamente un Order Domain confirmado.
+Un **Order Domain** nunca se elimina físicamente. Solo cambia de estado y genera eventos.
 
 ---
 
-## Eventos (tipos contrato — no inventar)
+## Reglas P0 (UI / negocio)
 
-`pedido.creado` · `pedido.actualizado` · `producto.*` · `pedido.enviado` · `pedido.cobrado` · **`pedido.anulado`** · **`pedido.devuelto`**
+| Situación | Botón | Estado local | Evento EN1 |
+|-----------|-------|--------------|------------|
+| Ticket sin Order (borrador) | Descartar | — (borra ticket local) | — |
+| Confirmado, **pre-cocina** (`open` / `confirmed`) | **Cancelar** | `cancelled` | `pedido.anulado` |
+| **Post-cocina** (`sent` … `delivered`) | **Anular** | `voided` | `pedido.anulado` (mismo contrato) |
+| Cobrado (`paid` / `completed` / `closed`) | **Reembolsar** | `refunded` | `pedido.devuelto` |
 
-Auditoría en `payload`: `reason`, `origin` (`EPOSONE`\|`EN1`\|`SYSTEM`), caja, dispositivo, turno, `created_by`.
+Nunca mostrar **Eliminar** sobre un Order confirmado.
+
+`voidOrder()` y `cancelOrder()` comparten el evento HTTP `pedido.anulado`; difieren en estado local y copy de UI. Un posible `pedido.voided` en EN1 = **P1** (no tocar contrato ahora).
 
 ---
 
-## Flujo cancelación
+## Pipeline cocina
+
+Estados `sent` / `preparing` / `ready` / `delivered` **no se rediseñan en P0**. Solo alimentan la regla Cancelar vs Anular.
+
+---
+
+## Flujo cancelación / anulación
 
 ```text
-UI (motivo) → cancelOrder → OrderEvent(pedido.anulado) → status cancelled
-  → cola Sync → POST /orders/{id}/events → ACK → SYNCED
+UI (motivo) → cancelOrder | voidOrder → OrderEvent(pedido.anulado)
+  → lifecycle cancelled | voided → cola Sync → POST .../events
 ```
 
 Offline-first: la operación no espera EN1.
@@ -41,12 +48,16 @@ Offline-first: la operación no espera EN1.
 
 ## UI
 
-- Tickets abiertos: **Descartar** (borrador) vs **Cancelar pedido** (confirmado + motivo).
-- Lista Pedidos EN1: cancelados visibles con motivo / actor; no desaparecen.
-- Recepción EN1: `ingestRemoteEventsFromOrderJson` al GET con `include=events`.
+- Tickets abiertos: Descartar · Cancelar · Anular según estado.
+- Lista Pedidos EN1: acción según `OrderLifecycle.abortAction`.
+- Cancelados / anulados visibles con motivo; no desaparecen.
 
 ---
 
-## Pendiente (roles)
+## Pendiente P1
 
-Permisos Supervisor/Admin formales viven en EN1/Portal. Local exige **motivo** obligatorio; gate de rol = futuro.
+- ADR cocina + máquina de estados definitiva.
+- Supervisor / autorización.
+- Auditoría completa estado anterior → nuevo.
+- Decidir si VOIDED requiere evento EN1 propio.
+- Reportes: excluir CANCELLED/VOIDED de ventas (ajuste fino).

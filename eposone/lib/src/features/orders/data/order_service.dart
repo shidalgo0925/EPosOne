@@ -456,6 +456,8 @@ class OrderService {
     return (await _repo.getByLocalId(orderLocalId)) ?? order;
   }
 
+  /// Anula post-cocina: status VOIDED + mismo evento `pedido.anulado` (contrato EN1).
+  /// Internamente mismo canal HTTP que cancel; distinto estado local / UI.
   Future<Order> voidOrder({
     required String orderLocalId,
     required String reason,
@@ -466,20 +468,64 @@ class OrderService {
     String? registerId,
     String? deviceId,
     String? shiftId,
-  }) =>
-      cancelOrder(
-        orderLocalId: orderLocalId,
-        reason: reason,
-        actorId: actorId,
-        config: config,
-        syncNow: syncNow,
-        organizationId: organizationId,
-        registerId: registerId,
-        deviceId: deviceId,
-        shiftId: shiftId,
-      );
+  }) async {
+    final trimmed = reason.trim();
+    if (trimmed.isEmpty) {
+      throw ArgumentError('Anulación requiere motivo');
+    }
+    if (!OrderActionPolicy.cashierMayVoid(hasReason: true)) {
+      throw StateError('Sin permiso para anular');
+    }
 
-  /// Cancela un pedido confirmado: status CANCELLED + evento `pedido.anulado`.
+    final order = await _repo.getByLocalId(orderLocalId);
+    if (order == null) throw StateError('Pedido no encontrado: $orderLocalId');
+    if (OrderLifecycle.isCancelledLike(order.lifecycleStatus)) {
+      return order;
+    }
+    if (!OrderLifecycle.canVoid(order.lifecycleStatus)) {
+      throw StateError(
+        'No se puede anular un pedido en estado ${order.lifecycleStatus}. '
+        'Use Cancelar (pre-cocina) o Reembolsar (cobrado).',
+      );
+    }
+
+    final audit = OrderEventAudit(
+      reason: trimmed,
+      origin: OrderEventOriginCode.eposone,
+      organizationId: organizationId ?? order.organizationId,
+      registerId: registerId ?? order.registerRef,
+      deviceId: deviceId,
+      shiftId: shiftId,
+      createdBy: actorId,
+      extra: const {'action': 'void'},
+    );
+
+    await _repo.putEvent(
+      OrderEvent.record(
+        orderLocalId: orderLocalId,
+        eventType: OrderEventTypes.voided,
+        actorId: actorId,
+        payloadJson: audit.toPayloadJson(),
+      ),
+    );
+    await _repo.putOrder(
+      order
+          .copyWith(
+            isOpen: false,
+            lifecycleStatus: OrderLifecycle.voided,
+          )
+          .markAsModified(),
+    );
+    await _enqueueSync(orderLocalId);
+    if (syncNow) {
+      try {
+        await syncOrderToEn1(orderLocalId, config: config);
+      } catch (_) {}
+    }
+    return (await _repo.getByLocalId(orderLocalId)) ?? order;
+  }
+
+  /// Cancela pre-cocina: status CANCELLED + evento `pedido.anulado`.
   /// Nunca elimina registros físicos del Order Domain.
   Future<Order> cancelOrder({
     required String orderLocalId,
@@ -505,8 +551,21 @@ class OrderService {
     if (OrderLifecycle.isCancelledLike(order.lifecycleStatus)) {
       return order;
     }
-    if (!OrderLifecycle.canCancel(order.lifecycleStatus) &&
-        OrderLifecycle.isTerminal(order.lifecycleStatus)) {
+    // Si ya fue a cocina, redirigir a anulación (misma cola EN1).
+    if (OrderLifecycle.canVoid(order.lifecycleStatus)) {
+      return voidOrder(
+        orderLocalId: orderLocalId,
+        reason: trimmed,
+        actorId: actorId,
+        config: config,
+        syncNow: syncNow,
+        organizationId: organizationId,
+        registerId: registerId,
+        deviceId: deviceId,
+        shiftId: shiftId,
+      );
+    }
+    if (!OrderLifecycle.canCancel(order.lifecycleStatus)) {
       throw StateError(
         'No se puede cancelar un pedido en estado ${order.lifecycleStatus}',
       );
@@ -520,6 +579,7 @@ class OrderService {
       deviceId: deviceId,
       shiftId: shiftId,
       createdBy: actorId,
+      extra: const {'action': 'cancel'},
     );
 
     await _repo.putEvent(
@@ -566,6 +626,20 @@ class OrderService {
     }
     final order = await _repo.getByLocalId(orderLocalId);
     if (order == null) throw StateError('Pedido no encontrado: $orderLocalId');
+    if (!OrderLifecycle.canRefund(order.lifecycleStatus) &&
+        OrderLifecycle.normalize(order.lifecycleStatus) !=
+            OrderLifecycle.refunded) {
+      throw StateError(
+        'Solo se puede reembolsar un pedido cobrado '
+        '(estado: ${order.lifecycleStatus})',
+      );
+    }
+    if (OrderLifecycle.normalize(order.lifecycleStatus) ==
+            OrderLifecycle.refunded ||
+        OrderLifecycle.normalize(order.lifecycleStatus) ==
+            OrderLifecycle.returned) {
+      return order;
+    }
 
     final audit = OrderEventAudit(
       reason: trimmed,

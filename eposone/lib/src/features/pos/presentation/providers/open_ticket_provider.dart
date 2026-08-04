@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:eposone/src/core/session/pos_session.dart';
 import 'package:eposone/src/features/commercial_engine/commercial_engine.dart';
+import 'package:eposone/src/features/orders/domain/order_lifecycle.dart';
 import 'package:eposone/src/features/orders/presentation/providers/order_providers.dart';
 import 'package:eposone/src/features/pos/data/repositories/open_ticket_repository.dart';
 import 'package:eposone/src/features/pos/data/repositories/predefined_ticket_repository.dart';
@@ -172,10 +173,10 @@ class OpenTicketActions {
     _invalidate();
   }
 
-  /// Descarta borrador local O cancela pedido confirmado (event-driven).
+  /// Descarta borrador local O cancela/anula pedido confirmado (event-driven).
   ///
   /// - Sin Order Domain ligado → eliminación física del ticket (DRAFT).
-  /// - Con pedido ligado → `cancelOrder` + ticket `cancelled` (nunca borra Order).
+  /// - Pre-cocina → `cancelOrder`; post-cocina → `voidOrder` (nunca borra Order).
   Future<void> deleteTicket(String ticketId, {String? cancelReason}) async {
     final repo = _ref.read(openTicketRepositoryProvider);
     final ticket = await repo.getById(ticketId);
@@ -200,16 +201,32 @@ class OpenTicketActions {
         : cancelReason!.trim();
 
     final session = _ref.read(posSessionProvider);
+    final orderSvc = _ref.read(orderServiceProvider);
     try {
-      await _ref.read(orderServiceProvider).cancelOrder(
-            orderLocalId: linkedOrderId,
-            reason: reason,
-            actorId: session?.cashierId ?? session?.cashierName,
-            shiftId: session?.cashRegisterId,
-            syncNow: true,
-          );
+      final order =
+          await _ref.read(orderRepositoryProvider).getByLocalId(linkedOrderId);
+      final status = order?.lifecycleStatus;
+      final actor = session?.cashierId ?? session?.cashierName;
+      final shift = session?.cashRegisterId;
+      if (OrderLifecycle.canVoid(status)) {
+        await orderSvc.voidOrder(
+          orderLocalId: linkedOrderId,
+          reason: reason,
+          actorId: actor,
+          shiftId: shift,
+          syncNow: true,
+        );
+      } else {
+        await orderSvc.cancelOrder(
+          orderLocalId: linkedOrderId,
+          reason: reason,
+          actorId: actor,
+          shiftId: shift,
+          syncNow: true,
+        );
+      }
     } catch (e) {
-      // Si ya estaba cancelado, igual sacamos el ticket de abiertos.
+      // Si ya estaba cancelado/anulado, igual sacamos el ticket de abiertos.
       if (e is! StateError) rethrow;
     }
 
