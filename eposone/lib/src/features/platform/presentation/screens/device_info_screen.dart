@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:isar/isar.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:eposone/src/core/database/database_provider.dart';
 import 'package:eposone/src/core/providers/business_config_provider.dart';
 import 'package:eposone/src/core/theme/eposone_theme.dart';
@@ -21,12 +23,12 @@ import 'package:eposone/src/features/platform/domain/platform_mode.dart';
 import 'package:eposone/src/features/platform/domain/provisioning_config.dart';
 import 'package:eposone/src/features/pos/presentation/providers/pos_page_provider.dart';
 import 'package:eposone/src/features/products/presentation/providers/product_provider.dart';
+import 'package:eposone/src/features/sync/domain/entities/sync_entity_kind.dart';
+import 'package:eposone/src/features/sync/domain/entities/sync_operation.dart';
 import 'package:eposone/src/features/sync/presentation/providers/en1_connection_status.dart';
 import 'package:eposone/src/features/sync/presentation/providers/sync_provider.dart';
 
-const _appVersionLabel = '1.0.0+1';
-
-/// Pantalla "Este dispositivo" — UUID, modo, estado EN1, bootstrap Hito 2.
+/// Pantalla "Este dispositivo" — UUID, modo, estado EN1, bootstrap / Hito 2.6.
 class DeviceInfoScreen extends ConsumerStatefulWidget {
   const DeviceInfoScreen({super.key});
 
@@ -56,9 +58,14 @@ class _DeviceInfoScreenState extends ConsumerState<DeviceInfoScreen> {
   int _cashiersActive = 0;
   int _cashiersTotal = 0;
   int _pendingOps = 0;
+  int _failedOps = 0;
+  String _queueBreakdown = '—';
+  String? _bootstrapError;
+  String? _syncError;
   DateTime? _lastSyncAt;
   En1LinkState _link = En1LinkState.unknown;
   String _licenseSummary = 'Sin snapshot';
+  String _appVersionLabel = '…';
 
   @override
   void initState() {
@@ -67,8 +74,10 @@ class _DeviceInfoScreenState extends ConsumerState<DeviceInfoScreen> {
   }
 
   Future<void> _load() async {
+    final pkg = await PackageInfo.fromPlatform();
+    final appVersion = '${pkg.version}+${pkg.buildNumber}';
     final repo = En1ProvisioningRepository();
-    final device = await DeviceRegistry.snapshot(appVersion: _appVersionLabel);
+    final device = await DeviceRegistry.snapshot(appVersion: appVersion);
     final mode = await PlatformPrefs.getMode();
     final status = await repo.getStatus();
     final config = await repo.getConfig();
@@ -77,6 +86,7 @@ class _DeviceInfoScreenState extends ConsumerState<DeviceInfoScreen> {
     final bootRepo = En1BootstrapRepository(isar: isar);
     final done = await bootRepo.isBootstrapDone();
     final at = await bootRepo.lastBootstrapAt();
+    final bootstrapError = await bootRepo.lastBootstrapError();
     final audit = await En1DateTimeService.loadAuditLog(limit: 12);
     final cashiersVersion = await En1CashierCatalogStore.getCashiersVersion();
     final cashiersMeta = await En1CashierCatalogStore.listMetaOnly();
@@ -88,6 +98,29 @@ class _DeviceInfoScreenState extends ConsumerState<DeviceInfoScreen> {
         ? 'Sin snapshot EN1'
         : '${licenseSnap.licenseType.label} · ${licenseVal.effectiveStatus.label}'
             '${licenseSnap.planCode != null ? ' · ${licenseSnap.planCode}' : ''}';
+
+    final pendingList = await isar.syncOperations
+        .filter()
+        .operationStatusEqualTo(SyncOperationStatus.pending)
+        .findAll();
+    final failedList = await isar.syncOperations
+        .filter()
+        .operationStatusEqualTo(SyncOperationStatus.failed)
+        .sortByUpdatedAtDesc()
+        .findAll();
+    final byKind = <String, int>{};
+    for (final op in pendingList) {
+      final label = syncEntityKindLabel(op.entityKind);
+      byKind[label] = (byKind[label] ?? 0) + 1;
+    }
+    final queueBreakdown = byKind.isEmpty
+        ? 'Sin pendientes'
+        : byKind.entries.map((e) => '${e.key}: ${e.value}').join(' · ');
+    final syncError = failedList.isEmpty
+        ? null
+        : '${syncEntityKindLabel(failedList.first.entityKind)}: '
+            '${failedList.first.errorMessage ?? 'error'}';
+
     En1StatusSnapshot? en1Snap;
     try {
       en1Snap = await ref.read(en1StatusSnapshotProvider.future);
@@ -105,14 +138,19 @@ class _DeviceInfoScreenState extends ConsumerState<DeviceInfoScreen> {
       _error = error;
       _bootstrapDone = done;
       _bootstrapAt = at;
+      _bootstrapError = bootstrapError;
+      _syncError = syncError;
       _clockAudit = audit;
       _cashiersVersion = cashiersVersion;
       _cashiersTotal = cashiersMeta.length;
       _cashiersActive = cashiersMeta.where((c) => c.isActive).length;
       _pendingOps = en1Snap?.pendingOrders ?? pendingOps;
+      _failedOps = failedList.length;
+      _queueBreakdown = queueBreakdown;
       _lastSyncAt = en1Snap?.lastSyncAt ?? biz?.en1LastSyncAt;
       _link = en1Snap?.link ?? En1LinkState.unknown;
       _licenseSummary = licenseSummary;
+      _appVersionLabel = appVersion;
       _loading = false;
     });
   }
@@ -320,8 +358,16 @@ class _DeviceInfoScreenState extends ConsumerState<DeviceInfoScreen> {
                       ? 'Sin registro'
                       : En1DateTimeService.formatLocal(_lastSyncAt!),
                 ),
-                _tile('Cola / pendientes', '$_pendingOps'),
-                if (_error != null) _tile('Último error', _error!),
+                _tile(
+                  'Cola / pendientes',
+                  '$_pendingOps total'
+                      '${_failedOps > 0 ? ' · $_failedOps con error' : ''}',
+                ),
+                _tile('Cola (detalle)', _queueBreakdown),
+                if (_error != null) _tile('Último error provisioning', _error!),
+                if (_bootstrapError != null)
+                  _tile('Último error bootstrap', _bootstrapError!),
+                if (_syncError != null) _tile('Último error sync', _syncError!),
                 _tile('Versión APK', _appVersionLabel),
                 _tile(
                   'cashiers_version',
@@ -332,7 +378,7 @@ class _DeviceInfoScreenState extends ConsumerState<DeviceInfoScreen> {
                   '$_cashiersActive activos / $_cashiersTotal total',
                 ),
                 if (_config?.configVersion != null)
-                  _tile('config_version', '${_config!.configVersion}'),
+                  _tile('config_version (bootstrap)', '${_config!.configVersion}'),
                 _tile(
                   'Políticas comerciales',
                   'Pendiente freeze V6 (snapshot vacío OK)',
@@ -351,8 +397,6 @@ class _DeviceInfoScreenState extends ConsumerState<DeviceInfoScreen> {
                 ),
                 const SizedBox(height: 16),
                 _tile('Estado EN1', _status.label),
-                if (_error != null && _status == ConnectionStatus.error)
-                  _tile('Último error (provisioning)', _error!),
                 _tile('UUID', _device?.uuid ?? '—', copyable: true),
                 _tile('Modelo / host', _device?.model ?? '—'),
                 _tile('Sistema', _device?.os ?? '—'),

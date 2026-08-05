@@ -37,6 +37,7 @@ class En1BootstrapRepository {
   static const _prefsMetaKey = 'en1_bootstrap_product_meta_v1';
   static const _prefsAtKey = 'en1_bootstrap_completed_at_v1';
   static const _prefsConfigKey = 'en1_bootstrap_config_json_v1';
+  static const _prefsLastErrorKey = 'en1_bootstrap_last_error_v1';
   static const _en1PageComida = 'en1_page_comida';
   static const _en1PageBar = 'en1_page_bar';
 
@@ -84,6 +85,21 @@ class En1BootstrapRepository {
     final raw = prefs.getString(_prefsAtKey);
     if (raw == null) return null;
     return DateTime.tryParse(raw);
+  }
+
+  Future<String?> lastBootstrapError() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_prefsLastErrorKey);
+  }
+
+  Future<void> _clearBootstrapError() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_prefsLastErrorKey);
+  }
+
+  Future<void> _saveBootstrapError(Object e) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_prefsLastErrorKey, e.toString());
   }
 
   /// Device Token del register + Base URL del provisioning.
@@ -371,8 +387,10 @@ class En1BootstrapRepository {
           detail: '${products.length} prod · $imageOk img',
         );
       }
+      await _clearBootstrapError();
       return result;
     } catch (e) {
+      await _saveBootstrapError(e);
       if (recordInSyncHistory) {
         await _recordSyncHistory(
             success: false, detail: null, error: e.toString());
