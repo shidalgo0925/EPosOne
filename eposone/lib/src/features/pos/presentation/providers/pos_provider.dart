@@ -225,6 +225,9 @@ final completeSaleProvider = Provider<
       openTicketLabel: openTicketLabel,
       couponCode: cart.appliedCouponCode,
       couponDiscount: orderInput.couponDiscount,
+      discountProgramLabel: cart.appliedDiscount == null
+          ? null
+          : '${cart.appliedDiscount!.programName} (${cart.appliedDiscount!.programCode})',
     );
 
     final items = itemsToSell

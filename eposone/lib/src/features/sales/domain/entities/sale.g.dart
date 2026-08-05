@@ -72,97 +72,102 @@ const SaleSchema = CollectionSchema(
       name: r'discount',
       type: IsarType.double,
     ),
-    r'isDeleted': PropertySchema(
+    r'discountProgramLabel': PropertySchema(
       id: 11,
+      name: r'discountProgramLabel',
+      type: IsarType.string,
+    ),
+    r'isDeleted': PropertySchema(
+      id: 12,
       name: r'isDeleted',
       type: IsarType.bool,
     ),
     r'isPendingSync': PropertySchema(
-      id: 12,
+      id: 13,
       name: r'isPendingSync',
       type: IsarType.bool,
     ),
     r'isSynced': PropertySchema(
-      id: 13,
+      id: 14,
       name: r'isSynced',
       type: IsarType.bool,
     ),
     r'localId': PropertySchema(
-      id: 14,
+      id: 15,
       name: r'localId',
       type: IsarType.string,
     ),
     r'notes': PropertySchema(
-      id: 15,
+      id: 16,
       name: r'notes',
       type: IsarType.string,
     ),
     r'openTicketLabel': PropertySchema(
-      id: 16,
+      id: 17,
       name: r'openTicketLabel',
       type: IsarType.string,
     ),
     r'orderType': PropertySchema(
-      id: 17,
+      id: 18,
       name: r'orderType',
       type: IsarType.byte,
       enumMap: _SaleorderTypeEnumValueMap,
     ),
     r'paymentMethod': PropertySchema(
-      id: 18,
+      id: 19,
       name: r'paymentMethod',
       type: IsarType.byte,
       enumMap: _SalepaymentMethodEnumValueMap,
     ),
     r'receiptNumber': PropertySchema(
-      id: 19,
+      id: 20,
       name: r'receiptNumber',
       type: IsarType.string,
     ),
     r'saleDate': PropertySchema(
-      id: 20,
+      id: 21,
       name: r'saleDate',
       type: IsarType.dateTime,
     ),
     r'serverId': PropertySchema(
-      id: 21,
+      id: 22,
       name: r'serverId',
       type: IsarType.string,
     ),
     r'status': PropertySchema(
-      id: 22,
+      id: 23,
       name: r'status',
       type: IsarType.byte,
       enumMap: _SalestatusEnumValueMap,
     ),
     r'subtotal': PropertySchema(
-      id: 23,
+      id: 24,
       name: r'subtotal',
       type: IsarType.double,
     ),
     r'syncStatus': PropertySchema(
-      id: 24,
+      id: 25,
       name: r'syncStatus',
       type: IsarType.byte,
       enumMap: _SalesyncStatusEnumValueMap,
     ),
     r'taxAmount': PropertySchema(
-      id: 25,
+      id: 26,
       name: r'taxAmount',
       type: IsarType.double,
     ),
     r'tipAmount': PropertySchema(
-      id: 26,
+      id: 27,
       name: r'tipAmount',
       type: IsarType.double,
     ),
     r'total': PropertySchema(
-      id: 27,
+      id: 28,
       name: r'total',
       type: IsarType.double,
     ),
     r'updatedAt': PropertySchema(
-      id: 28,
+      id: 29,
       name: r'updatedAt',
       type: IsarType.dateTime,
     )
@@ -217,6 +222,12 @@ int _saleEstimateSize(
       bytesCount += 3 + value.length * 3;
     }
   }
+  {
+    final value = object.discountProgramLabel;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   bytesCount += 3 + object.localId.length * 3;
   {
     final value = object.notes;
@@ -262,24 +273,25 @@ void _saleSerialize(
   writer.writeString(offsets[8], object.customerId);
   writer.writeDateTime(offsets[9], object.deletedAt);
   writer.writeDouble(offsets[10], object.discount);
-  writer.writeBool(offsets[11], object.isDeleted);
-  writer.writeBool(offsets[12], object.isPendingSync);
-  writer.writeBool(offsets[13], object.isSynced);
-  writer.writeString(offsets[14], object.localId);
-  writer.writeString(offsets[15], object.notes);
-  writer.writeString(offsets[16], object.openTicketLabel);
-  writer.writeByte(offsets[17], object.orderType.index);
-  writer.writeByte(offsets[18], object.paymentMethod.index);
-  writer.writeString(offsets[19], object.receiptNumber);
-  writer.writeDateTime(offsets[20], object.saleDate);
-  writer.writeString(offsets[21], object.serverId);
-  writer.writeByte(offsets[22], object.status.index);
-  writer.writeDouble(offsets[23], object.subtotal);
-  writer.writeByte(offsets[24], object.syncStatus.index);
-  writer.writeDouble(offsets[25], object.taxAmount);
-  writer.writeDouble(offsets[26], object.tipAmount);
-  writer.writeDouble(offsets[27], object.total);
-  writer.writeDateTime(offsets[28], object.updatedAt);
+  writer.writeString(offsets[11], object.discountProgramLabel);
+  writer.writeBool(offsets[12], object.isDeleted);
+  writer.writeBool(offsets[13], object.isPendingSync);
+  writer.writeBool(offsets[14], object.isSynced);
+  writer.writeString(offsets[15], object.localId);
+  writer.writeString(offsets[16], object.notes);
+  writer.writeString(offsets[17], object.openTicketLabel);
+  writer.writeByte(offsets[18], object.orderType.index);
+  writer.writeByte(offsets[19], object.paymentMethod.index);
+  writer.writeString(offsets[20], object.receiptNumber);
+  writer.writeDateTime(offsets[21], object.saleDate);
+  writer.writeString(offsets[22], object.serverId);
+  writer.writeByte(offsets[23], object.status.index);
+  writer.writeDouble(offsets[24], object.subtotal);
+  writer.writeByte(offsets[25], object.syncStatus.index);
+  writer.writeDouble(offsets[26], object.taxAmount);
+  writer.writeDouble(offsets[27], object.tipAmount);
+  writer.writeDouble(offsets[28], object.total);
+  writer.writeDateTime(offsets[29], object.updatedAt);
 }
 
 Sale _saleDeserialize(
@@ -300,27 +312,28 @@ Sale _saleDeserialize(
     customerId: reader.readStringOrNull(offsets[8]),
     deletedAt: reader.readDateTimeOrNull(offsets[9]),
     discount: reader.readDoubleOrNull(offsets[10]) ?? 0,
-    localId: reader.readString(offsets[14]),
-    notes: reader.readStringOrNull(offsets[15]),
-    openTicketLabel: reader.readStringOrNull(offsets[16]),
-    orderType: _SaleorderTypeValueEnumMap[reader.readByteOrNull(offsets[17])] ??
+    discountProgramLabel: reader.readStringOrNull(offsets[11]),
+    localId: reader.readString(offsets[15]),
+    notes: reader.readStringOrNull(offsets[16]),
+    openTicketLabel: reader.readStringOrNull(offsets[17]),
+    orderType: _SaleorderTypeValueEnumMap[reader.readByteOrNull(offsets[18])] ??
         OrderType.generic,
     paymentMethod:
-        _SalepaymentMethodValueEnumMap[reader.readByteOrNull(offsets[18])] ??
+        _SalepaymentMethodValueEnumMap[reader.readByteOrNull(offsets[19])] ??
             PaymentMethod.cash,
-    receiptNumber: reader.readStringOrNull(offsets[19]),
-    saleDate: reader.readDateTime(offsets[20]),
-    serverId: reader.readStringOrNull(offsets[21]),
-    status: _SalestatusValueEnumMap[reader.readByteOrNull(offsets[22])] ??
+    receiptNumber: reader.readStringOrNull(offsets[20]),
+    saleDate: reader.readDateTime(offsets[21]),
+    serverId: reader.readStringOrNull(offsets[22]),
+    status: _SalestatusValueEnumMap[reader.readByteOrNull(offsets[23])] ??
         SaleStatus.completed,
-    subtotal: reader.readDouble(offsets[23]),
+    subtotal: reader.readDouble(offsets[24]),
     syncStatus:
-        _SalesyncStatusValueEnumMap[reader.readByteOrNull(offsets[24])] ??
+        _SalesyncStatusValueEnumMap[reader.readByteOrNull(offsets[25])] ??
             SyncStatus.pending,
-    taxAmount: reader.readDouble(offsets[25]),
-    tipAmount: reader.readDoubleOrNull(offsets[26]) ?? 0,
-    total: reader.readDouble(offsets[27]),
-    updatedAt: reader.readDateTime(offsets[28]),
+    taxAmount: reader.readDouble(offsets[26]),
+    tipAmount: reader.readDoubleOrNull(offsets[27]) ?? 0,
+    total: reader.readDouble(offsets[28]),
+    updatedAt: reader.readDateTime(offsets[29]),
   );
   return object;
 }
@@ -355,44 +368,46 @@ P _saleDeserializeProp<P>(
     case 10:
       return (reader.readDoubleOrNull(offset) ?? 0) as P;
     case 11:
-      return (reader.readBool(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 12:
       return (reader.readBool(offset)) as P;
     case 13:
       return (reader.readBool(offset)) as P;
     case 14:
-      return (reader.readString(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 15:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 16:
       return (reader.readStringOrNull(offset)) as P;
     case 17:
+      return (reader.readStringOrNull(offset)) as P;
+    case 18:
       return (_SaleorderTypeValueEnumMap[reader.readByteOrNull(offset)] ??
           OrderType.generic) as P;
-    case 18:
+    case 19:
       return (_SalepaymentMethodValueEnumMap[reader.readByteOrNull(offset)] ??
           PaymentMethod.cash) as P;
-    case 19:
-      return (reader.readStringOrNull(offset)) as P;
     case 20:
-      return (reader.readDateTime(offset)) as P;
-    case 21:
       return (reader.readStringOrNull(offset)) as P;
+    case 21:
+      return (reader.readDateTime(offset)) as P;
     case 22:
+      return (reader.readStringOrNull(offset)) as P;
+    case 23:
       return (_SalestatusValueEnumMap[reader.readByteOrNull(offset)] ??
           SaleStatus.completed) as P;
-    case 23:
-      return (reader.readDouble(offset)) as P;
     case 24:
+      return (reader.readDouble(offset)) as P;
+    case 25:
       return (_SalesyncStatusValueEnumMap[reader.readByteOrNull(offset)] ??
           SyncStatus.pending) as P;
-    case 25:
-      return (reader.readDouble(offset)) as P;
     case 26:
-      return (reader.readDoubleOrNull(offset) ?? 0) as P;
-    case 27:
       return (reader.readDouble(offset)) as P;
+    case 27:
+      return (reader.readDoubleOrNull(offset) ?? 0) as P;
     case 28:
+      return (reader.readDouble(offset)) as P;
+    case 29:
       return (reader.readDateTime(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -1630,6 +1645,157 @@ extension SaleQueryFilter on QueryBuilder<Sale, Sale, QFilterCondition> {
         upper: upper,
         includeUpper: includeUpper,
         epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<Sale, Sale, QAfterFilterCondition> discountProgramLabelIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'discountProgramLabel',
+      ));
+    });
+  }
+
+  QueryBuilder<Sale, Sale, QAfterFilterCondition>
+      discountProgramLabelIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'discountProgramLabel',
+      ));
+    });
+  }
+
+  QueryBuilder<Sale, Sale, QAfterFilterCondition> discountProgramLabelEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'discountProgramLabel',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Sale, Sale, QAfterFilterCondition>
+      discountProgramLabelGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'discountProgramLabel',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Sale, Sale, QAfterFilterCondition> discountProgramLabelLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'discountProgramLabel',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Sale, Sale, QAfterFilterCondition> discountProgramLabelBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'discountProgramLabel',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Sale, Sale, QAfterFilterCondition>
+      discountProgramLabelStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'discountProgramLabel',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Sale, Sale, QAfterFilterCondition> discountProgramLabelEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'discountProgramLabel',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Sale, Sale, QAfterFilterCondition> discountProgramLabelContains(
+      String value,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'discountProgramLabel',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Sale, Sale, QAfterFilterCondition> discountProgramLabelMatches(
+      String pattern,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'discountProgramLabel',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Sale, Sale, QAfterFilterCondition>
+      discountProgramLabelIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'discountProgramLabel',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<Sale, Sale, QAfterFilterCondition>
+      discountProgramLabelIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'discountProgramLabel',
+        value: '',
       ));
     });
   }
@@ -3127,6 +3293,18 @@ extension SaleQuerySortBy on QueryBuilder<Sale, Sale, QSortBy> {
     });
   }
 
+  QueryBuilder<Sale, Sale, QAfterSortBy> sortByDiscountProgramLabel() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'discountProgramLabel', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Sale, Sale, QAfterSortBy> sortByDiscountProgramLabelDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'discountProgramLabel', Sort.desc);
+    });
+  }
+
   QueryBuilder<Sale, Sale, QAfterSortBy> sortByIsDeleted() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isDeleted', Sort.asc);
@@ -3477,6 +3655,18 @@ extension SaleQuerySortThenBy on QueryBuilder<Sale, Sale, QSortThenBy> {
     });
   }
 
+  QueryBuilder<Sale, Sale, QAfterSortBy> thenByDiscountProgramLabel() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'discountProgramLabel', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Sale, Sale, QAfterSortBy> thenByDiscountProgramLabelDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'discountProgramLabel', Sort.desc);
+    });
+  }
+
   QueryBuilder<Sale, Sale, QAfterSortBy> thenByIsDeleted() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isDeleted', Sort.asc);
@@ -3779,6 +3969,14 @@ extension SaleQueryWhereDistinct on QueryBuilder<Sale, Sale, QDistinct> {
     });
   }
 
+  QueryBuilder<Sale, Sale, QDistinct> distinctByDiscountProgramLabel(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'discountProgramLabel',
+          caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<Sale, Sale, QDistinct> distinctByIsDeleted() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'isDeleted');
@@ -3965,6 +4163,12 @@ extension SaleQueryProperty on QueryBuilder<Sale, Sale, QQueryProperty> {
   QueryBuilder<Sale, double, QQueryOperations> discountProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'discount');
+    });
+  }
+
+  QueryBuilder<Sale, String?, QQueryOperations> discountProgramLabelProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'discountProgramLabel');
     });
   }
 

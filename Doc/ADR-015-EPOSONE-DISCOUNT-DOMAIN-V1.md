@@ -67,7 +67,7 @@ Cupones, loyalty, happy hour, campañas, promos automáticas, combos, reglas por
 | Fase | Contenido | Estado |
 |------|-----------|--------|
 | **A** | ADR, inventario, modelos, resolver, tests unitarios, doc EN1 pendiente | **Cerrada** (`5f131da`) |
-| **B** | Isar catálogo, seed SYSTEM, snapshot en ticket/cart, puente Totales, UI Programa + Settings | **En curso** (paralelo P0; % legacy aún disponible) |
+| **B** | Isar catálogo, seed SYSTEM, snapshot, puente Totales, UI Programa + Settings, PIN auth, recibo/precuenta con programa, % libre deprecado | **En curso** (paralelo P0) |
 | **C** | Contrato HTTP EN1 + sync | Bloqueada |
 
 ---

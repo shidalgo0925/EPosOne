@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:eposone/src/core/session/pos_session.dart';
 import 'package:eposone/src/features/discount/application/default_discount_resolver.dart';
 import 'package:eposone/src/features/discount/data/discount_program_repository.dart';
 import 'package:eposone/src/features/discount/domain/discount_enums.dart';
@@ -9,6 +8,7 @@ import 'package:eposone/src/features/discount/domain/discount_program.dart';
 import 'package:eposone/src/features/discount/domain/discount_resolve_request.dart';
 import 'package:eposone/src/features/discount/domain/discount_resolve_result.dart';
 import 'package:eposone/src/features/discount/domain/money_cents.dart';
+import 'package:eposone/src/features/discount/presentation/discount_authorize_pin_dialog.dart';
 import 'package:eposone/src/features/pos/presentation/providers/cart_provider.dart';
 import 'package:eposone/src/features/settings/data/repositories/business_config_repository.dart';
 
@@ -200,17 +200,16 @@ class _ApplyProgramDialogState extends ConsumerState<_ApplyProgramDialog> {
           child: const Text('Cancelar'),
         ),
         FilledButton(
-          onPressed: _selected == null ? null : _apply,
+          onPressed: _selected == null ? null : () => _apply(),
           child: const Text('Aplicar'),
         ),
       ],
     );
   }
 
-  void _apply() {
+  Future<void> _apply() async {
     final program = _selected!;
     final cart = ref.read(cartProvider);
-    final session = ref.read(posSessionProvider);
     const resolver = DefaultDiscountResolver();
 
     int? valueOverride;
@@ -221,6 +220,20 @@ class _ApplyProgramDialogState extends ConsumerState<_ApplyProgramDialog> {
         return;
       }
       valueOverride = (pct * 100).round();
+      if (_reasonCtrl.text.trim().isEmpty) {
+        setState(() => _error = 'Indique motivo de autorización');
+        return;
+      }
+    }
+
+    DiscountAuthPinResult? pinAuth;
+    if (program.requiresAuthorization) {
+      pinAuth = await showDiscountAuthorizePinDialog(
+        context,
+        ref,
+        title: 'Autorizar: ${program.name}',
+      );
+      if (pinAuth == null) return;
     }
 
     final result = resolver.resolve(
@@ -229,8 +242,8 @@ class _ApplyProgramDialogState extends ConsumerState<_ApplyProgramDialog> {
           for (final item in cart.items)
             DiscountLineInput(
               lineId: item.id,
-              unitPriceCents:
-                  MoneyCents.fromDecimalString(item.unitPrice.toStringAsFixed(2)),
+              unitPriceCents: MoneyCents.fromDecimalString(
+                  item.unitPrice.toStringAsFixed(2)),
               quantity: item.quantity.round().clamp(1, 999999),
               markedBeneficiary: item.discountBeneficiary,
             ),
@@ -253,9 +266,8 @@ class _ApplyProgramDialogState extends ConsumerState<_ApplyProgramDialog> {
               : DocumentCheckType.none,
         ),
         authorization: DiscountAuthorizationInput(
-          authorized: !program.requiresAuthorization ||
-              _reasonCtrl.text.trim().isNotEmpty,
-          authorizedByUserId: session?.cashierId,
+          authorized: !program.requiresAuthorization || pinAuth != null,
+          authorizedByUserId: pinAuth?.authorizedByUserId,
           reason: _reasonCtrl.text.trim().isEmpty
               ? null
               : _reasonCtrl.text.trim(),
@@ -271,6 +283,7 @@ class _ApplyProgramDialogState extends ConsumerState<_ApplyProgramDialog> {
       return;
     }
 
+    if (!mounted) return;
     ref.read(cartProvider.notifier).applyProgramDiscount(result.applied!);
     Navigator.pop(context);
   }

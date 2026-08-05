@@ -10,6 +10,7 @@ import 'package:eposone/src/features/pos/domain/entities/order_type.dart';
 import 'package:eposone/src/features/pos/presentation/providers/cart_provider.dart';
 import 'package:eposone/src/features/pos/presentation/providers/pos_provider.dart';
 import 'package:eposone/src/features/settings/domain/entities/business_config.dart';
+import 'package:eposone/src/features/discount/domain/discount_mappers.dart';
 
 /// Pre-cuenta (bill) — documento informativo, no venta.
 Future<void> showOpenTicketBillPreview({
@@ -21,9 +22,13 @@ Future<void> showOpenTicketBillPreview({
   OrderType orderType = OrderType.generic,
   required List<OpenTicketLine> lines,
   required CalculationResult result,
+  String? discountLabel,
 }) async {
   final dateStr = En1DateTimeService.formatLocal(En1DateTimeService.nowUtc());
   final businessName = config?.businessName ?? 'EPOSOne';
+  final discLabel = (discountLabel != null && discountLabel.trim().isNotEmpty)
+      ? discountLabel.trim()
+      : 'Descuento';
 
   await showDialog(
     context: context,
@@ -101,7 +106,7 @@ Future<void> showOpenTicketBillPreview({
                   value: '$symbol${result.subtotal.toStringAsFixed(2)}'),
               if (result.discount > 0)
                 _BillRow(
-                    label: 'Descuento',
+                    label: discLabel,
                     value: '-$symbol${result.discount.toStringAsFixed(2)}'),
               if (result.exemptBase > 0.0001)
                 _BillRow(
@@ -153,6 +158,7 @@ Future<void> showOpenTicketBillPreview({
                   .toList(),
               subtotal: result.subtotal,
               discount: result.discount,
+              discountLabel: discLabel,
               tax: result.taxAmount,
               total: result.total,
               taxByRate: result.taxByRate,
@@ -175,6 +181,7 @@ Future<void> showBillForOpenTicket(
   required CommercialEngineFacade engine,
 }) {
   final symbol = config?.currencySymbol ?? 'B/.';
+  final applied = AppliedDiscountCodec.decode(ticket.appliedDiscountJson);
   final result = engine.calculateTotals(
     CommercialOrderInput(
       lines: [
@@ -188,7 +195,10 @@ Future<void> showBillForOpenTicket(
             fiscalCategoryCode: line.fiscalCategoryCode,
           ),
       ],
-      documentDiscountPercent: ticket.discountPercent ?? 0,
+      documentDiscountPercent:
+          applied != null ? 0 : (ticket.discountPercent ?? 0),
+      documentDiscountAmount:
+          applied == null ? 0 : applied.discountAmountCents / 100.0,
     ),
   );
 
@@ -201,6 +211,9 @@ Future<void> showBillForOpenTicket(
     orderType: ticket.orderType,
     lines: lines,
     result: result,
+    discountLabel: applied == null
+        ? null
+        : '${applied.programName} (${applied.programCode})',
   );
 }
 
@@ -239,6 +252,9 @@ Future<void> showBillForCart(
     orderType: cart.orderType,
     lines: lines,
     result: result,
+    discountLabel: cart.appliedDiscount == null
+        ? null
+        : '${cart.appliedDiscount!.programName} (${cart.appliedDiscount!.programCode})',
   );
 }
 

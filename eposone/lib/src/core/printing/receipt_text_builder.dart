@@ -102,6 +102,9 @@ class ReceiptTextBuilder {
       if (itbmsTotal > 0.0001)
         ThermalOpsText.row('$taxName Total:', _money(symbol, itbmsTotal)),
       ThermalOpsText.row('Descuento:', _money(symbol, discount)),
+      if (sale.discountProgramLabel != null &&
+          sale.discountProgramLabel!.trim().isNotEmpty)
+        ThermalOpsText.row('Programa:', sale.discountProgramLabel!.trim()),
       if (sale.tipAmount > 0)
         ThermalOpsText.row('Propina:', _money(symbol, sale.tipAmount)),
       ThermalOpsText.row('Total:', _money(symbol, sale.total)),
@@ -137,6 +140,7 @@ class ReceiptTextBuilder {
     required List<({String name, double qty, double lineTotal})> lines,
     required double subtotal,
     required double discount,
+    String? discountLabel,
     required double tax,
     required double total,
     Map<double, double>? taxByRate,
@@ -144,6 +148,9 @@ class ReceiptTextBuilder {
   }) {
     final name = config?.businessName ?? 'EPOSOne';
     final taxName = config?.taxName ?? 'ITBMS';
+    final discLabel = (discountLabel != null && discountLabel.trim().isNotEmpty)
+        ? discountLabel.trim()
+        : 'Descuento';
     final result = <String>[
       ThermalOpsText.center('CUENTA / PRECUENTA'),
       ..._header(config, name),
@@ -176,7 +183,7 @@ class ReceiptTextBuilder {
     result.addAll([
       ThermalOpsText.line(),
       ThermalOpsText.row('Neto sin impuestos:', _money(symbol, subtotal)),
-      ThermalOpsText.row('Descuento:', _money(symbol, discount)),
+      ThermalOpsText.row('$discLabel:', _money(symbol, discount)),
       if (exemptBase > 0.0001)
         ThermalOpsText.row('Exento:', _money(symbol, exemptBase)),
       for (final e in rates)

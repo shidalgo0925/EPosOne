@@ -37,6 +37,9 @@ class Sale extends SyncEntity {
   final String? couponCode;
   final double couponDiscount;
 
+  /// Label from Discount Domain AppliedDiscount (program name / code).
+  final String? discountProgramLabel;
+
   const Sale({
     required super.localId,
     super.serverId,
@@ -64,6 +67,7 @@ class Sale extends SyncEntity {
     this.openTicketLabel,
     this.couponCode,
     this.couponDiscount = 0,
+    this.discountProgramLabel,
   });
 
   @override
@@ -102,6 +106,7 @@ class Sale extends SyncEntity {
     String? openTicketLabel,
     String? couponCode,
     double? couponDiscount,
+    String? discountProgramLabel,
   }) =>
       Sale(
         localId: localId ?? this.localId,
@@ -130,6 +135,8 @@ class Sale extends SyncEntity {
         openTicketLabel: openTicketLabel ?? this.openTicketLabel,
         couponCode: couponCode ?? this.couponCode,
         couponDiscount: couponDiscount ?? this.couponDiscount,
+        discountProgramLabel:
+            discountProgramLabel ?? this.discountProgramLabel,
       );
 
   factory Sale.create({
@@ -151,6 +158,7 @@ class Sale extends SyncEntity {
     String? openTicketLabel,
     String? couponCode,
     double couponDiscount = 0,
+    String? discountProgramLabel,
   }) =>
       Sale(
         localId: En1DateTimeService.nowUtc().millisecondsSinceEpoch.toString(),
@@ -173,6 +181,7 @@ class Sale extends SyncEntity {
         openTicketLabel: openTicketLabel,
         couponCode: couponCode,
         couponDiscount: couponDiscount,
+        discountProgramLabel: discountProgramLabel,
         createdAt: En1DateTimeService.nowUtc(),
         updatedAt: En1DateTimeService.nowUtc(),
       );

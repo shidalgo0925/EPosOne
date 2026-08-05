@@ -120,9 +120,6 @@ class PosTicketPanel extends ConsumerWidget {
                         case 'limpiar':
                           ref.read(cartProvider.notifier).clear();
                         case 'descuento':
-                          await _showDiscountDialog(
-                              context, ref, cart.discountPercent);
-                        case 'programa':
                           await showApplyDiscountProgramDialog(context, ref);
                         case 'cupon':
                           await _showCouponDialog(context, ref, cart);
@@ -138,9 +135,6 @@ class PosTicketPanel extends ConsumerWidget {
                             value: 'precuenta', child: Text('Pre-cuenta')),
                         const PopupMenuItem(
                             value: 'descuento',
-                            child: Text('Descuento ticket')),
-                        const PopupMenuItem(
-                            value: 'programa',
                             child: Text('Programa de descuento')),
                         const PopupMenuItem(
                             value: 'cupon', child: Text('Cupón promocional')),
@@ -211,7 +205,7 @@ class PosTicketPanel extends ConsumerWidget {
                       value: '$symbol${totals.subtotal.toStringAsFixed(2)}'),
                   if (totals.discount > 0)
                     _TotalRow(
-                      label: 'Descuentos',
+                      label: cart.appliedDiscount?.programName ?? 'Descuentos',
                       value: '-$symbol${totals.discount.toStringAsFixed(2)}',
                       valueColor: Colors.red.shade400,
                     ),
@@ -337,81 +331,6 @@ class PosTicketPanel extends ConsumerWidget {
     }
   }
 
-  Future<void> _showDiscountDialog(
-      BuildContext context, WidgetRef ref, double? current) async {
-    final customCtrl =
-        TextEditingController(text: current?.toStringAsFixed(0) ?? '');
-
-    final result = await showDialog<_DiscountChoice>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Descuento en ticket'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                for (final p in [5.0, 10.0, 15.0, 20.0])
-                  ActionChip(
-                    label: Text('${p.toStringAsFixed(0)}%'),
-                    onPressed: () =>
-                        Navigator.pop(ctx, _DiscountChoice.percent(p)),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: customCtrl,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(
-                labelText: 'Otro %',
-                border: OutlineInputBorder(),
-                suffixText: '%',
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          if (current != null)
-            TextButton(
-              onPressed: () =>
-                  Navigator.pop(ctx, const _DiscountChoice.clear()),
-              child: const Text('Quitar'),
-            ),
-          TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancelar')),
-          FilledButton(
-            onPressed: () {
-              final v = double.tryParse(customCtrl.text);
-              if (v == null || v <= 0 || v > 100) {
-                ScaffoldMessenger.of(ctx).showSnackBar(
-                  const SnackBar(
-                      content: Text('Indica un porcentaje entre 1 y 100')),
-                );
-                return;
-              }
-              Navigator.pop(ctx, _DiscountChoice.percent(v));
-            },
-            child: const Text('Aplicar'),
-          ),
-        ],
-      ),
-    );
-
-    if (result == null) return;
-    final notifier = ref.read(cartProvider.notifier);
-    if (result.clear) {
-      notifier.clearGlobalDiscount();
-    } else if (result.percent != null) {
-      notifier.setGlobalDiscount(result.percent!);
-    }
-  }
-
   Future<void> _showCouponDialog(
       BuildContext context, WidgetRef ref, CartState cart) async {
     final codeCtrl = TextEditingController(text: cart.appliedCouponCode ?? '');
@@ -481,15 +400,6 @@ class PosTicketPanel extends ConsumerWidget {
       }
     }
   }
-}
-
-class _DiscountChoice {
-  final double? percent;
-  final bool clear;
-  const _DiscountChoice.percent(this.percent) : clear = false;
-  const _DiscountChoice.clear()
-      : percent = null,
-        clear = true;
 }
 
 class _OrderTypeSelector extends ConsumerWidget {
