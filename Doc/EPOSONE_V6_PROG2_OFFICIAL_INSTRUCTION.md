@@ -72,9 +72,14 @@ Contratos Fiscal/Propinas/Pagos/Recibo · motores definitivos · promociones nue
 
 - [ ] Checklist E2E A–E OK  
 - [ ] Hito 2.5 cerrado oficialmente  
-- [ ] Hito 2.6 diagnóstico usable en soporte  
-- [ ] Ownership + matriz Dual Mode documentadas  
-- [ ] Arquitectura motor lista (ya ✅)
+- [x] Hito 2.6 diagnóstico usable en soporte (`ca50112`+)  
+- [x] Ownership + matriz Dual Mode documentadas (borrador 5 ago 2026)  
+- [x] Arquitectura motor lista (ya ✅)
+
+Docs:
+
+- [`EPOSONE_OWNERSHIP_MATRIX_V1.md`](EPOSONE_OWNERSHIP_MATRIX_V1.md)  
+- [`EPOSONE_STANDALONE_INTEGRATED_MATRIX_V1.md`](EPOSONE_STANDALONE_INTEGRATED_MATRIX_V1.md)
 
 Luego: Sprint V6 Motor Comercial (post-freeze).
 
