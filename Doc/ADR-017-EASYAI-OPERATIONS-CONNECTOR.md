@@ -4,7 +4,7 @@
 |-------|--------|
 | **Estado** | **Fase 0 cerrada** (ADR + catálogo + Connector + tests) · Fase 1 wire dominio pendiente |
 | **Fecha** | 5 de agosto de 2026 |
-| **Commit Fase 0** | (push) |
+| **Commit Fase 0** | `1bcfb43` |
 | **Proyecto** | EasyAI Core |
 | **Rol Local** | Arquitecto Operacional / proveedor de herramientas |
 | **SoT** | Este ADR + [`EPOSONE_EASYAI_OPS_TOOL_CATALOG_V1.md`](EPOSONE_EASYAI_OPS_TOOL_CATALOG_V1.md) |
