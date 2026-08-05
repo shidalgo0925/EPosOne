@@ -5,7 +5,7 @@
 | **Fecha** | 19 jul 2026 |
 | **Origen** | Analista — cierre Hito 2.5 + cadena operativa |
 | **Precondición** | APK limpia: desinstalar + reinstalar (no update-over-install) |
-| **Estado** | 🟡 Bloque A OK · **B en curso (1 ago 2026)** · C–E pendientes |
+| **Estado** | 🟢 A+B OK · **C–E pendientes Ops** · Ingeniería Prog2 cerrada ([cierre 5 ago](EPOSONE_PROG2_DELIVERY_CLOSE_2026-08-05.md)) · APK `cc9b0de`+ |
 | **Run log** | [`EPOSONE_E2E_HITO25_RUN_LOG.md`](EPOSONE_E2E_HITO25_RUN_LOG.md) |
 
 ---
@@ -32,14 +32,14 @@
 
 | # | Prueba | OK |
 |---|--------|----|
-| B1 | Login PIN online | ☐ |
-| B2 | Login PIN offline | ☐ |
-| B3 | PIN incorrecto | ☐ |
-| B4 | PIN bloqueado (lockout tras fallos) | ☐ |
-| B5 | Abrir turno | ☐ |
-| B6 | Cambio de cajero | ☐ |
-| B7 | Cambio de cajero con pedido abierto | ☐ |
-| B8 | Cambio de cajero con pedido pagado | ☐ |
+| B1 | Login PIN online | ✅ |
+| B2 | Login PIN offline | ✅ |
+| B3 | PIN incorrecto | ✅ |
+| B4 | PIN bloqueado (lockout tras fallos) | ✅ |
+| B5 | Abrir turno | ✅ |
+| B6 | Cambio de cajero | ✅ |
+| B7 | Cambio de cajero con pedido abierto | ✅ |
+| B8 | Cambio de cajero con pedido pagado | ✅ |
 | B9 | Desactivar cajero desde EN1 | ☐ |
 | B10 | Sincronizar / bootstrap | ☐ |
 | B11 | Confirmar bloqueo del cajero desactivado | ☐ |
