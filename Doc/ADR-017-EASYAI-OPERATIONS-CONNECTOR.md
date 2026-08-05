@@ -5,7 +5,7 @@
 | **Estado** | **Fase 1 cerrada** (consultar/analizar cableados + provider) · Fase 2 escrituras pendiente |
 | **Fecha** | 5 de agosto de 2026 |
 | **Commit Fase 0** | `1bcfb43` |
-| **Commit Fase 1** | (push) |
+| **Commit Fase 1** | `13ee49f` |
 | **Proyecto** | EasyAI Core |
 | **Rol Local** | Arquitecto Operacional / proveedor de herramientas |
 | **SoT** | Este ADR + [`EPOSONE_EASYAI_OPS_TOOL_CATALOG_V1.md`](EPOSONE_EASYAI_OPS_TOOL_CATALOG_V1.md) |
