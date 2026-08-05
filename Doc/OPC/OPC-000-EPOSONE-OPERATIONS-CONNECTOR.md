@@ -6,7 +6,7 @@
 | **Proyecto** | EasyAI Core |
 | **Rol Local** | Chief Architect – Operations Connector |
 | **Sprint** | **S2** — Operations Connector Specification |
-| **Estado** | **Especificación** (documentación) · no es implementación de IA |
+| **Estado** | **CERRADO (S2)** — especificación completa · handoff CODITO externo |
 | **Fecha** | 5 de agosto de 2026 |
 | **ADR de decisión** | [`ADR-017`](../ADR-017-EASYAI-OPERATIONS-CONNECTOR.md) |
 | **Catálogo tools runtime** | [`EPOSONE_EASYAI_OPS_TOOL_CATALOG_V1.md`](../EPOSONE_EASYAI_OPS_TOOL_CATALOG_V1.md) |

@@ -2,11 +2,13 @@
 
 | Campo | Valor |
 |-------|--------|
-| **Estado** | **Fase 2 cerrada** (código) · **S2 OPC spec documentada** · Fase 3 transporte pendiente |
+| **Estado** | **S2 CERRADO** (spec OPC) · Fases código 0–2 cerradas · Fase 3 transporte pendiente |
 | **Fecha** | 5 de agosto de 2026 |
 | **Commit Fase 0** | `1bcfb43` |
 | **Commit Fase 1** | `13ee49f` |
 | **Commit Fase 2** | `e29d38e` |
+| **Commit S2 OPC** | `bc9b3f2` |
+| **Cierre S2** | [`EPOSONE_EASYAI_S2_OPC_CLOSE_2026-08-05.md`](EPOSONE_EASYAI_S2_OPC_CLOSE_2026-08-05.md) |
 | **Proyecto** | EasyAI Core |
 | **Rol Local** | Arquitecto Operacional / proveedor de herramientas |
 | **SoT** | Este ADR + [`EPOSONE_EASYAI_OPS_TOOL_CATALOG_V1.md`](EPOSONE_EASYAI_OPS_TOOL_CATALOG_V1.md) · Spec S2: [`Doc/OPC/`](OPC/README.md) |

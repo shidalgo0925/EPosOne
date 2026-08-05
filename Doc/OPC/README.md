@@ -2,9 +2,9 @@
 
 | Campo | Valor |
 |-------|--------|
-| **Sprint** | S2 — Specification |
-| **Estado** | Documentación completa |
+| **Estado** | **S2 CERRADO** — especificación completa |
 | **Fecha** | 5 ago 2026 |
+| **Cierre** | [`EPOSONE_EASYAI_S2_OPC_CLOSE_2026-08-05.md`](../EPOSONE_EASYAI_S2_OPC_CLOSE_2026-08-05.md) |
 | **Entrada** | [OPC-000](OPC-000-EPOSONE-OPERATIONS-CONNECTOR.md) |
 
 ## Índice

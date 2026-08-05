@@ -6,6 +6,8 @@
 | **Proyecto** | EasyAI Core |
 | **Rol Local** | Chief Architect – Operations Connector |
 | **Padre** | [OPC-000](OPC-000-EPOSONE-OPERATIONS-CONNECTOR.md) |
+| **Estado** | **CERRADO en Local** |
+| **Cierre** | [`EPOSONE_EASYAI_S2_OPC_CLOSE_2026-08-05.md`](../EPOSONE_EASYAI_S2_OPC_CLOSE_2026-08-05.md) |
 | **Fecha** | 5 ago 2026 |
 | **Regla** | Documentar · no código · no GPT · no endpoints |
 
@@ -63,6 +65,7 @@ S2 **no** pide revertir ni ampliar ese código.
 - [x] Paquete `Doc/OPC/` completo  
 - [x] EasyAI puede entender operación sin arquitectura interna  
 - [x] Restricciones respetadas (no código / no GPT / no APIs nuevas)  
-- [ ] ACK CODITO de mapeo EIS (externo)
+- [x] Cierre Local publicado  
+- [ ] ACK CODITO de mapeo EIS (externo · no bloquea cierre Local)
 
-**Cierre Local S2:** especificación lista para handoff.
+**S2 Local: CERRADO.** Handoff listo para CODITO / EasyAI.
