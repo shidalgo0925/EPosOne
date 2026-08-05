@@ -20,6 +20,9 @@ class OpenTicketLine extends SyncEntity {
   /// JSON serializado de [SelectedModifier].
   final String? modifiersJson;
 
+  /// Line marked as legal/commercial discount beneficiary (ITEMS scope).
+  final bool discountBeneficiary;
+
   const OpenTicketLine({
     required super.localId,
     super.serverId,
@@ -35,6 +38,7 @@ class OpenTicketLine extends SyncEntity {
     this.discount = 0,
     this.fiscalCategoryCode,
     this.modifiersJson,
+    this.discountBeneficiary = false,
   });
 
   double get lineTotal => (quantity * unitPrice) - discount;
@@ -71,6 +75,7 @@ class OpenTicketLine extends SyncEntity {
     String? fiscalCategoryCode,
     String? modifiersJson,
     bool clearModifiersJson = false,
+    bool? discountBeneficiary,
   }) =>
       OpenTicketLine(
         localId: localId ?? this.localId,
@@ -88,6 +93,8 @@ class OpenTicketLine extends SyncEntity {
         fiscalCategoryCode: fiscalCategoryCode ?? this.fiscalCategoryCode,
         modifiersJson:
             clearModifiersJson ? null : (modifiersJson ?? this.modifiersJson),
+        discountBeneficiary:
+            discountBeneficiary ?? this.discountBeneficiary,
       );
 
   factory OpenTicketLine.create({
@@ -99,6 +106,7 @@ class OpenTicketLine extends SyncEntity {
     double discount = 0,
     String? fiscalCategoryCode,
     String? modifiersJson,
+    bool discountBeneficiary = false,
   }) {
     final now = DateTime.now();
     return OpenTicketLine(
@@ -111,6 +119,7 @@ class OpenTicketLine extends SyncEntity {
       discount: discount,
       fiscalCategoryCode: fiscalCategoryCode,
       modifiersJson: modifiersJson,
+      discountBeneficiary: discountBeneficiary,
       createdAt: now,
       updatedAt: now,
     );

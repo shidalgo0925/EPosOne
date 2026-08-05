@@ -59,7 +59,7 @@ class DiscountProgram {
   final int? maxPercent;
 
   /// Empty = all establishment types.
-  final List<EstablishmentType> establishmentTypes;
+  final List<DiscountEstablishmentClass> establishmentTypes;
 
   final String? notes;
 
@@ -71,7 +71,7 @@ class DiscountProgram {
     return true;
   }
 
-  bool appliesTo(EstablishmentType establishment) {
+  bool appliesTo(DiscountEstablishmentClass establishment) {
     if (establishmentTypes.isEmpty) return true;
     return establishmentTypes.contains(establishment);
   }

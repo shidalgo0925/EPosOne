@@ -28,6 +28,7 @@ import 'package:eposone/src/features/orders/domain/entities/order.dart';
 import 'package:eposone/src/features/orders/domain/entities/order_item.dart';
 import 'package:eposone/src/features/orders/domain/entities/order_payment.dart';
 import 'package:eposone/src/features/orders/domain/entities/order_event.dart';
+import 'package:eposone/src/features/discount/data/discount_program_record.dart';
 
 part 'database_provider.g.dart';
 
@@ -67,6 +68,7 @@ class Database extends _$Database {
         OrderItemSchema,
         OrderPaymentSchema,
         OrderEventSchema,
+        DiscountProgramRecordSchema,
       ],
       directory: dir.path,
       inspector: true,

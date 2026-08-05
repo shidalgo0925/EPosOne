@@ -95,6 +95,13 @@ class SettingsScreen extends StatelessWidget {
             onTap: () => context.push('/platform/device'),
           ),
           ListTile(
+            leading: const Icon(Icons.discount_outlined),
+            title: const Text('Programas de descuento'),
+            subtitle: const Text('Legal / comercial · Discount Domain V1'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/settings/discounts'),
+          ),
+          ListTile(
             leading: const Icon(Icons.workspace_premium_outlined),
             title: const Text('Premium'),
             subtitle: const Text('Cupones, fidelización, CRM'),

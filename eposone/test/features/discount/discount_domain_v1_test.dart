@@ -8,7 +8,7 @@ void main() {
   DiscountResolveRequest baseRequest({
     required List<DiscountLineInput> lines,
     required List<DiscountProgram> catalog,
-    EstablishmentType establishment = EstablishmentType.restaurant,
+    DiscountEstablishmentClass establishment = DiscountEstablishmentClass.restaurant,
     String? selectedProgramCode,
     DiscountBeneficiaryInput beneficiary = const DiscountBeneficiaryInput(),
     DiscountAuthorizationInput authorization =
@@ -133,7 +133,7 @@ void main() {
         baseRequest(
           lines: const [],
           catalog: catalog,
-          establishment: EstablishmentType.fastFoodFranchise,
+          establishment: DiscountEstablishmentClass.fastFoodFranchise,
         ),
       );
       expect(eligible, isEmpty);
@@ -307,7 +307,7 @@ void main() {
         baseRequest(
           lines: const [],
           catalog: [ff],
-          establishment: EstablishmentType.fastFoodFranchise,
+          establishment: DiscountEstablishmentClass.fastFoodFranchise,
         ),
       );
       expect(eligible, isEmpty);

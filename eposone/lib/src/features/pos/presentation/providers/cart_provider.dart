@@ -3,6 +3,8 @@ import 'package:eposone/src/features/pos/domain/entities/order_type.dart';
 import 'package:eposone/src/features/products/domain/entities/product.dart';
 import 'package:eposone/src/features/products/domain/entities/selected_modifier.dart';
 import 'package:eposone/src/features/products/domain/modifier_codec.dart';
+import 'package:eposone/src/features/discount/domain/applied_discount.dart';
+import 'package:eposone/src/features/discount/domain/discount_mappers.dart';
 
 /// Item en el carrito POS
 class CartItem {
@@ -12,6 +14,7 @@ class CartItem {
   double? customPrice;
   double discount;
   final List<SelectedModifier> modifiers;
+  final bool discountBeneficiary;
 
   CartItem({
     required this.id,
@@ -20,6 +23,7 @@ class CartItem {
     this.customPrice,
     this.discount = 0,
     this.modifiers = const [],
+    this.discountBeneficiary = false,
   });
 
   double get modifiersTotal =>
@@ -41,6 +45,7 @@ class CartItem {
     double? customPrice,
     double? discount,
     List<SelectedModifier>? modifiers,
+    bool? discountBeneficiary,
   }) =>
       CartItem(
         id: id ?? this.id,
@@ -49,6 +54,8 @@ class CartItem {
         customPrice: customPrice ?? this.customPrice,
         discount: discount ?? this.discount,
         modifiers: modifiers ?? this.modifiers,
+        discountBeneficiary:
+            discountBeneficiary ?? this.discountBeneficiary,
       );
 
   static bool sameConfiguration(CartItem a, CartItem b) {
@@ -70,6 +77,7 @@ class CartState {
   final String? appliedCouponId;
   final String? appliedCouponCode;
   final double couponDiscount;
+  final AppliedDiscount? appliedDiscount;
 
   const CartState({
     this.items = const [],
@@ -80,10 +88,14 @@ class CartState {
     this.appliedCouponId,
     this.appliedCouponCode,
     this.couponDiscount = 0,
+    this.appliedDiscount,
   });
 
   int get itemCount => items.length;
   int get totalQuantity => items.fold(0, (sum, i) => sum + i.quantity.toInt());
+
+  String? get appliedDiscountJson =>
+      appliedDiscount == null ? null : AppliedDiscountCodec.encode(appliedDiscount!);
 
   CartState copyWith({
     List<CartItem>? items,
@@ -98,6 +110,8 @@ class CartState {
     String? appliedCouponCode,
     bool clearCoupon = false,
     double? couponDiscount,
+    AppliedDiscount? appliedDiscount,
+    bool clearAppliedDiscount = false,
   }) =>
       CartState(
         items: items ?? this.items,
@@ -114,12 +128,20 @@ class CartState {
             clearCoupon ? null : (appliedCouponCode ?? this.appliedCouponCode),
         couponDiscount:
             clearCoupon ? 0 : (couponDiscount ?? this.couponDiscount),
+        appliedDiscount: clearAppliedDiscount
+            ? null
+            : (appliedDiscount ?? this.appliedDiscount),
       );
 }
 
 /// Notifier del carrito
 class CartNotifier extends StateNotifier<CartState> {
   CartNotifier() : super(const CartState());
+
+  void _touchItems(List<CartItem> items) {
+    // Program discount snapshot must not drift with cart edits.
+    state = state.copyWith(items: items, clearAppliedDiscount: true);
+  }
 
   void addProduct(
     Product product, {
@@ -142,9 +164,9 @@ class CartNotifier extends StateNotifier<CartState> {
       final updated = existing.copyWith(quantity: existing.quantity + quantity);
       final newItems = [...state.items];
       newItems[existingIndex] = updated;
-      state = state.copyWith(items: newItems);
+      _touchItems(newItems);
     } else {
-      state = state.copyWith(items: [
+      _touchItems([
         ...state.items,
         CartItem(
           id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -162,32 +184,41 @@ class CartNotifier extends StateNotifier<CartState> {
       removeItem(itemId);
       return;
     }
-    state = state.copyWith(
-      items: state.items
+    _touchItems(
+      state.items
           .map((i) => i.id == itemId ? i.copyWith(quantity: quantity) : i)
           .toList(),
     );
   }
 
   void updateDiscount(String itemId, double discount) {
-    state = state.copyWith(
-      items: state.items
+    _touchItems(
+      state.items
           .map((i) => i.id == itemId ? i.copyWith(discount: discount) : i)
           .toList(),
     );
   }
 
   void updateCustomPrice(String itemId, double? price) {
-    state = state.copyWith(
-      items: state.items
+    _touchItems(
+      state.items
           .map((i) => i.id == itemId ? i.copyWith(customPrice: price) : i)
           .toList(),
     );
   }
 
-  void removeItem(String itemId) {
+  void setDiscountBeneficiary(String itemId, bool value) {
     state = state.copyWith(
-        items: state.items.where((i) => i.id != itemId).toList());
+      items: state.items
+          .map((i) =>
+              i.id == itemId ? i.copyWith(discountBeneficiary: value) : i)
+          .toList(),
+      clearAppliedDiscount: true,
+    );
+  }
+
+  void removeItem(String itemId) {
+    _touchItems(state.items.where((i) => i.id != itemId).toList());
   }
 
   void removeQuantity(String itemId, double quantity) {
@@ -201,15 +232,14 @@ class CartNotifier extends StateNotifier<CartState> {
     } else {
       final newItems = [...state.items];
       newItems[index] = item.copyWith(quantity: remaining);
-      state = state.copyWith(items: newItems);
+      _touchItems(newItems);
     }
   }
 
   List<CartItem> takeItems(Iterable<String> itemIds) {
     final idSet = itemIds.toSet();
     final taken = state.items.where((i) => idSet.contains(i.id)).toList();
-    state = state.copyWith(
-        items: state.items.where((i) => !idSet.contains(i.id)).toList());
+    _touchItems(state.items.where((i) => !idSet.contains(i.id)).toList());
     return taken;
   }
 
@@ -219,11 +249,25 @@ class CartNotifier extends StateNotifier<CartState> {
   }
 
   void setGlobalDiscount(double percent) {
-    state = state.copyWith(discountPercent: percent);
+    state = state.copyWith(
+      discountPercent: percent,
+      clearAppliedDiscount: true,
+    );
   }
 
   void clearGlobalDiscount() {
     state = state.copyWith(clearDiscountPercent: true);
+  }
+
+  void applyProgramDiscount(AppliedDiscount applied) {
+    state = state.copyWith(
+      appliedDiscount: applied,
+      clearDiscountPercent: true,
+    );
+  }
+
+  void clearProgramDiscount() {
+    state = state.copyWith(clearAppliedDiscount: true);
   }
 
   void applyCoupon(
@@ -255,6 +299,7 @@ class CartNotifier extends StateNotifier<CartState> {
     String? openTicketId,
     double? discountPercent,
     OrderType orderType = OrderType.generic,
+    AppliedDiscount? appliedDiscount,
   }) {
     state = CartState(
       items: items,
@@ -262,6 +307,7 @@ class CartNotifier extends StateNotifier<CartState> {
       openTicketId: openTicketId,
       discountPercent: discountPercent,
       orderType: orderType,
+      appliedDiscount: appliedDiscount,
     );
   }
 

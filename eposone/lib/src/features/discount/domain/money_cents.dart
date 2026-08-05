@@ -1,5 +1,3 @@
-import 'discount_enums.dart';
-
 /// Money helpers for Discount Domain — integer cents only.
 abstract final class MoneyCents {
   static int fromDecimalString(String value) {

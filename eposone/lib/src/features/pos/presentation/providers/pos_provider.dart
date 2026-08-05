@@ -110,6 +110,9 @@ CommercialOrderInput commercialOrderFromCart(
   double? tipPercent,
 }) {
   final items = itemsOverride ?? cart.items;
+  final applied = cart.appliedDiscount;
+  final programAmount =
+      applied == null ? 0.0 : applied.discountAmountCents / 100.0;
   return CommercialOrderInput(
     lines: [
       for (final item in items)
@@ -122,7 +125,9 @@ CommercialOrderInput commercialOrderFromCart(
           fiscalCategoryCode: item.product.fiscalCategoryCode,
         ),
     ],
-    documentDiscountPercent: cart.discountPercent ?? 0,
+    // Program discount wins over free % (legacy kept for bridge).
+    documentDiscountPercent: applied != null ? 0 : (cart.discountPercent ?? 0),
+    documentDiscountAmount: programAmount,
     couponDiscount: _allocatedCouponDiscount(cart, items),
     tipAmount: tipAmount,
     tipPercent: tipPercent,

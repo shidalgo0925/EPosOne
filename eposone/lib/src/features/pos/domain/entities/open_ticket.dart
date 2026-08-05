@@ -17,6 +17,10 @@ class OpenTicket extends SyncEntity {
   final String? cashierId;
   final String? cashRegisterId;
   final double? discountPercent;
+
+  /// Snapshot JSON of AppliedDiscount (Discount Domain V1). Null = legacy only.
+  final String? appliedDiscountJson;
+
   final DateTime savedAt;
   @enumerated
   final OpenTicketStatus status;
@@ -40,6 +44,7 @@ class OpenTicket extends SyncEntity {
     this.cashierId,
     this.cashRegisterId,
     this.discountPercent,
+    this.appliedDiscountJson,
     required this.savedAt,
     this.status = OpenTicketStatus.open,
     this.orderType = OrderType.generic,
@@ -77,6 +82,8 @@ class OpenTicket extends SyncEntity {
     String? cashierId,
     String? cashRegisterId,
     double? discountPercent,
+    String? appliedDiscountJson,
+    bool clearAppliedDiscountJson = false,
     DateTime? savedAt,
     OpenTicketStatus? status,
     OrderType? orderType,
@@ -99,6 +106,9 @@ class OpenTicket extends SyncEntity {
         cashierId: cashierId ?? this.cashierId,
         cashRegisterId: cashRegisterId ?? this.cashRegisterId,
         discountPercent: discountPercent ?? this.discountPercent,
+        appliedDiscountJson: clearAppliedDiscountJson
+            ? null
+            : (appliedDiscountJson ?? this.appliedDiscountJson),
         savedAt: savedAt ?? this.savedAt,
         status: status ?? this.status,
         orderType: orderType ?? this.orderType,
@@ -115,6 +125,7 @@ class OpenTicket extends SyncEntity {
     String? cashierId,
     String? cashRegisterId,
     double? discountPercent,
+    String? appliedDiscountJson,
     OrderType orderType = OrderType.generic,
   }) {
     final now = DateTime.now();
@@ -127,9 +138,11 @@ class OpenTicket extends SyncEntity {
       cashierId: cashierId,
       cashRegisterId: cashRegisterId,
       discountPercent: discountPercent,
+      appliedDiscountJson: appliedDiscountJson,
       savedAt: now,
       createdAt: now,
       updatedAt: now,
+      orderType: orderType,
     );
   }
 }

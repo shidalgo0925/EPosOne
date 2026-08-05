@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |-------|--------|
-| **Estado** | Aprobado — **Fase A** (diseño + cálculo + tests); Fase B post-P0; Fase C post-contrato EN1 |
+| **Estado** | **Fase B en curso** — Isar + seed + UI mínima + puente Totales; P0 E2E sigue primero |
 | **Fecha** | 5 de agosto de 2026 |
 | **Prioridad** | **P0.5** — no desplaza certificación P0 |
 | **SoT** | Este ADR + decisión ETS Discount Domain V1 |
@@ -66,8 +66,8 @@ Cupones, loyalty, happy hour, campañas, promos automáticas, combos, reglas por
 
 | Fase | Contenido | Estado |
 |------|-----------|--------|
-| **A** | ADR, inventario, modelos, resolver, tests unitarios, doc EN1 pendiente | **En curso** |
-| **B** | Isar, UI, Totales, recibo, E2E — **después de certificar P0** | Bloqueada |
+| **A** | ADR, inventario, modelos, resolver, tests unitarios, doc EN1 pendiente | **Cerrada** (`5f131da`) |
+| **B** | Isar catálogo, seed SYSTEM, snapshot en ticket/cart, puente Totales, UI Programa + Settings | **En curso** (paralelo P0; % legacy aún disponible) |
 | **C** | Contrato HTTP EN1 + sync | Bloqueada |
 
 ---

@@ -11,8 +11,9 @@ enum DiscountScope { order, items }
 
 enum DiscountStatus { active, inactive }
 
-/// Establishment classification — configured outside the sale UI.
-enum EstablishmentType {
+/// Discount-domain establishment class (mapped from fiscal BusinessConfig).
+/// Named apart from fiscal [EstablishmentType] to avoid clashes.
+enum DiscountEstablishmentClass {
   restaurant,
   fastFoodFranchise,
   retail,

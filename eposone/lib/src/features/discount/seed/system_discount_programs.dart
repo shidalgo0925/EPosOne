@@ -21,7 +21,7 @@ abstract final class SystemDiscountPrograms {
       requiresAuthorization: false,
       requiresCustomer: true,
       requiresDocumentCheck: true,
-      establishmentTypes: const [EstablishmentType.restaurant],
+      establishmentTypes: const [DiscountEstablishmentClass.restaurant],
       notes: 'Ley Panamá — restaurante. Solo líneas beneficiario.',
     );
   }
@@ -43,7 +43,7 @@ abstract final class SystemDiscountPrograms {
       requiresAuthorization: false,
       requiresCustomer: true,
       requiresDocumentCheck: true,
-      establishmentTypes: const [EstablishmentType.fastFoodFranchise],
+      establishmentTypes: const [DiscountEstablishmentClass.fastFoodFranchise],
       notes: 'Seed; activar según política del establecimiento.',
     );
   }

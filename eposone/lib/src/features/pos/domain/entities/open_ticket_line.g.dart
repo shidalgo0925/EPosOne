@@ -32,79 +32,84 @@ const OpenTicketLineSchema = CollectionSchema(
       name: r'discount',
       type: IsarType.double,
     ),
-    r'fiscalCategoryCode': PropertySchema(
+    r'discountBeneficiary': PropertySchema(
       id: 3,
+      name: r'discountBeneficiary',
+      type: IsarType.bool,
+    ),
+    r'fiscalCategoryCode': PropertySchema(
+      id: 4,
       name: r'fiscalCategoryCode',
       type: IsarType.string,
     ),
     r'isDeleted': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'isDeleted',
       type: IsarType.bool,
     ),
     r'isPendingSync': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'isPendingSync',
       type: IsarType.bool,
     ),
     r'isSynced': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'isSynced',
       type: IsarType.bool,
     ),
     r'lineTotal': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'lineTotal',
       type: IsarType.double,
     ),
     r'localId': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'localId',
       type: IsarType.string,
     ),
     r'modifiersJson': PropertySchema(
-      id: 9,
+      id: 10,
       name: r'modifiersJson',
       type: IsarType.string,
     ),
     r'openTicketId': PropertySchema(
-      id: 10,
+      id: 11,
       name: r'openTicketId',
       type: IsarType.string,
     ),
     r'productId': PropertySchema(
-      id: 11,
+      id: 12,
       name: r'productId',
       type: IsarType.string,
     ),
     r'productName': PropertySchema(
-      id: 12,
+      id: 13,
       name: r'productName',
       type: IsarType.string,
     ),
     r'quantity': PropertySchema(
-      id: 13,
+      id: 14,
       name: r'quantity',
       type: IsarType.double,
     ),
     r'serverId': PropertySchema(
-      id: 14,
+      id: 15,
       name: r'serverId',
       type: IsarType.string,
     ),
     r'syncStatus': PropertySchema(
-      id: 15,
+      id: 16,
       name: r'syncStatus',
       type: IsarType.byte,
       enumMap: _OpenTicketLinesyncStatusEnumValueMap,
     ),
     r'unitPrice': PropertySchema(
-      id: 16,
+      id: 17,
       name: r'unitPrice',
       type: IsarType.double,
     ),
     r'updatedAt': PropertySchema(
-      id: 17,
+      id: 18,
       name: r'updatedAt',
       type: IsarType.dateTime,
     )
@@ -163,21 +168,22 @@ void _openTicketLineSerialize(
   writer.writeDateTime(offsets[0], object.createdAt);
   writer.writeDateTime(offsets[1], object.deletedAt);
   writer.writeDouble(offsets[2], object.discount);
-  writer.writeString(offsets[3], object.fiscalCategoryCode);
-  writer.writeBool(offsets[4], object.isDeleted);
-  writer.writeBool(offsets[5], object.isPendingSync);
-  writer.writeBool(offsets[6], object.isSynced);
-  writer.writeDouble(offsets[7], object.lineTotal);
-  writer.writeString(offsets[8], object.localId);
-  writer.writeString(offsets[9], object.modifiersJson);
-  writer.writeString(offsets[10], object.openTicketId);
-  writer.writeString(offsets[11], object.productId);
-  writer.writeString(offsets[12], object.productName);
-  writer.writeDouble(offsets[13], object.quantity);
-  writer.writeString(offsets[14], object.serverId);
-  writer.writeByte(offsets[15], object.syncStatus.index);
-  writer.writeDouble(offsets[16], object.unitPrice);
-  writer.writeDateTime(offsets[17], object.updatedAt);
+  writer.writeBool(offsets[3], object.discountBeneficiary);
+  writer.writeString(offsets[4], object.fiscalCategoryCode);
+  writer.writeBool(offsets[5], object.isDeleted);
+  writer.writeBool(offsets[6], object.isPendingSync);
+  writer.writeBool(offsets[7], object.isSynced);
+  writer.writeDouble(offsets[8], object.lineTotal);
+  writer.writeString(offsets[9], object.localId);
+  writer.writeString(offsets[10], object.modifiersJson);
+  writer.writeString(offsets[11], object.openTicketId);
+  writer.writeString(offsets[12], object.productId);
+  writer.writeString(offsets[13], object.productName);
+  writer.writeDouble(offsets[14], object.quantity);
+  writer.writeString(offsets[15], object.serverId);
+  writer.writeByte(offsets[16], object.syncStatus.index);
+  writer.writeDouble(offsets[17], object.unitPrice);
+  writer.writeDateTime(offsets[18], object.updatedAt);
 }
 
 OpenTicketLine _openTicketLineDeserialize(
@@ -190,19 +196,20 @@ OpenTicketLine _openTicketLineDeserialize(
     createdAt: reader.readDateTime(offsets[0]),
     deletedAt: reader.readDateTimeOrNull(offsets[1]),
     discount: reader.readDoubleOrNull(offsets[2]) ?? 0,
-    fiscalCategoryCode: reader.readStringOrNull(offsets[3]),
-    localId: reader.readString(offsets[8]),
-    modifiersJson: reader.readStringOrNull(offsets[9]),
-    openTicketId: reader.readString(offsets[10]),
-    productId: reader.readString(offsets[11]),
-    productName: reader.readString(offsets[12]),
-    quantity: reader.readDouble(offsets[13]),
-    serverId: reader.readStringOrNull(offsets[14]),
+    discountBeneficiary: reader.readBoolOrNull(offsets[3]) ?? false,
+    fiscalCategoryCode: reader.readStringOrNull(offsets[4]),
+    localId: reader.readString(offsets[9]),
+    modifiersJson: reader.readStringOrNull(offsets[10]),
+    openTicketId: reader.readString(offsets[11]),
+    productId: reader.readString(offsets[12]),
+    productName: reader.readString(offsets[13]),
+    quantity: reader.readDouble(offsets[14]),
+    serverId: reader.readStringOrNull(offsets[15]),
     syncStatus: _OpenTicketLinesyncStatusValueEnumMap[
-            reader.readByteOrNull(offsets[15])] ??
+            reader.readByteOrNull(offsets[16])] ??
         SyncStatus.pending,
-    unitPrice: reader.readDouble(offsets[16]),
-    updatedAt: reader.readDateTime(offsets[17]),
+    unitPrice: reader.readDouble(offsets[17]),
+    updatedAt: reader.readDateTime(offsets[18]),
   );
   return object;
 }
@@ -221,36 +228,38 @@ P _openTicketLineDeserializeProp<P>(
     case 2:
       return (reader.readDoubleOrNull(offset) ?? 0) as P;
     case 3:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readBoolOrNull(offset) ?? false) as P;
     case 4:
-      return (reader.readBool(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 5:
       return (reader.readBool(offset)) as P;
     case 6:
       return (reader.readBool(offset)) as P;
     case 7:
-      return (reader.readDouble(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 8:
-      return (reader.readString(offset)) as P;
+      return (reader.readDouble(offset)) as P;
     case 9:
-      return (reader.readStringOrNull(offset)) as P;
-    case 10:
       return (reader.readString(offset)) as P;
+    case 10:
+      return (reader.readStringOrNull(offset)) as P;
     case 11:
       return (reader.readString(offset)) as P;
     case 12:
       return (reader.readString(offset)) as P;
     case 13:
-      return (reader.readDouble(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 14:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDouble(offset)) as P;
     case 15:
+      return (reader.readStringOrNull(offset)) as P;
+    case 16:
       return (_OpenTicketLinesyncStatusValueEnumMap[
               reader.readByteOrNull(offset)] ??
           SyncStatus.pending) as P;
-    case 16:
-      return (reader.readDouble(offset)) as P;
     case 17:
+      return (reader.readDouble(offset)) as P;
+    case 18:
       return (reader.readDateTime(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -554,6 +563,16 @@ extension OpenTicketLineQueryFilter
         upper: upper,
         includeUpper: includeUpper,
         epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<OpenTicketLine, OpenTicketLine, QAfterFilterCondition>
+      discountBeneficiaryEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'discountBeneficiary',
+        value: value,
       ));
     });
   }
@@ -2009,6 +2028,20 @@ extension OpenTicketLineQuerySortBy
   }
 
   QueryBuilder<OpenTicketLine, OpenTicketLine, QAfterSortBy>
+      sortByDiscountBeneficiary() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'discountBeneficiary', Sort.asc);
+    });
+  }
+
+  QueryBuilder<OpenTicketLine, OpenTicketLine, QAfterSortBy>
+      sortByDiscountBeneficiaryDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'discountBeneficiary', Sort.desc);
+    });
+  }
+
+  QueryBuilder<OpenTicketLine, OpenTicketLine, QAfterSortBy>
       sortByFiscalCategoryCode() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'fiscalCategoryCode', Sort.asc);
@@ -2252,6 +2285,20 @@ extension OpenTicketLineQuerySortThenBy
   }
 
   QueryBuilder<OpenTicketLine, OpenTicketLine, QAfterSortBy>
+      thenByDiscountBeneficiary() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'discountBeneficiary', Sort.asc);
+    });
+  }
+
+  QueryBuilder<OpenTicketLine, OpenTicketLine, QAfterSortBy>
+      thenByDiscountBeneficiaryDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'discountBeneficiary', Sort.desc);
+    });
+  }
+
+  QueryBuilder<OpenTicketLine, OpenTicketLine, QAfterSortBy>
       thenByFiscalCategoryCode() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'fiscalCategoryCode', Sort.asc);
@@ -2489,6 +2536,13 @@ extension OpenTicketLineQueryWhereDistinct
   }
 
   QueryBuilder<OpenTicketLine, OpenTicketLine, QDistinct>
+      distinctByDiscountBeneficiary() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'discountBeneficiary');
+    });
+  }
+
+  QueryBuilder<OpenTicketLine, OpenTicketLine, QDistinct>
       distinctByFiscalCategoryCode({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'fiscalCategoryCode',
@@ -2618,6 +2672,13 @@ extension OpenTicketLineQueryProperty
   QueryBuilder<OpenTicketLine, double, QQueryOperations> discountProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'discount');
+    });
+  }
+
+  QueryBuilder<OpenTicketLine, bool, QQueryOperations>
+      discountBeneficiaryProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'discountBeneficiary');
     });
   }
 

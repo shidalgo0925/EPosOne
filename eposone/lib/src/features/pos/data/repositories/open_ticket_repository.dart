@@ -83,6 +83,7 @@ class OpenTicketRepository {
             predefinedSlotId: predefinedSlotId,
             customerId: cart.customerId,
             discountPercent: cart.discountPercent,
+            appliedDiscountJson: cart.appliedDiscountJson,
             orderType: orderType ?? cart.orderType,
             savedAt: now,
             updatedAt: now,
@@ -96,6 +97,7 @@ class OpenTicketRepository {
             cashierId: cashierId,
             cashRegisterId: cashRegisterId,
             discountPercent: cart.discountPercent,
+            appliedDiscountJson: cart.appliedDiscountJson,
             orderType: orderType ?? cart.orderType,
           );
 
@@ -111,6 +113,7 @@ class OpenTicketRepository {
             fiscalCategoryCode: item.product.fiscalCategoryCode,
             modifiersJson:
                 item.modifiersJson.isEmpty ? null : item.modifiersJson,
+            discountBeneficiary: item.discountBeneficiary,
           ),
         )
         .toList();

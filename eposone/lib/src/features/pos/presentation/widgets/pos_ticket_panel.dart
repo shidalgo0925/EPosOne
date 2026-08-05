@@ -15,6 +15,7 @@ import 'package:eposone/src/features/pos/presentation/widgets/customer_picker_ti
 import 'package:eposone/src/features/pos/presentation/widgets/open_tickets_sheet.dart';
 import 'package:eposone/src/features/premium/data/repositories/coupon_repository.dart';
 import 'package:eposone/src/features/premium/domain/entities/coupon.dart';
+import 'package:eposone/src/features/discount/presentation/apply_discount_program_dialog.dart';
 
 class PosTicketPanel extends ConsumerWidget {
   final bool expanded;
@@ -121,6 +122,8 @@ class PosTicketPanel extends ConsumerWidget {
                         case 'descuento':
                           await _showDiscountDialog(
                               context, ref, cart.discountPercent);
+                        case 'programa':
+                          await showApplyDiscountProgramDialog(context, ref);
                         case 'cupon':
                           await _showCouponDialog(context, ref, cart);
                         case 'guardar':
@@ -136,6 +139,9 @@ class PosTicketPanel extends ConsumerWidget {
                         const PopupMenuItem(
                             value: 'descuento',
                             child: Text('Descuento ticket')),
+                        const PopupMenuItem(
+                            value: 'programa',
+                            child: Text('Programa de descuento')),
                         const PopupMenuItem(
                             value: 'cupon', child: Text('Cupón promocional')),
                         if (openTicketsOn)

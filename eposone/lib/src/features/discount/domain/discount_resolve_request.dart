@@ -71,7 +71,7 @@ class DiscountResolveRequest {
 
   final List<DiscountLineInput> lines;
   final List<DiscountProgram> catalog;
-  final EstablishmentType establishmentType;
+  final DiscountEstablishmentClass establishmentType;
   final DateTime at;
 
   /// Explicit program chosen by cashier from eligible list (not free %).
