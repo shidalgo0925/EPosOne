@@ -53,6 +53,7 @@ import 'package:eposone/src/features/reports/presentation/screens/sales_report_s
 import 'package:eposone/src/features/reports/presentation/screens/shifts_report_screen.dart';
 import 'package:eposone/src/features/reports/presentation/screens/employees_report_screen.dart';
 import 'package:eposone/src/features/discount/presentation/discount_programs_settings_screen.dart';
+import 'package:eposone/src/features/operations_control/presentation/operations_control_shell.dart';
 
 
 
@@ -179,6 +180,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         },
       ),
       GoRoute(path: '/reports', builder: (_, __) => const ReportsHubScreen()),
+      GoRoute(
+        path: '/operations-control',
+        builder: (_, __) => const OperationsControlShell(),
+      ),
       GoRoute(
           path: '/reports/sales',
           builder: (_, __) => const SalesReportScreen()),

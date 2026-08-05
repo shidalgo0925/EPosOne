@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |-------|--------|
-| **Estado** | Aprobado en principio (ETS) — **Fase A pendiente de GO de implementación** |
+| **Estado** | **Fase A en curso** — shell OCC + Hoy + enlaces (código); madurez B–D pendiente |
 | **Fecha** | 5 de agosto de 2026 |
 | **Prioridad** | Pilar de producto · **no desplaza** cierre E2E P0 / Hito 2.5 |
 | **SoT** | Este ADR + decisión ETS “Control Operacional ≠ reportes” |
@@ -167,4 +167,4 @@ Detalle vivo: [`EPOSONE_OCC_SOURCE_INVENTORY_V1.md`](EPOSONE_OCC_SOURCE_INVENTOR
 - [x] Árbol de navegación §4  
 - [x] Fases A–D por madurez  
 - [x] Dual Mode + no inventar HTTP  
-- [ ] Implementación Fase A (código) — requiere GO aparte
+- [x] Implementación Fase A (código) — shell + Hoy + deep links (`/operations-control`)
