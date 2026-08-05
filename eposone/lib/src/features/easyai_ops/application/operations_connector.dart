@@ -2,8 +2,15 @@ import '../domain/ops_context.dart';
 import '../domain/ops_tool_definition.dart';
 import '../domain/ops_tool_result.dart';
 import '../domain/ops_verb.dart';
+import 'handlers/caja_tool_handlers.dart';
+import 'handlers/dispositivos_tool_handlers.dart';
+import 'handlers/licencias_tool_handlers.dart';
 import 'handlers/occ_tool_handlers.dart';
+import 'handlers/pedidos_tool_handlers.dart';
+import 'handlers/reportes_tool_handlers.dart';
+import 'handlers/telemetria_tool_handlers.dart';
 import 'handlers/turnos_tool_handlers.dart';
+import 'handlers/ventas_tool_handlers.dart';
 import 'ops_tool_registry.dart';
 
 /// Única fachada EasyAI ↔ EPOSOne (ADR-017).
@@ -13,7 +20,24 @@ class OperationsConnector {
   OperationsConnector({
     OccToolHandlers? occ,
     TurnosToolHandlers? turnos,
-  }) : _registry = OpsToolRegistry(occ: occ, turnos: turnos);
+    CajaToolHandlers? caja,
+    DispositivosToolHandlers? dispositivos,
+    TelemetriaToolHandlers? telemetria,
+    LicenciasToolHandlers? licencias,
+    PedidosToolHandlers? pedidos,
+    VentasToolHandlers? ventas,
+    ReportesToolHandlers? reportes,
+  }) : _registry = OpsToolRegistry(
+          occ: occ,
+          turnos: turnos,
+          caja: caja,
+          dispositivos: dispositivos,
+          telemetria: telemetria,
+          licencias: licencias,
+          pedidos: pedidos,
+          ventas: ventas,
+          reportes: reportes,
+        );
 
   final OpsToolRegistry _registry;
 

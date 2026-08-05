@@ -2,9 +2,10 @@
 
 | Campo | Valor |
 |-------|--------|
-| **Estado** | **Fase 0 cerrada** (ADR + catálogo + Connector + tests) · Fase 1 wire dominio pendiente |
+| **Estado** | **Fase 1 cerrada** (consultar/analizar cableados + provider) · Fase 2 escrituras pendiente |
 | **Fecha** | 5 de agosto de 2026 |
 | **Commit Fase 0** | `1bcfb43` |
+| **Commit Fase 1** | (push) |
 | **Proyecto** | EasyAI Core |
 | **Rol Local** | Arquitecto Operacional / proveedor de herramientas |
 | **SoT** | Este ADR + [`EPOSONE_EASYAI_OPS_TOOL_CATALOG_V1.md`](EPOSONE_EASYAI_OPS_TOOL_CATALOG_V1.md) |
@@ -109,8 +110,8 @@ Verbos canónicos:
 
 | Fase | Contenido | Estado |
 |------|-----------|--------|
-| **0** | ADR + catálogo + registry Dart + `invoke` stub / 1–2 tools lectura | **En curso** |
-| **1** | Wire `consultar`/`analizar` a OCC, turnos, sync, licencia | Pendiente |
+| **0** | ADR + catálogo + registry Dart + `invoke` stub / 1–2 tools lectura | **Cerrada** |
+| **1** | Wire `consultar`/`analizar` a OCC, turnos, sync, licencia, caja, dispositivos, ventas | **Cerrada** |
 | **2** | Verbos de escritura con auth (abrir/cerrar caja, cancelar pedido) | Pendiente |
 | **3** | Transporte remoto (HTTP/MCP) cuando EasyAI/EN1 congelados | Pendiente |
 
@@ -132,3 +133,10 @@ Verbos canónicos:
 - [x] `OperationsConnector` + registry en código  
 - [x] ≥1 tool lectura real inyectable (`occ.consultar.pulso` con loader)  
 - [x] Suite que demuestre rechazo sin acceso a tablas  
+
+## 9. Criterio de aceptación Fase 1
+
+- [x] `operationsConnectorProvider` inyecta loaders de dominio  
+- [x] Tools Wire: OCC, dashboard, turnos, caja (consultar/analizar), dispositivos, telemetría, licencias, pedidos abiertos, ventas hoy, reportes disponibles  
+- [x] Sin acceso a tablas; escrituras siguen stub + auth gate  
+- [x] Suite ampliada (12 tests)  

@@ -5,10 +5,11 @@
 | **Fecha** | 5 ago 2026 |
 | **ADR** | [`ADR-017`](ADR-017-EASYAI-OPERATIONS-CONNECTOR.md) |
 | **Regla** | Solo tools · sin tablas · sin IA |
+| **Fase** | **1** — consultar/analizar cableados al dominio |
 
 Convención ID: `{contexto}.{verbo}` o `{contexto}.{verbo}.{recurso}`
 
-Leyenda estado: **Pub** = publicado en registry · **Plan** = declarado · **Wire** = cableado a dominio
+Leyenda estado: **Pub** = publicado en registry · **Plan** = declarado stub · **Wire** = cableado a dominio vía `operationsConnectorProvider`
 
 ---
 
@@ -24,8 +25,8 @@ Ver ADR-017 §4.
 
 | Tool ID | Verbo | Descripción | Estado |
 |---------|-------|-------------|--------|
-| `caja.consultar.estado` | consultar | Estado de caja / montos sesión | Plan |
-| `caja.analizar.descuadre` | analizar | Señal descuadre teórico vs contado | Plan |
+| `caja.consultar.estado` | consultar | Estado de caja / montos sesión | **Wire** |
+| `caja.analizar.descuadre` | analizar | Teórico vs `counted_amount` | **Wire** |
 | `caja.abrir` | abrir | Abrir caja (auth) | Plan |
 | `caja.cerrar` | cerrar | Cerrar / arqueo (auth) | Plan |
 
@@ -33,7 +34,7 @@ Ver ADR-017 §4.
 
 | Tool ID | Verbo | Descripción | Estado |
 |---------|-------|-------------|--------|
-| `turnos.consultar.actual` | consultar | Turno abierto actual | **Pub** |
+| `turnos.consultar.actual` | consultar | Turno abierto actual | **Wire** |
 | `turnos.consultar.historial` | consultar | Últimos N turnos | Plan |
 | `turnos.abrir` | abrir | Abrir turno | Plan |
 | `turnos.cerrar` | cerrar | Cerrar turno | Plan |
@@ -42,7 +43,7 @@ Ver ADR-017 §4.
 
 | Tool ID | Verbo | Descripción | Estado |
 |---------|-------|-------------|--------|
-| `pedidos.consultar.abiertos` | consultar | Tickets / orders abiertos | Plan |
+| `pedidos.consultar.abiertos` | consultar | Tickets / orders abiertos | **Wire** |
 | `pedidos.consultar.por_id` | consultar | Detalle pedido | Plan |
 | `pedidos.crear` | crear | Alta pedido (auth) | Plan |
 | `pedidos.actualizar` | actualizar | Modificar líneas | Plan |
@@ -78,36 +79,36 @@ Ver ADR-017 §4.
 | Tool ID | Verbo | Descripción | Estado |
 |---------|-------|-------------|--------|
 | `ventas.consultar` | consultar | Venta por id / periodo corto | Plan |
-| `ventas.analizar.resumen_hoy` | analizar | Totales del día | Plan |
+| `ventas.analizar.resumen_hoy` | analizar | Totales del día de negocio | **Wire** |
 | `ventas.cancelar` | cancelar | Anular / reembolso (auth) | Plan |
 
 ### dispositivos
 
 | Tool ID | Verbo | Descripción | Estado |
 |---------|-------|-------------|--------|
-| `dispositivos.consultar.este` | consultar | Snapshot 2.6 / UUID / modo | Plan |
-| `dispositivos.analizar.salud` | analizar | Bootstrap/sync/errores | Plan |
+| `dispositivos.consultar.este` | consultar | Snapshot 2.6 / UUID / modo | **Wire** |
+| `dispositivos.analizar.salud` | analizar | Bootstrap/sync/errores | **Wire** |
 
 ### dashboard
 
 | Tool ID | Verbo | Descripción | Estado |
 |---------|-------|-------------|--------|
-| `dashboard.consultar.pulso` | consultar | Alias OCC Hoy | **Pub** (vía occ) |
-| `dashboard.analizar.atencion` | analizar | Conteo señales atención | **Pub** |
+| `dashboard.consultar.pulso` | consultar | Alias OCC Hoy | **Wire** |
+| `dashboard.analizar.atencion` | analizar | Conteo señales atención | **Wire** |
 
 ### occ
 
 | Tool ID | Verbo | Descripción | Estado |
 |---------|-------|-------------|--------|
-| `occ.consultar.pulso` | consultar | `OccPulse` operacional | **Pub** / **Wire** |
-| `occ.analizar.alertas` | analizar | Lista señales Fase A | Plan |
-| `occ.consultar.contexto` | consultar | Árbol navegación OCC | **Pub** |
+| `occ.consultar.pulso` | consultar | `OccPulse` operacional | **Wire** |
+| `occ.analizar.alertas` | analizar | Lista señales Fase A | **Wire** |
+| `occ.consultar.contexto` | consultar | Árbol navegación OCC | **Wire** |
 
 ### reportes
 
 | Tool ID | Verbo | Descripción | Estado |
 |---------|-------|-------------|--------|
-| `reportes.consultar.disponibles` | consultar | Lista informes (no datos crudos) | Plan |
+| `reportes.consultar.disponibles` | consultar | Lista informes (no datos crudos) | **Wire** |
 | `reportes.analizar.ventas_periodo` | analizar | Agregado periodo (sin SQL) | Plan |
 
 > Solo `consultar` / `analizar`. Sin crear/actualizar tablas de reporting.
@@ -116,15 +117,25 @@ Ver ADR-017 §4.
 
 | Tool ID | Verbo | Descripción | Estado |
 |---------|-------|-------------|--------|
-| `telemetria.consultar.cola` | consultar | Pendientes / fallos sync | Plan |
-| `telemetria.analizar.errores` | analizar | Últimos errores bootstrap/sync | Plan |
+| `telemetria.consultar.cola` | consultar | Pendientes / fallos sync | **Wire** |
+| `telemetria.analizar.errores` | analizar | Últimos errores bootstrap/sync | **Wire** |
 
 ### licencias
 
 | Tool ID | Verbo | Descripción | Estado |
 |---------|-------|-------------|--------|
-| `licencias.consultar` | consultar | Snapshot + estado efectivo | Plan |
-| `licencias.analizar.vencimiento` | analizar | Riesgo gracia/expiración | Plan |
+| `licencias.consultar` | consultar | Snapshot + estado efectivo | **Wire** |
+| `licencias.analizar.vencimiento` | analizar | Riesgo gracia/expiración | **Wire** |
+
+---
+
+## Inyección app
+
+```dart
+ref.read(operationsConnectorProvider).invoke('occ.consultar.pulso', {});
+```
+
+El provider traduce repos/OCC → Maps. EasyAI **nunca** recibe Isar.
 
 ---
 

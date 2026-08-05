@@ -3,28 +3,40 @@ import '../../domain/ops_tool_definition.dart';
 import '../../domain/ops_verb.dart';
 
 /// Tools declared in catalog but not wired — still published as Plan stubs.
+/// Write verbs stay stubbed until Fase 2 (auth real).
 class StubToolHandlers {
   List<OpsToolDefinition> plannedDefinitions() {
     final specs = <(String, OpsContext, OpsVerb, String)>[
-      ('caja.consultar.estado', OpsContext.caja, OpsVerb.consultar, 'Estado de caja'),
       ('caja.cerrar', OpsContext.caja, OpsVerb.cerrar, 'Cerrar caja / arqueo'),
       ('caja.abrir', OpsContext.caja, OpsVerb.abrir, 'Abrir caja'),
-      ('pedidos.consultar.abiertos', OpsContext.pedidos, OpsVerb.consultar,
-          'Pedidos/tickets abiertos'),
+      ('turnos.consultar.historial', OpsContext.turnos, OpsVerb.consultar,
+          'Historial de turnos'),
+      ('turnos.abrir', OpsContext.turnos, OpsVerb.abrir, 'Abrir turno'),
+      ('turnos.cerrar', OpsContext.turnos, OpsVerb.cerrar, 'Cerrar turno'),
+      ('pedidos.consultar.por_id', OpsContext.pedidos, OpsVerb.consultar,
+          'Detalle pedido'),
+      ('pedidos.crear', OpsContext.pedidos, OpsVerb.crear, 'Alta pedido'),
+      ('pedidos.actualizar', OpsContext.pedidos, OpsVerb.actualizar,
+          'Modificar líneas'),
       ('pedidos.cancelar', OpsContext.pedidos, OpsVerb.cancelar, 'Cancelar/anular pedido'),
+      ('pedidos.cerrar', OpsContext.pedidos, OpsVerb.cerrar, 'Cobrar / cerrar pedido'),
       ('clientes.consultar', OpsContext.clientes, OpsVerb.consultar, 'Consultar clientes'),
+      ('clientes.crear', OpsContext.clientes, OpsVerb.crear, 'Alta cliente'),
+      ('clientes.actualizar', OpsContext.clientes, OpsVerb.actualizar, 'Editar cliente'),
       ('inventario.consultar.stock', OpsContext.inventario, OpsVerb.consultar,
           'Consultar stock'),
+      ('inventario.actualizar.ajuste', OpsContext.inventario, OpsVerb.actualizar,
+          'Ajuste de inventario'),
+      ('inventario.analizar.alertas', OpsContext.inventario, OpsVerb.analizar,
+          'Alertas bajo mínimo'),
       ('productos.consultar', OpsContext.productos, OpsVerb.consultar, 'Consultar productos'),
-      ('ventas.analizar.resumen_hoy', OpsContext.ventas, OpsVerb.analizar,
-          'Resumen ventas hoy'),
-      ('dispositivos.consultar.este', OpsContext.dispositivos, OpsVerb.consultar,
-          'Este dispositivo'),
-      ('telemetria.consultar.cola', OpsContext.telemetria, OpsVerb.consultar,
-          'Cola de sync'),
-      ('licencias.consultar', OpsContext.licencias, OpsVerb.consultar, 'Licencia'),
-      ('reportes.consultar.disponibles', OpsContext.reportes, OpsVerb.consultar,
-          'Informes disponibles'),
+      ('productos.crear', OpsContext.productos, OpsVerb.crear, 'Alta producto'),
+      ('productos.actualizar', OpsContext.productos, OpsVerb.actualizar,
+          'Actualizar producto'),
+      ('ventas.consultar', OpsContext.ventas, OpsVerb.consultar, 'Consultar venta'),
+      ('ventas.cancelar', OpsContext.ventas, OpsVerb.cancelar, 'Anular / reembolso'),
+      ('reportes.analizar.ventas_periodo', OpsContext.reportes, OpsVerb.analizar,
+          'Agregado ventas periodo'),
     ];
 
     return [

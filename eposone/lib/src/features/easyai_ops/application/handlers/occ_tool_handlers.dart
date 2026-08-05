@@ -4,10 +4,11 @@ import '../../domain/ops_verb.dart';
 
 /// OCC / Dashboard tools — lectura operacional (ADR-016 + ADR-017).
 class OccToolHandlers {
-  OccToolHandlers({this.loadPulse});
+  OccToolHandlers({this.loadPulse, this.loadAlertas});
 
-  /// Injected from app (Isar/OCC). Tests inject a fake.
+  /// Injected from app (OCC). Tests inject a fake.
   final Future<Map<String, Object?>> Function()? loadPulse;
+  final Future<Map<String, Object?>> Function()? loadAlertas;
 
   List<OpsToolDefinition> definitions() => [
         OpsToolDefinition(
@@ -54,6 +55,52 @@ class OccToolHandlers {
           },
         ),
         OpsToolDefinition(
+          id: 'occ.analizar.alertas',
+          context: OpsContext.occ,
+          verb: OpsVerb.analizar,
+          title: 'Alertas OCC',
+          description: 'Lista de señales Fase A (sync, bootstrap, licencia, enlace)',
+          risk: OpsRisk.low,
+          wired: loadAlertas != null || loadPulse != null,
+          handler: (input, session) async {
+            if (loadAlertas != null) return loadAlertas!();
+            final p = await _pulso();
+            final alerts = <Map<String, Object?>>[];
+            void add(String code, String? detail) {
+              if (detail == null || detail.isEmpty) return;
+              alerts.add({'code': code, 'detail': detail});
+            }
+
+            final pending = (p['pending_sync'] as int?) ?? 0;
+            final failed = (p['failed_sync'] as int?) ?? 0;
+            if (pending > 0) {
+              alerts.add({'code': 'sync_pending', 'detail': '$pending pendientes'});
+            }
+            if (failed > 0) {
+              alerts.add({'code': 'sync_failed', 'detail': '$failed fallidos'});
+            }
+            add('bootstrap', p['bootstrap_error'] as String?);
+            add('provisioning', p['provisioning_error'] as String?);
+            add('sync', p['sync_error'] as String?);
+            final link = p['link_label'] as String?;
+            if (link != null && link.toLowerCase().contains('offline')) {
+              alerts.add({'code': 'en1_offline', 'detail': link});
+            }
+            final lic = p['license_label'] as String?;
+            if (lic != null &&
+                (lic.toLowerCase().contains('gracia') ||
+                    lic.toLowerCase().contains('expir') ||
+                    lic.toLowerCase().contains('suspend'))) {
+              alerts.add({'code': 'license', 'detail': lic});
+            }
+            return {
+              'count': alerts.length,
+              'alerts': alerts,
+              'attention_count': p['attention_count'] ?? alerts.length,
+            };
+          },
+        ),
+        OpsToolDefinition(
           id: 'occ.consultar.contexto',
           context: OpsContext.occ,
           verb: OpsVerb.consultar,
@@ -79,10 +126,11 @@ class OccToolHandlers {
     if (loadPulse != null) return loadPulse!();
     return {
       'wired': false,
-      'message': 'Pulse loader no inyectado (Fase 0)',
+      'message': 'Pulse loader no inyectado',
       'shift_open': null,
       'open_tickets': null,
       'pending_sync': null,
+      'failed_sync': null,
       'attention_count': 0,
     };
   }
