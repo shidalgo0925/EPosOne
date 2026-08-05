@@ -2,6 +2,33 @@ import 'dart:typed_data';
 
 import 'package:image/image.dart' as img;
 
+/// Tamaño tipográfico ESC/POS (ESC ! n).
+enum EscPosFontSize {
+  normal,
+  doubleHeight,
+  doubleWidth,
+  doubleBoth,
+}
+
+/// Línea de ticket con tamaño y alineación.
+class EscPosPrintLine {
+  final String text;
+  final EscPosFontSize size;
+  final bool center;
+
+  const EscPosPrintLine(
+    this.text, {
+    this.size = EscPosFontSize.normal,
+    this.center = false,
+  });
+
+  /// Columnas útiles aprox. en Font A 80 mm.
+  static int colsFor(EscPosFontSize size) => switch (size) {
+        EscPosFontSize.normal || EscPosFontSize.doubleHeight => 48,
+        EscPosFontSize.doubleWidth || EscPosFontSize.doubleBoth => 24,
+      };
+}
+
 /// Bytes ESC/POS compartidos (BT y red TCP).
 class EscPosBytes {
   EscPosBytes._();
@@ -12,10 +39,37 @@ class EscPosBytes {
   static const alignLeft = [0x1B, 0x61, 0x00];
   static const alignCenter = [0x1B, 0x61, 0x01];
   static const fontNormal = [0x1B, 0x21, 0x00];
+  /// ESC ! : bit4=doble alto, bit5=doble ancho.
+  static const fontDoubleHeight = [0x1B, 0x21, 0x10];
+  static const fontDoubleWidth = [0x1B, 0x21, 0x20];
+  static const fontDoubleBoth = [0x1B, 0x21, 0x30];
+
+  static List<int> fontBytes(EscPosFontSize size) => switch (size) {
+        EscPosFontSize.normal => fontNormal,
+        EscPosFontSize.doubleHeight => fontDoubleHeight,
+        EscPosFontSize.doubleWidth => fontDoubleWidth,
+        EscPosFontSize.doubleBoth => fontDoubleBoth,
+      };
 
   /// Construye ticket: init + logo opcional + líneas ASCII + QR + corte.
   static List<int> fromLines(
     List<String> lines, {
+    String? qrData,
+    List<int>? logoRaster,
+  }) {
+    return fromPrintLines(
+      [
+        for (final line in lines)
+          EscPosPrintLine(line, size: EscPosFontSize.normal),
+      ],
+      qrData: qrData,
+      logoRaster: logoRaster,
+    );
+  }
+
+  /// Ticket con tamaños por línea (comandas cocina/bar).
+  static List<int> fromPrintLines(
+    List<EscPosPrintLine> lines, {
     String? qrData,
     List<int>? logoRaster,
   }) {
@@ -26,20 +80,20 @@ class EscPosBytes {
     if (logoRaster != null && logoRaster.isNotEmpty) {
       bytes.addAll(alignCenter);
       bytes.addAll(logoRaster);
-      // Separación logo → nombre (no pegado).
       bytes.addAll([0x0A, 0x0A, 0x0A]);
+    }
+
+    for (final line in lines) {
+      bytes.addAll(line.center ? alignCenter : alignLeft);
+      bytes.addAll(fontBytes(line.size));
+      bytes.addAll(_encodeAscii(_toPrinterText(line.text)));
+      bytes.add(0x0A);
     }
 
     bytes.addAll(alignLeft);
     bytes.addAll(fontNormal);
 
-    for (final line in lines) {
-      bytes.addAll(_encodeAscii(_toPrinterText(line)));
-      bytes.add(0x0A);
-    }
-
     if (qrData != null && qrData.isNotEmpty) {
-      // Espacio corto antes del QR (evita el hueco enorme del ticket actual).
       bytes.addAll([0x0A, 0x0A]);
       bytes.addAll(alignCenter);
       bytes.addAll(qrCode(qrData, size: 10));

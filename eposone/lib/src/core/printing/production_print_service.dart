@@ -66,7 +66,7 @@ class ProductionPrintService {
     final results = <ProductionPrintResult>[];
     for (final entry in grouped.entries) {
       final dest = byId[entry.key]!;
-      final lines = KitchenTicketBuilder.build(
+      final lines = KitchenTicketBuilder.buildPrintLines(
         config: config,
         destinationName: dest.name,
         lines: entry.value,
@@ -97,7 +97,7 @@ class ProductionPrintService {
   }
 
   static Future<bool> testDestination(ProductionDestination dest) async {
-    final lines = KitchenTicketBuilder.build(
+    final lines = KitchenTicketBuilder.buildPrintLines(
       config: null,
       destinationName: dest.name,
       lines: const [
@@ -111,9 +111,9 @@ class ProductionPrintService {
 
   static Future<bool> _printToDestination(
     ProductionDestination dest,
-    List<String> lines,
+    List<EscPosPrintLine> lines,
   ) async {
-    final bytes = EscPosBytes.fromLines(lines);
+    final bytes = EscPosBytes.fromPrintLines(lines);
     switch (dest.channel) {
       case ProductionChannel.network:
         final host = dest.host?.trim();
