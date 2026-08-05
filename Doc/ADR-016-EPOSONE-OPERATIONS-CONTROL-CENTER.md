@@ -2,8 +2,9 @@
 
 | Campo | Valor |
 |-------|--------|
-| **Estado** | **Fase A en curso** — shell OCC + Hoy + enlaces (código); madurez B–D pendiente |
+| **Estado** | **Fase A cerrada** (Visibilidad: shell + Hoy + deep links) · B–D pendientes · no desplaza E2E P0 |
 | **Fecha** | 5 de agosto de 2026 |
+| **Commit Fase A** | `edf7264` |
 | **Prioridad** | Pilar de producto · **no desplaza** cierre E2E P0 / Hito 2.5 |
 | **SoT** | Este ADR + decisión ETS “Control Operacional ≠ reportes” |
 | **Relacionado** | [`ADR-008`](ADR-008-EPOSONE-COMMERCIAL-ENGINE.md) · [`ADR-014`](ADR-014-EPOSONE-INSTALLATION-PROVISIONING-BOOTSTRAP.md) · [`ADR-015`](ADR-015-EPOSONE-DISCOUNT-DOMAIN-V1.md) · Cash Shift [`EN1_EPOSONE_CASH_SHIFT_HTTP_CONTRACT.md`](EN1_EPOSONE_CASH_SHIFT_HTTP_CONTRACT.md) · Ownership [`EPOSONE_OWNERSHIP_MATRIX_V1.md`](EPOSONE_OWNERSHIP_MATRIX_V1.md) · Diagnóstico 2.6 |
@@ -103,14 +104,14 @@ Widgets nuevos (cocina, delivery…) se cuelgan bajo **Hoy / Operación / Alerta
 
 ## 6. Roadmap de madurez (historia del producto)
 
-| Fase | Objetivo | Contenido típico |
-|------|----------|------------------|
-| **A — Visibilidad** | Ver la operación | Navegación OCC · **Hoy** (KPIs + deep links) · acceso a arqueos/cierres existentes |
-| **B — Control** | Actuar sobre excepciones | Alertas · bitácora · excepciones de caja/sync/dispositivo |
-| **C — Inteligencia** | Priorizar | Medios de pago · salud operativa · rankings / insights |
-| **D — Conciliación** | Cerrar el ciclo financiero | Banco · depósitos · conciliación |
+| Fase | Objetivo | Contenido típico | Estado |
+|------|----------|------------------|--------|
+| **A — Visibilidad** | Ver la operación | Navegación OCC · **Hoy** · deep links a arqueos/cierres | **Cerrada** `edf7264` |
+| **B — Control** | Actuar sobre excepciones | Alertas · bitácora · excepciones de caja/sync/dispositivo | Pendiente |
+| **C — Inteligencia** | Priorizar | Medios de pago · salud operativa · rankings / insights | Pendiente |
+| **D — Conciliación** | Cerrar el ciclo financiero | Banco · depósitos · conciliación | Pendiente |
 
-Fase A **no** implementa inteligencia ni banco.
+Fase A **no** implementa inteligencia ni banco. Código: `/operations-control` · menú admin **Centro de Control**.
 
 ---
 
