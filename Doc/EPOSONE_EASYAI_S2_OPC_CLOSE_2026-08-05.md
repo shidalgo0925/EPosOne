@@ -6,7 +6,7 @@
 | **Fecha** | 5 de agosto de 2026 |
 | **Proyecto** | EasyAI Core |
 | **Rol** | Chief Architect – Operations Connector |
-| **Rama** | `master` @ **`bc9b3f2`** (paquete OPC) · cierre formal este commit |
+| **Rama** | `master` @ **`2a88f54`** (cierre formal) · paquete OPC `bc9b3f2` |
 | **SoT** | [`Doc/OPC/`](OPC/README.md) · [`ADR-017`](ADR-017-EASYAI-OPERATIONS-CONNECTOR.md) |
 
 ---
