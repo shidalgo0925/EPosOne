@@ -74,14 +74,17 @@ Contratos Fiscal/Propinas/Pagos/Recibo · motores definitivos · promociones nue
 - [ ] Hito 2.5 cerrado oficialmente  
 - [x] Hito 2.6 diagnóstico usable en soporte (`ca50112`+)  
 - [x] Ownership + matriz Dual Mode documentadas (borrador 5 ago 2026)  
-- [x] Arquitectura motor lista (ya ✅)
+- [x] Arquitectura motor lista (ya ✅)  
+- [x] ADR-016 Operations Control Center (principio + roadmap; UI Fase A = GO aparte)
 
 Docs:
 
 - [`EPOSONE_OWNERSHIP_MATRIX_V1.md`](EPOSONE_OWNERSHIP_MATRIX_V1.md)  
-- [`EPOSONE_STANDALONE_INTEGRATED_MATRIX_V1.md`](EPOSONE_STANDALONE_INTEGRATED_MATRIX_V1.md)
+- [`EPOSONE_STANDALONE_INTEGRATED_MATRIX_V1.md`](EPOSONE_STANDALONE_INTEGRATED_MATRIX_V1.md)  
+- [`ADR-016-EPOSONE-OPERATIONS-CONTROL-CENTER.md`](ADR-016-EPOSONE-OPERATIONS-CONTROL-CENTER.md)  
+- [`EPOSONE_OCC_SOURCE_INVENTORY_V1.md`](EPOSONE_OCC_SOURCE_INVENTORY_V1.md)
 
-Luego: Sprint V6 Motor Comercial (post-freeze).
+Luego: E2E C–E en tablet · OCC Fase A UI con GO · Sprint V6 Motor Comercial (post-freeze).
 
 ---
 
