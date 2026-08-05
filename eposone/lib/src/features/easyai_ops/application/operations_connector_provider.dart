@@ -3,7 +3,9 @@ import 'package:isar/isar.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:eposone/src/core/database/database_provider.dart';
+import 'package:eposone/src/core/session/pos_session.dart';
 import 'package:eposone/src/core/time/en1_date_time_service.dart';
+import 'package:eposone/src/features/cash_register/data/cash_shift_sync_service.dart';
 import 'package:eposone/src/features/cash_register/data/repositories/cash_register_repository.dart';
 import 'package:eposone/src/features/cash_register/presentation/providers/cash_register_provider.dart';
 import 'package:eposone/src/features/easyai_ops/application/handlers/caja_tool_handlers.dart';
@@ -16,6 +18,10 @@ import 'package:eposone/src/features/easyai_ops/application/handlers/telemetria_
 import 'package:eposone/src/features/easyai_ops/application/handlers/turnos_tool_handlers.dart';
 import 'package:eposone/src/features/easyai_ops/application/handlers/ventas_tool_handlers.dart';
 import 'package:eposone/src/features/easyai_ops/application/operations_connector.dart';
+import 'package:eposone/src/features/easyai_ops/application/ops_auth.dart';
+import 'package:eposone/src/features/easyai_ops/domain/ops_auth_result.dart';
+import 'package:eposone/src/features/easyai_ops/domain/ops_tool_definition.dart';
+import 'package:eposone/src/features/auth/data/repositories/cashier_repository.dart';
 import 'package:eposone/src/features/licensing/domain/license_enums.dart';
 import 'package:eposone/src/features/licensing/domain/license_service.dart';
 import 'package:eposone/src/features/operations_control/application/occ_pulse_provider.dart';
@@ -24,14 +30,17 @@ import 'package:eposone/src/features/platform/data/en1_bootstrap_repository.dart
 import 'package:eposone/src/features/platform/data/en1_provisioning_repository.dart';
 import 'package:eposone/src/features/platform/data/platform_prefs.dart';
 import 'package:eposone/src/features/pos/data/repositories/open_ticket_repository.dart';
+import 'package:eposone/src/features/pos/domain/entities/open_ticket.dart';
 import 'package:eposone/src/features/sales/data/repositories/sale_repository.dart';
 import 'package:eposone/src/features/sales/domain/entities/sale.dart';
+import 'package:eposone/src/features/settings/data/repositories/business_config_repository.dart';
+import 'package:eposone/src/features/sync/data/repositories/sync_repository.dart';
 import 'package:eposone/src/features/sync/domain/entities/sync_entity_kind.dart';
 import 'package:eposone/src/features/sync/domain/entities/sync_operation.dart';
 import 'package:eposone/src/features/sync/presentation/providers/en1_connection_status.dart';
 import 'package:eposone/src/features/sync/presentation/providers/sync_provider.dart';
 
-/// Connector cableado al dominio (Fase 1). EasyAI solo ve Maps estructurados.
+/// Connector cableado al dominio (Fase 1–2). EasyAI solo ve Maps estructurados.
 final operationsConnectorProvider = Provider<OperationsConnector>((ref) {
   return OperationsConnector(
     occ: OccToolHandlers(
@@ -40,10 +49,15 @@ final operationsConnectorProvider = Provider<OperationsConnector>((ref) {
     ),
     turnos: TurnosToolHandlers(
       loadCurrentShift: () => _loadTurnoActual(ref),
+      loadHistorial: (input) => _loadTurnosHistorial(ref, input),
+      openTurno: (input, session) => _abrirCaja(ref, input, session),
+      closeTurno: (input, session) => _cerrarCaja(ref, input, session),
     ),
     caja: CajaToolHandlers(
       loadEstado: () => _loadCajaEstado(ref),
       loadExpectedCash: () => _loadCajaExpected(ref),
+      openCaja: (input, session) => _abrirCaja(ref, input, session),
+      closeCaja: (input, session) => _cerrarCaja(ref, input, session),
     ),
     dispositivos: DispositivosToolHandlers(
       loadEste: () => _loadDispositivoEste(ref),
@@ -59,6 +73,8 @@ final operationsConnectorProvider = Provider<OperationsConnector>((ref) {
     ),
     pedidos: PedidosToolHandlers(
       loadAbiertos: () => _loadPedidosAbiertos(ref),
+      loadPorId: (input) => _loadPedidoPorId(ref, input),
+      cancelar: (input, session) => _cancelarPedido(ref, input, session),
     ),
     ventas: VentasToolHandlers(
       loadResumenHoy: () => _loadVentasHoy(ref),
@@ -66,6 +82,216 @@ final operationsConnectorProvider = Provider<OperationsConnector>((ref) {
     reportes: ReportesToolHandlers(),
   );
 });
+
+/// Auth operacional (PIN / sesión POS) — sin IA.
+final opsAuthProvider = Provider<OpsAuth>((ref) {
+  final isarAsync = ref.watch(databaseProvider);
+  return isarAsync.when(
+    data: (isar) => OpsAuth(cashiers: CashierRepository(isar)),
+    loading: () => OpsAuth(),
+    error: (_, __) => OpsAuth(),
+  );
+});
+
+/// Autoriza escritura con PIN. Devuelve sesión lista para [OperationsConnector.invoke].
+Future<OpsAuthResult> authorizeOpsWithPin(
+  Ref ref, {
+  required String pin,
+  String? cashierId,
+  int? cashierContactId,
+}) {
+  return ref.read(opsAuthProvider).authorizeWithPin(
+        pin: pin,
+        cashierId: cashierId,
+        cashierContactId: cashierContactId,
+      );
+}
+
+/// Autoriza usando la sesión POS ya logueada (host gate).
+OpsAuthResult authorizeOpsFromPosSession(Ref ref) {
+  return ref.read(opsAuthProvider).fromPosSession(ref.read(posSessionProvider));
+}
+
+Future<Map<String, Object?>> _abrirCaja(
+  Ref ref,
+  Map<String, Object?> input,
+  OpsInvokeSession session,
+) async {
+  final amount = (input['opening_amount'] as num?)?.toDouble();
+  if (amount == null || amount < 0) {
+    throw ArgumentError('opening_amount requerido (>= 0)');
+  }
+  final isar = await ref.read(databaseProvider.future);
+  final repo = CashRegisterRepository(isar);
+  final register = await repo.openRegister(
+    amount,
+    openedBy: session.actorName ?? session.actorId,
+    cashierId: session.actorId,
+    cashierContactId: session.cashierContactId,
+  );
+  await _enqueueCashShiftSync(ref, isar, register.localId);
+  ref.invalidate(currentCashRegisterProvider);
+  ref.read(posSessionProvider.notifier).setCashRegister(register.localId);
+  return {
+    'wired': true,
+    'open': true,
+    'register_id': register.localId,
+    'opening_amount': register.openingAmount,
+    'opened_at': register.openDate.toUtc().toIso8601String(),
+    'actor_id': session.actorId,
+    'actor_name': session.actorName,
+  };
+}
+
+Future<Map<String, Object?>> _cerrarCaja(
+  Ref ref,
+  Map<String, Object?> input,
+  OpsInvokeSession session,
+) async {
+  final counted = (input['counted_amount'] as num?)?.toDouble();
+  if (counted == null) {
+    throw ArgumentError('counted_amount requerido');
+  }
+  final notes = input['notes'] as String?;
+  final isar = await ref.read(databaseProvider.future);
+  final repo = CashRegisterRepository(isar);
+  final open = await repo.getOpenRegister();
+  if (open == null) {
+    throw StateError('No hay caja abierta');
+  }
+  final summary = await ref.read(shiftSummaryProvider(open.localId).future);
+  await repo.closeRegister(
+    registerId: open.localId,
+    closingAmount: counted,
+    expectedAmount: summary.expectedCash,
+    closedBy: session.actorName ?? session.actorId,
+    notes: notes,
+  );
+  await _enqueueCashShiftSync(ref, isar, open.localId);
+  ref.invalidate(currentCashRegisterProvider);
+  ref.invalidate(shiftSummaryProvider(open.localId));
+  ref.read(posSessionProvider.notifier).clearCashRegister();
+  final diff = counted - summary.expectedCash;
+  return {
+    'wired': true,
+    'closed': true,
+    'register_id': open.localId,
+    'counted_amount': counted,
+    'expected_cash': summary.expectedCash,
+    'difference': diff,
+    'has_descuadre': diff.abs() > 0.009,
+    'actor_id': session.actorId,
+    'actor_name': session.actorName,
+  };
+}
+
+Future<void> _enqueueCashShiftSync(
+  Ref ref,
+  Isar isar,
+  String registerLocalId,
+) async {
+  final config = await BusinessConfigRepository(isar).getConfig();
+  if (!config.isEn1SyncReady) return;
+  final sync = SyncRepository(isar);
+  final shiftSync = CashShiftSyncService(isar: isar, syncRepository: sync);
+  await shiftSync.enqueueIfReady(registerLocalId, config);
+  try {
+    await sync.runSyncCycle();
+  } catch (_) {}
+}
+
+Future<Map<String, Object?>> _cancelarPedido(
+  Ref ref,
+  Map<String, Object?> input,
+  OpsInvokeSession session,
+) async {
+  final ticketId = (input['ticket_id'] as String?)?.trim();
+  if (ticketId == null || ticketId.isEmpty) {
+    throw ArgumentError('ticket_id requerido');
+  }
+  final reason = input['reason'] as String?;
+  final isar = await ref.read(databaseProvider.future);
+  final repo = OpenTicketRepository(isar);
+  final ticket = await repo.getById(ticketId);
+  if (ticket == null) {
+    throw StateError('Ticket no encontrado');
+  }
+  if (ticket.status != OpenTicketStatus.open) {
+    throw StateError('Ticket no está abierto');
+  }
+  final comment = reason == null || reason.trim().isEmpty
+      ? ticket.comment
+      : 'Cancelado EasyAI: ${reason.trim()}'
+          '${ticket.comment != null ? ' · ${ticket.comment}' : ''}';
+  await repo.markTicketCancelled(ticketId, comment: comment);
+  return {
+    'wired': true,
+    'cancelled': true,
+    'ticket_id': ticketId,
+    'actor_id': session.actorId,
+    'actor_name': session.actorName,
+  };
+}
+
+Future<Map<String, Object?>> _loadPedidoPorId(
+  Ref ref,
+  Map<String, Object?> input,
+) async {
+  final ticketId = (input['ticket_id'] as String?)?.trim();
+  if (ticketId == null || ticketId.isEmpty) {
+    throw ArgumentError('ticket_id requerido');
+  }
+  final isar = await ref.read(databaseProvider.future);
+  final ticket = await OpenTicketRepository(isar).getById(ticketId);
+  if (ticket == null) {
+    return {'wired': true, 'found': false, 'ticket_id': ticketId};
+  }
+  return {
+    'wired': true,
+    'found': true,
+    'ticket': {
+      'id': ticket.localId,
+      'label': ticket.label,
+      'status': ticket.status.name,
+      'order_type': ticket.orderType.name,
+      'saved_at': ticket.savedAt.toUtc().toIso8601String(),
+      'customer_id': ticket.customerId,
+      'linked_order_id': ticket.linkedOrderLocalId,
+      'comment': ticket.comment,
+    },
+  };
+}
+
+Future<Map<String, Object?>> _loadTurnosHistorial(
+  Ref ref,
+  Map<String, Object?> input,
+) async {
+  final limitRaw = input['limit'];
+  final limit = limitRaw is int
+      ? limitRaw.clamp(1, 50)
+      : (limitRaw is num ? limitRaw.toInt().clamp(1, 50) : 10);
+  final isar = await ref.read(databaseProvider.future);
+  final items = await CashRegisterRepository(isar).getAllRegisters(limit: limit);
+  return {
+    'wired': true,
+    'count': items.length,
+    'items': [
+      for (final r in items)
+        {
+          'register_id': r.localId,
+          'status': r.status.name,
+          'open': r.isOpen,
+          'opened_at': r.openDate.toUtc().toIso8601String(),
+          'closed_at': r.closeDate?.toUtc().toIso8601String(),
+          'opening_amount': r.openingAmount,
+          'closing_amount': r.closingAmount,
+          'expected_amount': r.expectedAmount,
+          'difference': r.difference,
+          'cashier_name': r.currentCashierName ?? r.openedBy,
+        },
+    ],
+  };
+}
 
 Future<Map<String, Object?>> _loadPulseMap(Ref ref) async {
   final p = await ref.read(occPulseProvider.future);

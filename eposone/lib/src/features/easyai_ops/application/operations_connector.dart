@@ -92,7 +92,15 @@ class OperationsConnector {
         return OpsToolResult.rejected(
           toolId: toolId,
           code: 'authorization_required',
-          message: 'Verbo de escritura requiere autorización',
+          message: 'Verbo de escritura requiere autorización (PIN o sesión host)',
+        );
+      }
+      final actor = session.actorId?.trim();
+      if (actor == null || actor.isEmpty) {
+        return OpsToolResult.rejected(
+          toolId: toolId,
+          code: 'actor_required',
+          message: 'Escritura requiere actor_id en la sesión autorizada',
         );
       }
     }

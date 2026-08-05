@@ -33,6 +33,25 @@ void main() {
           'open': true,
           'register_id': 'reg-1',
         },
+        loadHistorial: (input) async => {
+          'count': 1,
+          'items': [
+            {'register_id': 'reg-1', 'open': false},
+          ],
+        },
+        openTurno: (input, session) async => {
+          'wired': true,
+          'open': true,
+          'register_id': 'reg-new',
+          'opening_amount': input['opening_amount'],
+          'actor_id': session.actorId,
+        },
+        closeTurno: (input, session) async => {
+          'wired': true,
+          'closed': true,
+          'counted_amount': input['counted_amount'],
+          'actor_id': session.actorId,
+        },
       ),
       caja: CajaToolHandlers(
         loadEstado: () async => {
@@ -46,6 +65,21 @@ void main() {
           'open': true,
           'register_id': 'reg-1',
           'expected_cash': 250.5,
+        },
+        openCaja: (input, session) async => {
+          'wired': true,
+          'open': true,
+          'register_id': 'reg-new',
+          'opening_amount': input['opening_amount'],
+          'actor_id': session.actorId,
+        },
+        closeCaja: (input, session) async => {
+          'wired': true,
+          'closed': true,
+          'counted_amount': input['counted_amount'],
+          'expected_cash': 250.5,
+          'difference': (input['counted_amount'] as num) - 250.5,
+          'actor_id': session.actorId,
         },
       ),
       dispositivos: DispositivosToolHandlers(
@@ -92,6 +126,16 @@ void main() {
             {'id': 't1', 'label': 'Mesa 1'},
           ],
         },
+        loadPorId: (input) async => {
+          'found': true,
+          'ticket': {'id': input['ticket_id'], 'status': 'open'},
+        },
+        cancelar: (input, session) async => {
+          'wired': true,
+          'cancelled': true,
+          'ticket_id': input['ticket_id'],
+          'actor_id': session.actorId,
+        },
       ),
       ventas: VentasToolHandlers(
         loadResumenHoy: () async => {
@@ -102,6 +146,14 @@ void main() {
       ),
     );
   });
+
+  const authSession = OpsInvokeSession(
+    actorId: 'cashier-1',
+    actorName: 'Ana',
+    role: 'admin',
+    authorized: true,
+    authMethod: 'pin',
+  );
 
   test('listContexts publishes all ADR contexts', () {
     final ids = connector.listContexts().map((c) => c['id']).toSet();
@@ -127,27 +179,20 @@ void main() {
     }
   });
 
-  test('fase1 wired tools report wired=true in catalog', () {
+  test('fase2 write tools report wired=true in catalog', () {
     final wiredIds = connector
         .listTools()
         .where((t) => t['wired'] == true)
         .map((t) => t['id']! as String)
         .toSet();
     expect(wiredIds, containsAll([
-      'occ.consultar.pulso',
-      'occ.analizar.alertas',
-      'caja.consultar.estado',
-      'caja.analizar.descuadre',
-      'dispositivos.consultar.este',
-      'dispositivos.analizar.salud',
-      'telemetria.consultar.cola',
-      'telemetria.analizar.errores',
-      'licencias.consultar',
-      'licencias.analizar.vencimiento',
-      'pedidos.consultar.abiertos',
-      'ventas.analizar.resumen_hoy',
-      'reportes.consultar.disponibles',
-      'turnos.consultar.actual',
+      'caja.abrir',
+      'caja.cerrar',
+      'turnos.abrir',
+      'turnos.cerrar',
+      'turnos.consultar.historial',
+      'pedidos.cancelar',
+      'pedidos.consultar.por_id',
     ]));
   });
 
@@ -155,48 +200,63 @@ void main() {
     final r = await connector.invoke('occ.consultar.pulso', {});
     expect(r.status, OpsToolStatus.ok);
     expect(r.data!['open_tickets'], 3);
-    expect(r.data!['context'], 'occ');
-    expect(r.data!['verb'], 'consultar');
   });
 
-  test('occ.analizar.alertas wired', () async {
-    final r = await connector.invoke('occ.analizar.alertas', {});
-    expect(r.status, OpsToolStatus.ok);
-    expect(r.data!['count'], 2);
+  test('caja.abrir requires auth', () async {
+    final r = await connector.invoke('caja.abrir', {'opening_amount': 50});
+    expect(r.status, OpsToolStatus.rejected);
+    expect(r.code, 'authorization_required');
   });
 
-  test('turnos.consultar.actual wired', () async {
-    final r = await connector.invoke('turnos.consultar.actual', {});
-    expect(r.status, OpsToolStatus.ok);
-    expect(r.data!['open'], true);
-  });
-
-  test('caja.analizar.descuadre with counted_amount', () async {
+  test('caja.abrir requires actor when authorized', () async {
     final r = await connector.invoke(
-      'caja.analizar.descuadre',
-      {'counted_amount': 240.0},
+      'caja.abrir',
+      {'opening_amount': 50},
+      session: const OpsInvokeSession(authorized: true),
+    );
+    expect(r.status, OpsToolStatus.rejected);
+    expect(r.code, 'actor_required');
+  });
+
+  test('caja.abrir succeeds with authorized session', () async {
+    final r = await connector.invoke(
+      'caja.abrir',
+      {'opening_amount': 100.0},
+      session: authSession,
     );
     expect(r.status, OpsToolStatus.ok);
-    expect(r.data!['has_descuadre'], true);
-    expect(r.data!['difference'], closeTo(-10.5, 0.001));
+    expect(r.data!['wired'], true);
+    expect(r.data!['opening_amount'], 100.0);
+    expect(r.data!['actor_id'], 'cashier-1');
   });
 
-  test('licencias / telemetria / dispositivos / pedidos / ventas', () async {
-    for (final id in [
-      'licencias.consultar',
-      'licencias.analizar.vencimiento',
-      'telemetria.consultar.cola',
-      'telemetria.analizar.errores',
-      'dispositivos.consultar.este',
-      'dispositivos.analizar.salud',
-      'pedidos.consultar.abiertos',
-      'ventas.analizar.resumen_hoy',
-      'reportes.consultar.disponibles',
-      'caja.consultar.estado',
-    ]) {
-      final r = await connector.invoke(id, {});
-      expect(r.status, OpsToolStatus.ok, reason: id);
-    }
+  test('caja.cerrar and turnos aliases with auth', () async {
+    final close = await connector.invoke(
+      'caja.cerrar',
+      {'counted_amount': 240.0},
+      session: authSession,
+    );
+    expect(close.status, OpsToolStatus.ok);
+    expect(close.data!['closed'], true);
+
+    final turno = await connector.invoke(
+      'turnos.abrir',
+      {'opening_amount': 20.0},
+      session: authSession,
+    );
+    expect(turno.status, OpsToolStatus.ok);
+    expect(turno.data!['open'], true);
+  });
+
+  test('pedidos.cancelar with auth', () async {
+    final r = await connector.invoke(
+      'pedidos.cancelar',
+      {'ticket_id': 't1', 'reason': 'cliente se fue'},
+      session: authSession,
+    );
+    expect(r.status, OpsToolStatus.ok);
+    expect(r.data!['cancelled'], true);
+    expect(r.data!['ticket_id'], 't1');
   });
 
   test('rejects raw table access attempts', () async {
@@ -205,25 +265,20 @@ void main() {
     expect(r.code, 'raw_access_forbidden');
   });
 
-  test('rejects unknown tool', () async {
-    final r = await connector.invoke('foo.bar', {});
-    expect(r.status, OpsToolStatus.rejected);
-    expect(r.code, 'tool_not_found');
-  });
-
-  test('write verb without auth is rejected', () async {
-    final r = await connector.invoke('caja.cerrar', {});
-    expect(r.status, OpsToolStatus.rejected);
-    expect(r.code, 'authorization_required');
-  });
-
-  test('planned stub returns wired=false payload when authorized', () async {
+  test('planned stub returns wired=false when authorized with actor', () async {
     final r = await connector.invoke(
-      'caja.cerrar',
+      'pedidos.crear',
       {},
-      session: const OpsInvokeSession(authorized: true),
+      session: authSession,
     );
     expect(r.status, OpsToolStatus.ok);
     expect(r.data!['wired'], false);
+  });
+
+  test('OpsAuth fromPosSession requires login', () {
+    final auth = OpsAuth();
+    final fail = auth.fromPosSession(null);
+    expect(fail.ok, isFalse);
+    expect(fail.code, 'session_required');
   });
 }

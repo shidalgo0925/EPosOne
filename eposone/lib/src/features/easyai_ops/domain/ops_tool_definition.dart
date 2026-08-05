@@ -8,20 +8,55 @@ typedef OpsToolHandler = Future<Map<String, Object?>> Function(
   OpsInvokeSession session,
 );
 
+/// Sesión de invocación EasyAI → Connector (ADR-017 Fase 2).
+///
+/// Escrituras exigen [authorized] == true y [actorId] no vacío.
+/// Autorización vía PIN ([OpsAuth]) o marcada por el host tras su propio gate.
 class OpsInvokeSession {
   const OpsInvokeSession({
     this.actorId,
+    this.actorName,
     this.role = 'cashier',
+    this.cashierContactId,
     this.channel = 'easyai',
     this.authorized = false,
+    this.authMethod = 'none',
   });
 
   final String? actorId;
+  final String? actorName;
   final String role;
+
+  /// EN1 cashier_contact_id cuando aplica.
+  final int? cashierContactId;
   final String channel;
 
   /// Explicit auth for write verbs (Fase 2).
   final bool authorized;
+
+  /// `none` | `pin` | `session` | `host`
+  final String authMethod;
+
+  OpsInvokeSession copyWith({
+    String? actorId,
+    String? actorName,
+    String? role,
+    int? cashierContactId,
+    String? channel,
+    bool? authorized,
+    String? authMethod,
+    bool clearContactId = false,
+  }) =>
+      OpsInvokeSession(
+        actorId: actorId ?? this.actorId,
+        actorName: actorName ?? this.actorName,
+        role: role ?? this.role,
+        cashierContactId:
+            clearContactId ? null : (cashierContactId ?? this.cashierContactId),
+        channel: channel ?? this.channel,
+        authorized: authorized ?? this.authorized,
+        authMethod: authMethod ?? this.authMethod,
+      );
 }
 
 /// Public tool descriptor — never exposes tables.

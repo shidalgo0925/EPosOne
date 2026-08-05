@@ -5,7 +5,7 @@
 | **Fecha** | 5 ago 2026 |
 | **ADR** | [`ADR-017`](ADR-017-EASYAI-OPERATIONS-CONNECTOR.md) |
 | **Regla** | Solo tools · sin tablas · sin IA |
-| **Fase** | **1** — consultar/analizar cableados al dominio |
+| **Fase** | **2** — escrituras con auth · consultar/analizar cableados |
 
 Convención ID: `{contexto}.{verbo}` o `{contexto}.{verbo}.{recurso}`
 
@@ -27,27 +27,27 @@ Ver ADR-017 §4.
 |---------|-------|-------------|--------|
 | `caja.consultar.estado` | consultar | Estado de caja / montos sesión | **Wire** |
 | `caja.analizar.descuadre` | analizar | Teórico vs `counted_amount` | **Wire** |
-| `caja.abrir` | abrir | Abrir caja (auth) | Plan |
-| `caja.cerrar` | cerrar | Cerrar / arqueo (auth) | Plan |
+| `caja.abrir` | abrir | Abrir caja (auth) | **Wire** |
+| `caja.cerrar` | cerrar | Cerrar / arqueo (auth) | **Wire** |
 
 ### turnos
 
 | Tool ID | Verbo | Descripción | Estado |
 |---------|-------|-------------|--------|
 | `turnos.consultar.actual` | consultar | Turno abierto actual | **Wire** |
-| `turnos.consultar.historial` | consultar | Últimos N turnos | Plan |
-| `turnos.abrir` | abrir | Abrir turno | Plan |
-| `turnos.cerrar` | cerrar | Cerrar turno | Plan |
+| `turnos.consultar.historial` | consultar | Últimos N turnos | **Wire** |
+| `turnos.abrir` | abrir | Abrir turno | **Wire** |
+| `turnos.cerrar` | cerrar | Cerrar turno | **Wire** |
 
 ### pedidos
 
 | Tool ID | Verbo | Descripción | Estado |
 |---------|-------|-------------|--------|
 | `pedidos.consultar.abiertos` | consultar | Tickets / orders abiertos | **Wire** |
-| `pedidos.consultar.por_id` | consultar | Detalle pedido | Plan |
+| `pedidos.consultar.por_id` | consultar | Detalle pedido | **Wire** |
 | `pedidos.crear` | crear | Alta pedido (auth) | Plan |
 | `pedidos.actualizar` | actualizar | Modificar líneas | Plan |
-| `pedidos.cancelar` | cancelar | Cancel / void según lifecycle | Plan |
+| `pedidos.cancelar` | cancelar | Cancel / void según lifecycle | **Wire** |
 | `pedidos.cerrar` | cerrar | Cobrar / cerrar | Plan |
 
 ### clientes
@@ -132,7 +132,20 @@ Ver ADR-017 §4.
 ## Inyección app
 
 ```dart
-ref.read(operationsConnectorProvider).invoke('occ.consultar.pulso', {});
+final connector = ref.read(operationsConnectorProvider);
+
+// 1) Autorizar escritura (PIN o sesión POS)
+final auth = await authorizeOpsWithPin(ref, pin: pin, cashierId: id);
+// final auth = authorizeOpsFromPosSession(ref);
+
+if (!auth.ok) { /* auth.code / auth.message */ }
+
+// 2) Invocar tool
+await connector.invoke(
+  'caja.abrir',
+  {'opening_amount': 50.0},
+  session: auth.session!,
+);
 ```
 
 El provider traduce repos/OCC → Maps. EasyAI **nunca** recibe Isar.
@@ -156,4 +169,4 @@ Cualquier otro verbo (`eliminar`, `exportar_sql`, `query_raw`, …) → **rechaz
 }
 ```
 
-Escrituras (`crear`/`actualizar`/`cancelar`/`cerrar`/`abrir`) exigen auth explícita en Fase 2.
+Escrituras (`crear`/`actualizar`/`cancelar`/`cerrar`/`abrir`) exigen `OpsInvokeSession.authorized` + `actor_id` (vía `OpsAuth` PIN o sesión POS).

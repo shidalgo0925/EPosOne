@@ -3,22 +3,12 @@ import '../../domain/ops_tool_definition.dart';
 import '../../domain/ops_verb.dart';
 
 /// Tools declared in catalog but not wired — still published as Plan stubs.
-/// Write verbs stay stubbed until Fase 2 (auth real).
 class StubToolHandlers {
   List<OpsToolDefinition> plannedDefinitions() {
     final specs = <(String, OpsContext, OpsVerb, String)>[
-      ('caja.cerrar', OpsContext.caja, OpsVerb.cerrar, 'Cerrar caja / arqueo'),
-      ('caja.abrir', OpsContext.caja, OpsVerb.abrir, 'Abrir caja'),
-      ('turnos.consultar.historial', OpsContext.turnos, OpsVerb.consultar,
-          'Historial de turnos'),
-      ('turnos.abrir', OpsContext.turnos, OpsVerb.abrir, 'Abrir turno'),
-      ('turnos.cerrar', OpsContext.turnos, OpsVerb.cerrar, 'Cerrar turno'),
-      ('pedidos.consultar.por_id', OpsContext.pedidos, OpsVerb.consultar,
-          'Detalle pedido'),
       ('pedidos.crear', OpsContext.pedidos, OpsVerb.crear, 'Alta pedido'),
       ('pedidos.actualizar', OpsContext.pedidos, OpsVerb.actualizar,
           'Modificar líneas'),
-      ('pedidos.cancelar', OpsContext.pedidos, OpsVerb.cancelar, 'Cancelar/anular pedido'),
       ('pedidos.cerrar', OpsContext.pedidos, OpsVerb.cerrar, 'Cobrar / cerrar pedido'),
       ('clientes.consultar', OpsContext.clientes, OpsVerb.consultar, 'Consultar clientes'),
       ('clientes.crear', OpsContext.clientes, OpsVerb.crear, 'Alta cliente'),

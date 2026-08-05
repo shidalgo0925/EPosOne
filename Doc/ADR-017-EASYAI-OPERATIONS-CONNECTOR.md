@@ -2,10 +2,11 @@
 
 | Campo | Valor |
 |-------|--------|
-| **Estado** | **Fase 1 cerrada** (consultar/analizar cableados + provider) · Fase 2 escrituras pendiente |
+| **Estado** | **Fase 2 cerrada** (escrituras + auth PIN/sesión) · Fase 3 transporte pendiente |
 | **Fecha** | 5 de agosto de 2026 |
 | **Commit Fase 0** | `1bcfb43` |
 | **Commit Fase 1** | `13ee49f` |
+| **Commit Fase 2** | (push) |
 | **Proyecto** | EasyAI Core |
 | **Rol Local** | Arquitecto Operacional / proveedor de herramientas |
 | **SoT** | Este ADR + [`EPOSONE_EASYAI_OPS_TOOL_CATALOG_V1.md`](EPOSONE_EASYAI_OPS_TOOL_CATALOG_V1.md) |
@@ -112,7 +113,7 @@ Verbos canónicos:
 |------|-----------|--------|
 | **0** | ADR + catálogo + registry Dart + `invoke` stub / 1–2 tools lectura | **Cerrada** |
 | **1** | Wire `consultar`/`analizar` a OCC, turnos, sync, licencia, caja, dispositivos, ventas | **Cerrada** |
-| **2** | Verbos de escritura con auth (abrir/cerrar caja, cancelar pedido) | Pendiente |
+| **2** | Verbos de escritura con auth (abrir/cerrar caja, cancelar pedido) | **Cerrada** |
 | **3** | Transporte remoto (HTTP/MCP) cuando EasyAI/EN1 congelados | Pendiente |
 
 ---
@@ -140,3 +141,11 @@ Verbos canónicos:
 - [x] Tools Wire: OCC, dashboard, turnos, caja (consultar/analizar), dispositivos, telemetría, licencias, pedidos abiertos, ventas hoy, reportes disponibles  
 - [x] Sin acceso a tablas; escrituras siguen stub + auth gate  
 - [x] Suite ampliada (12 tests)  
+
+## 10. Criterio de aceptación Fase 2
+
+- [x] `OpsAuth` — PIN local/EN1 o sesión POS → `OpsInvokeSession.authorized`  
+- [x] Gate: escritura sin auth → `authorization_required`; sin actor → `actor_required`  
+- [x] Wire: `caja.abrir` / `caja.cerrar` · `turnos.abrir` / `turnos.cerrar` · `pedidos.cancelar`  
+- [x] Lecturas extra: `turnos.consultar.historial` · `pedidos.consultar.por_id`  
+- [x] Suite (12+ tests) con caminos auth  

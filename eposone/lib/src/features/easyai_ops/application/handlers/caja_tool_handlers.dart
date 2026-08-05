@@ -2,12 +2,24 @@ import '../../domain/ops_context.dart';
 import '../../domain/ops_tool_definition.dart';
 import '../../domain/ops_verb.dart';
 
-/// Caja — consultar / analizar (ADR-017 Fase 1). Escrituras = Fase 2.
+typedef OpsWriteFn = Future<Map<String, Object?>> Function(
+  Map<String, Object?> input,
+  OpsInvokeSession session,
+);
+
+/// Caja — consultar / analizar / abrir / cerrar (ADR-017).
 class CajaToolHandlers {
-  CajaToolHandlers({this.loadEstado, this.loadExpectedCash});
+  CajaToolHandlers({
+    this.loadEstado,
+    this.loadExpectedCash,
+    this.openCaja,
+    this.closeCaja,
+  });
 
   final Future<Map<String, Object?>> Function()? loadEstado;
   final Future<Map<String, Object?>> Function()? loadExpectedCash;
+  final OpsWriteFn? openCaja;
+  final OpsWriteFn? closeCaja;
 
   List<OpsToolDefinition> definitions() => [
         OpsToolDefinition(
@@ -80,6 +92,51 @@ class CajaToolHandlers {
               'needs_counted': false,
               'has_descuadre': diff.abs() > 0.009,
             };
+          },
+        ),
+        OpsToolDefinition(
+          id: 'caja.abrir',
+          context: OpsContext.caja,
+          verb: OpsVerb.abrir,
+          title: 'Abrir caja',
+          description: 'Abre turno de caja (requiere auth)',
+          risk: OpsRisk.high,
+          requiresAuth: true,
+          wired: openCaja != null,
+          inputSchema: const {'opening_amount': 'number'},
+          handler: (input, session) async {
+            if (openCaja == null) {
+              return {
+                'wired': false,
+                'tool_id': 'caja.abrir',
+                'message': 'Abrir caja no cableado',
+              };
+            }
+            return openCaja!(input, session);
+          },
+        ),
+        OpsToolDefinition(
+          id: 'caja.cerrar',
+          context: OpsContext.caja,
+          verb: OpsVerb.cerrar,
+          title: 'Cerrar caja / arqueo',
+          description: 'Cierra caja con monto contado (requiere auth)',
+          risk: OpsRisk.high,
+          requiresAuth: true,
+          wired: closeCaja != null,
+          inputSchema: const {
+            'counted_amount': 'number',
+            'notes': 'string?',
+          },
+          handler: (input, session) async {
+            if (closeCaja == null) {
+              return {
+                'wired': false,
+                'tool_id': 'caja.cerrar',
+                'message': 'Cerrar caja no cableado',
+              };
+            }
+            return closeCaja!(input, session);
           },
         ),
       ];

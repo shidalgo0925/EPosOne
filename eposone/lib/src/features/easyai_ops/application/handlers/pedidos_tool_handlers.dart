@@ -1,12 +1,20 @@
 import '../../domain/ops_context.dart';
 import '../../domain/ops_tool_definition.dart';
 import '../../domain/ops_verb.dart';
+import 'caja_tool_handlers.dart';
 
-/// Pedidos — solo lectura Fase 1 (abiertos). Escrituras = Fase 2.
+/// Pedidos — lectura + cancelar (Fase 2). Crear/actualizar/cerrar = pendiente.
 class PedidosToolHandlers {
-  PedidosToolHandlers({this.loadAbiertos});
+  PedidosToolHandlers({
+    this.loadAbiertos,
+    this.loadPorId,
+    this.cancelar,
+  });
 
   final Future<Map<String, Object?>> Function()? loadAbiertos;
+  final Future<Map<String, Object?>> Function(Map<String, Object?> input)?
+      loadPorId;
+  final OpsWriteFn? cancelar;
 
   List<OpsToolDefinition> definitions() => [
         OpsToolDefinition(
@@ -25,6 +33,47 @@ class PedidosToolHandlers {
               'tickets': <Object?>[],
               'message': 'Pedidos loader no inyectado',
             };
+          },
+        ),
+        OpsToolDefinition(
+          id: 'pedidos.consultar.por_id',
+          context: OpsContext.pedidos,
+          verb: OpsVerb.consultar,
+          title: 'Detalle pedido',
+          description: 'Ticket abierto o cancelado por id local',
+          risk: OpsRisk.low,
+          wired: loadPorId != null,
+          inputSchema: const {'ticket_id': 'string'},
+          handler: (input, session) async {
+            if (loadPorId != null) return loadPorId!(input);
+            return {
+              'wired': false,
+              'message': 'Detalle loader no inyectado',
+            };
+          },
+        ),
+        OpsToolDefinition(
+          id: 'pedidos.cancelar',
+          context: OpsContext.pedidos,
+          verb: OpsVerb.cancelar,
+          title: 'Cancelar pedido',
+          description: 'Cancela OpenTicket local (requiere auth)',
+          risk: OpsRisk.high,
+          requiresAuth: true,
+          wired: cancelar != null,
+          inputSchema: const {
+            'ticket_id': 'string',
+            'reason': 'string?',
+          },
+          handler: (input, session) async {
+            if (cancelar == null) {
+              return {
+                'wired': false,
+                'tool_id': 'pedidos.cancelar',
+                'message': 'Cancelar pedido no cableado',
+              };
+            }
+            return cancelar!(input, session);
           },
         ),
       ];
