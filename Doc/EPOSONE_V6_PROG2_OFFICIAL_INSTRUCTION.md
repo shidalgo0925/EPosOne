@@ -2,12 +2,13 @@
 
 | Campo | Valor |
 |-------|--------|
-| **Fecha** | 19 jul 2026 |
-| **Estado** | Vigente |
+| **Fecha** | 19 jul 2026 · **addendum cierre ingeniería 5 ago 2026** |
+| **Estado** | Vigente · entrega Prog2 **cerrada en código** ([`EPOSONE_PROG2_DELIVERY_CLOSE_2026-08-05.md`](EPOSONE_PROG2_DELIVERY_CLOSE_2026-08-05.md)); E2E C–E en tablet pendiente Ops |
 | **Audiencia** | Prog2 (EPosOne) |
 | **Contexto** | Modelo comercial V6 en congelación ([`EPOSONE_COMMERCIAL_V6_REVIEW_PACKAGE.md`](EPOSONE_COMMERCIAL_V6_REVIEW_PACKAGE.md)) |
 | **E2E** | [`EPOSONE_E2E_CHECKLIST_HITO25_V1.md`](EPOSONE_E2E_CHECKLIST_HITO25_V1.md) |
 | **Status oficial** | [`EPOSONE_V6_OFFICIAL_STATUS_2026-07-19.md`](EPOSONE_V6_OFFICIAL_STATUS_2026-07-19.md) |
+| **HEAD entrega** | `cc9b0de` |
 
 ---
 

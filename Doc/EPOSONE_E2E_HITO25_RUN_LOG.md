@@ -3,9 +3,9 @@
 | Campo | Valor |
 |-------|--------|
 | **Fecha inicio** | 1 ago 2026 |
-| **APK** | `a5f2dbb`+ (sync Device Token / bootstrap gate) |
+| **APK prueba** | Release 5 ago · `cc9b0de` · `eposone/build/app/outputs/flutter-apk/app-release.apk` |
 | **Checklist** | [`EPOSONE_E2E_CHECKLIST_HITO25_V1.md`](EPOSONE_E2E_CHECKLIST_HITO25_V1.md) |
-| **Estado** | A ✅ · **B en curso** · C–E pendientes |
+| **Estado** | A ✅ · B ✅ · **C–E pendientes (Ops)** · Ingeniería Prog2 **cerrada** ([cierre 5 ago](EPOSONE_PROG2_DELIVERY_CLOSE_2026-08-05.md)) |
 
 Marcar cada fila: `OK` / `FAIL` / `N/A` + nota breve.
 
@@ -17,30 +17,32 @@ Ya OK en tablet (19 jul / revalidado con sync 1 ago). No repetir salvo APK limpi
 
 ---
 
-## B. Operación de Cajeros — EJECUTAR AHORA
+## B. Operación de Cajeros — CERRADO (mínimo B1–B8)
 
 **Preconds:** dispositivo provisionado, bootstrap OK, ≥2 cajeros EN1 activos con PIN, Wi‑Fi OK (salvo B2).
 
 | # | Pasos en tablet | Resultado | Notas |
 |---|-----------------|-----------|-------|
-| B1 | PIN correcto → entra | | |
-| B2 | Modo avión → PIN correcto → entra | | |
-| B3 | PIN malo → error, no entra | | |
-| B4 | Fallar PIN varias veces → lockout temporal | | |
-| B5 | Abrir turno (fondo inicial) → POS | | |
-| B6 | Cambiar cajero (sin pedido) → nuevo PIN → mismo turno | | |
-| B7 | Pedido abierto → cambiar cajero → pedido sigue / cajero nuevo | | |
-| B8 | Pedido pagado → cambiar cajero → ops OK | | |
-| B9 | En EN1: desactivar cajero A → en tablet: Descargar catálogo / sync | | Requiere BO EN1 |
-| B10 | Confirmar bootstrap/sync OK tras B9 | | |
-| B11 | Login con cajero A desactivado → bloqueado | | |
-| B12 | Pedidos/turnos previos siguen mostrando cajero original | | |
+| B1 | Login PIN online | **OK** | 2 ago |
+| B2 | Login PIN offline | **OK** | 2 ago |
+| B3 | PIN incorrecto | **OK** | 2 ago |
+| B4 | PIN bloqueado (lockout tras fallos) | **OK** | 2 ago |
+| B5 | Abrir turno | **OK** | 2 ago |
+| B6 | Cambio de cajero | **OK** | 2 ago |
+| B7 | Cambio de cajero con pedido abierto | **OK** | 2 ago |
+| B8 | Cambio de cajero con pedido pagado | **OK** | 2 ago |
+| B9 | Desactivar cajero desde EN1 | | Requiere BO EN1 — diferido |
+| B10 | Sincronizar / bootstrap | | Diferido con B9 |
+| B11 | Confirmar bloqueo del cajero desactivado | | Diferido con B9 |
+| B12 | Ops anteriores conservan cajero original | | Diferido / confirmar en C |
 
 **Bloque B OK solo si B1–B8 + B11 (mínimo).** B9–B10 dependen de acceso BO EN1.
 
 ---
 
-## C. Cadena operativa (siguiente tras B)
+## C. Cadena operativa — EJECUTAR AHORA (2 ago)
+
+**Preconds:** turno cerrado o listo para abrir · Wi‑Fi ON · catálogo EN1 · cola limpia o anotar pendientes previos.
 
 | # | Resultado | Notas |
 |---|-----------|-------|
