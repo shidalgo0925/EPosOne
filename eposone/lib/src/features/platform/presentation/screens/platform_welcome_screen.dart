@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:eposone/src/core/theme/eposone_theme.dart';
 import 'package:eposone/src/features/platform/data/device_registry.dart';
-import 'package:eposone/src/features/platform/data/provisioning_store.dart';
 
 /// Gate 2 — Bienvenida única (sin Modo Local / Cloud / Online / Offline).
 enum _WelcomeChoice {
@@ -27,21 +26,12 @@ class _PlatformWelcomeScreenState extends ConsumerState<PlatformWelcomeScreen> {
   _WelcomeChoice? _selected;
   bool _busy = false;
 
-  static const _defaultEn1 = 'https://appdev.easynodeone.com';
-
-  Future<String> _resolveBaseUrl() async {
-    final draft = await ProvisioningStore.getApiUrlDraft();
-    final cfg = await ProvisioningStore.loadConfig();
-    if (cfg != null && cfg.apiBaseUrl.isNotEmpty) return cfg.apiBaseUrl;
-    if (draft != null && draft.isNotEmpty) return draft;
-    return _defaultEn1;
-  }
+  /// Embudo comercial (/start) — host EPosOne, no la API Device.
+  /// Oficial: https://eposone.easytech.services/start
+  static const _commercialStartUrl = 'https://eposone.easytech.services/start';
 
   Future<void> _openCreateBusiness() async {
-    final base = await _resolveBaseUrl();
-    final uri = Uri.parse(
-      base.endsWith('/') ? '${base}start' : '$base/start',
-    );
+    final uri = Uri.parse(_commercialStartUrl);
 
     var launched = false;
     try {
@@ -171,7 +161,7 @@ class _PlatformWelcomeScreenState extends ConsumerState<PlatformWelcomeScreen> {
                         icon: Icons.storefront_outlined,
                         title: 'Crear un negocio',
                         subtitle:
-                            'Abre EN1 (/start) para cuenta, plan y panel de instalación.',
+                            'Abre eposone.easytech.services/start para cuenta, plan e instalación.',
                         onTap: _busy
                             ? null
                             : () => setState(

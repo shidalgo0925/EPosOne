@@ -17,7 +17,7 @@
 | Selección org + caja → Register existente | ✅ |
 | Camino C: código + pegar + QR → Register | ✅ |
 | Restore = Login + select (composición sin `/restore`) | ✅ |
-| Crear negocio → abre `{EN1}/start` | ✅ |
+| Crear negocio → abre https://eposone.easytech.services/start | ✅ |
 | Convergencia Register → Bootstrap → PIN | ✅ |
 | Register / Bootstrap / Sync / Licencias / Cashiers intactos | ✅ (solo consumidores) |
 
