@@ -5,6 +5,7 @@ import 'package:eposone/src/core/theme/eposone_theme.dart';
 import 'package:eposone/src/features/platform/data/en1_onboarding_api.dart';
 import 'package:eposone/src/features/platform/data/onboarding_user_session_store.dart';
 import 'package:eposone/src/features/platform/data/provisioning_store.dart';
+import 'package:eposone/src/features/platform/domain/en1_hosts.dart';
 
 /// Gate 2 — Login onboarding (User Bearer). Caminos B y D.
 class OnboardingLoginScreen extends ConsumerStatefulWidget {
@@ -27,7 +28,7 @@ class _OnboardingLoginScreenState extends ConsumerState<OnboardingLoginScreen> {
   String? _error;
   bool _obscure = true;
 
-  static const _defaultEn1 = 'https://appdev.easynodeone.com';
+  static const _defaultEn1 = En1Hosts.apiBase;
 
   @override
   void initState() {
@@ -126,7 +127,7 @@ class _OnboardingLoginScreenState extends ConsumerState<OnboardingLoginScreen> {
                     enabled: !_busy,
                     decoration: const InputDecoration(
                       labelText: 'URL EN1',
-                      hintText: 'https://appdev.easynodeone.com',
+                      hintText: En1Hosts.apiBase,
                     ),
                     validator: (v) {
                       if (v == null || v.trim().isEmpty) return 'Requerido';

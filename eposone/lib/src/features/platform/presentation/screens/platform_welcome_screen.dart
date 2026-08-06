@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:eposone/src/core/theme/eposone_theme.dart';
 import 'package:eposone/src/features/platform/data/device_registry.dart';
+import 'package:eposone/src/features/platform/data/provisioning_store.dart';
+import 'package:eposone/src/features/platform/domain/en1_hosts.dart';
 
 /// Gate 2 — Bienvenida única (sin Modo Local / Cloud / Online / Offline).
 enum _WelcomeChoice {
@@ -26,9 +28,8 @@ class _PlatformWelcomeScreenState extends ConsumerState<PlatformWelcomeScreen> {
   _WelcomeChoice? _selected;
   bool _busy = false;
 
-  /// Embudo comercial (/start) — host EPosOne, no la API Device.
-  /// Oficial: https://eposone.easytech.services/start
-  static const _commercialStartUrl = 'https://eposone.easytech.services/start';
+  /// Embudo comercial (/start) — host producto EPosOne (PRD).
+  static const _commercialStartUrl = En1Hosts.commercialStart;
 
   Future<void> _openCreateBusiness() async {
     final uri = Uri.parse(_commercialStartUrl);
@@ -100,6 +101,7 @@ class _PlatformWelcomeScreenState extends ConsumerState<PlatformWelcomeScreen> {
     setState(() => _busy = true);
     try {
       await DeviceRegistry.getOrCreateUuid();
+      await ProvisioningStore.saveApiUrlDraft(En1Hosts.apiBase);
       if (!mounted) return;
 
       switch (choice) {

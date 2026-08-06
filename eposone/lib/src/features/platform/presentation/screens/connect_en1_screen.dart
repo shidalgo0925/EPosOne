@@ -9,6 +9,7 @@ import 'package:eposone/src/features/platform/data/en1_provisioning_api.dart';
 import 'package:eposone/src/features/platform/data/en1_provisioning_repository.dart';
 import 'package:eposone/src/features/platform/data/provisioning_store.dart';
 import 'package:eposone/src/features/platform/domain/connection_status.dart';
+import 'package:eposone/src/features/platform/domain/en1_hosts.dart';
 import 'package:eposone/src/features/platform/domain/onboarding_session.dart';
 import 'package:eposone/src/features/pos/presentation/screens/barcode_scanner_screen.dart';
 import 'package:eposone/src/features/settings/data/repositories/business_config_repository.dart';
@@ -72,6 +73,8 @@ class _ConnectEn1ScreenState extends ConsumerState<ConnectEn1Screen> {
         _urlCtrl.text = existing.apiBaseUrl;
       } else if (draft != null && draft.isNotEmpty) {
         _urlCtrl.text = draft;
+      } else {
+        _urlCtrl.text = En1Hosts.apiBase;
       }
     });
   }
@@ -258,7 +261,7 @@ class _ConnectEn1ScreenState extends ConsumerState<ConnectEn1Screen> {
                     enabled: !_busy,
                     decoration: const InputDecoration(
                       labelText: 'URL API EasyNodeOne',
-                      hintText: 'https://en1.tudominio.com',
+                      hintText: En1Hosts.apiBase,
                       prefixIcon: Icon(Icons.link),
                     ),
                     keyboardType: TextInputType.url,

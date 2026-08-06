@@ -18,6 +18,7 @@
 | Camino C: código + pegar + QR → Register | ✅ |
 | Restore = Login + select (composición sin `/restore`) | ✅ |
 | Crear negocio → abre https://eposone.easytech.services/start | ✅ |
+| Defaults API/login → PRD `eposone.easytech.services` (no appdev) | ✅ |
 | Convergencia Register → Bootstrap → PIN | ✅ |
 | Register / Bootstrap / Sync / Licencias / Cashiers intactos | ✅ (solo consumidores) |
 
@@ -34,5 +35,5 @@
 
 ## Próximo
 
-- Validar contra appdev (login real + issue-code + register)
+- Validar contra PRD (`eposone.easytech.services`) con cia demo
 - APK release para CODITO Gate 2 sign-off
