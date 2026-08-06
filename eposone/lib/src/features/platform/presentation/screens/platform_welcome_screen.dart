@@ -1,45 +1,68 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:eposone/src/core/theme/eposone_theme.dart';
 import 'package:eposone/src/features/platform/data/device_registry.dart';
-import 'package:eposone/src/features/platform/data/platform_prefs.dart';
-import 'package:eposone/src/features/platform/domain/platform_mode.dart';
+import 'package:eposone/src/features/platform/data/provisioning_store.dart';
 
-/// Wizard de bienvenida (capa Plataforma).
-///
-/// Local → onboarding de negocio existente.
-/// Plataforma → pantalla Conectar EN1 (Hito 1 provisioning).
+/// Gate 2 — Bienvenida única (sin Modo Local / Cloud / Online / Offline).
+enum _WelcomeChoice {
+  createBusiness,
+  haveAccount,
+  activateCode,
+  restore,
+}
+
 class PlatformWelcomeScreen extends ConsumerStatefulWidget {
   const PlatformWelcomeScreen({super.key});
 
   @override
-  ConsumerState<PlatformWelcomeScreen> createState() => _PlatformWelcomeScreenState();
+  ConsumerState<PlatformWelcomeScreen> createState() =>
+      _PlatformWelcomeScreenState();
 }
 
 class _PlatformWelcomeScreenState extends ConsumerState<PlatformWelcomeScreen> {
-  PlatformMode? _selected;
+  _WelcomeChoice? _selected;
   bool _busy = false;
 
-  Future<void> _continue() async {
-    final mode = _selected;
-    if (mode == null || mode == PlatformMode.undecided) return;
+  static const _defaultEn1 = 'https://appdev.easynodeone.com';
 
+  Future<String> _resolveBaseUrl() async {
+    final draft = await ProvisioningStore.getApiUrlDraft();
+    final cfg = await ProvisioningStore.loadConfig();
+    if (cfg != null && cfg.apiBaseUrl.isNotEmpty) return cfg.apiBaseUrl;
+    if (draft != null && draft.isNotEmpty) return draft;
+    return _defaultEn1;
+  }
+
+  Future<void> _continue() async {
+    final choice = _selected;
+    if (choice == null) return;
     setState(() => _busy = true);
     try {
       await DeviceRegistry.getOrCreateUuid();
-
       if (!mounted) return;
 
-      if (mode == PlatformMode.local) {
-        await PlatformPrefs.completeOnboarding(PlatformMode.local);
-        if (!mounted) return;
-        context.go('/onboarding');
-        return;
+      switch (choice) {
+        case _WelcomeChoice.createBusiness:
+          final base = await _resolveBaseUrl();
+          final uri = Uri.parse('$base/start');
+          final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+          if (!ok && mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Abre en el navegador: $uri')),
+            );
+          }
+          // Tras crear negocio en web, vuelve y usa código / cuenta.
+          break;
+        case _WelcomeChoice.haveAccount:
+          context.go('/platform/onboarding/login');
+        case _WelcomeChoice.activateCode:
+          context.go('/platform/connect');
+        case _WelcomeChoice.restore:
+          context.go('/platform/onboarding/login?restore=1');
       }
-
-      // No marca onboarding done hasta provisioning exitoso.
-      context.go('/platform/connect');
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -64,7 +87,7 @@ class _PlatformWelcomeScreenState extends ConsumerState<PlatformWelcomeScreen> {
                   const Center(child: EposOneLogo(fontSize: 32)),
                   const SizedBox(height: 8),
                   Text(
-                    'Bienvenido',
+                    'Bienvenido a EPOSOne',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                           color: EposBrand.navy,
@@ -73,27 +96,55 @@ class _PlatformWelcomeScreenState extends ConsumerState<PlatformWelcomeScreen> {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    '¿Cómo deseas comenzar?',
+                    'Instala esta caja en pocos pasos. La modalidad la define EN1.',
                     textAlign: TextAlign.center,
                     style: TextStyle(color: EposBrand.textSecondary, fontSize: 15),
                   ),
                   const SizedBox(height: 28),
-                  _ModeCard(
-                    selected: _selected == PlatformMode.local,
+                  _ChoiceCard(
+                    selected: _selected == _WelcomeChoice.createBusiness,
                     icon: Icons.storefront_outlined,
                     title: 'Crear un negocio',
-                    subtitle:
-                        'Configura todo en este dispositivo. Ideal para empezar ya a vender.',
-                    onTap: _busy ? null : () => setState(() => _selected = PlatformMode.local),
+                    subtitle: 'Abre EN1 (/start) para cuenta, plan y panel de instalación.',
+                    onTap: _busy
+                        ? null
+                        : () => setState(
+                              () => _selected = _WelcomeChoice.createBusiness,
+                            ),
                   ),
                   const SizedBox(height: 12),
-                  _ModeCard(
-                    selected: _selected == PlatformMode.platform,
-                    icon: Icons.cloud_outlined,
-                    title: 'Conectar EasyNodeOne',
-                    subtitle:
-                        'Registra este dispositivo en la plataforma y descarga la configuración.',
-                    onTap: _busy ? null : () => setState(() => _selected = PlatformMode.platform),
+                  _ChoiceCard(
+                    selected: _selected == _WelcomeChoice.haveAccount,
+                    icon: Icons.login,
+                    title: 'Ya tengo una cuenta',
+                    subtitle: 'Inicia sesión EN1, elige caja y registra este dispositivo.',
+                    onTap: _busy
+                        ? null
+                        : () => setState(
+                              () => _selected = _WelcomeChoice.haveAccount,
+                            ),
+                  ),
+                  const SizedBox(height: 12),
+                  _ChoiceCard(
+                    selected: _selected == _WelcomeChoice.activateCode,
+                    icon: Icons.vpn_key_outlined,
+                    title: 'Activar con código',
+                    subtitle: 'Pega o escanea el código de aprovisionamiento.',
+                    onTap: _busy
+                        ? null
+                        : () => setState(
+                              () => _selected = _WelcomeChoice.activateCode,
+                            ),
+                  ),
+                  const SizedBox(height: 12),
+                  _ChoiceCard(
+                    selected: _selected == _WelcomeChoice.restore,
+                    icon: Icons.phonelink_setup,
+                    title: 'Restaurar instalación',
+                    subtitle: 'Recupera el vínculo de una caja ya autorizada en EN1.',
+                    onTap: _busy
+                        ? null
+                        : () => setState(() => _selected = _WelcomeChoice.restore),
                   ),
                   const Spacer(),
                   FilledButton(
@@ -102,17 +153,18 @@ class _PlatformWelcomeScreenState extends ConsumerState<PlatformWelcomeScreen> {
                         ? const SizedBox(
                             height: 22,
                             width: 22,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
                           )
-                        : const Text('Continuar'),
+                        : Text(
+                            _selected == _WelcomeChoice.createBusiness
+                                ? 'Abrir EN1'
+                                : 'Continuar',
+                          ),
                   ),
                   const SizedBox(height: 12),
-                  const Text(
-                    'El punto de venta no cambia. Solo eliges cómo inicia tu negocio.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 12, color: EposBrand.textSecondary),
-                  ),
-                  const SizedBox(height: 8),
                 ],
               ),
             ),
@@ -123,20 +175,20 @@ class _PlatformWelcomeScreenState extends ConsumerState<PlatformWelcomeScreen> {
   }
 }
 
-class _ModeCard extends StatelessWidget {
-  final bool selected;
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback? onTap;
-
-  const _ModeCard({
+class _ChoiceCard extends StatelessWidget {
+  const _ChoiceCard({
     required this.selected,
     required this.icon,
     required this.title,
     required this.subtitle,
     this.onTap,
   });
+
+  final bool selected;
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -147,7 +199,7 @@ class _ModeCard extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         child: Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
@@ -157,8 +209,8 @@ class _ModeCard extends StatelessWidget {
           ),
           child: Row(
             children: [
-              Icon(icon, size: 36, color: selected ? EposBrand.orange : EposBrand.navy),
-              const SizedBox(width: 14),
+              Icon(icon, size: 32, color: selected ? EposBrand.orange : EposBrand.navy),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -166,15 +218,18 @@ class _ModeCard extends StatelessWidget {
                     Text(
                       title,
                       style: const TextStyle(
-                        fontSize: 16,
+                        fontSize: 15,
                         fontWeight: FontWeight.w700,
                         color: EposBrand.textPrimary,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 2),
                     Text(
                       subtitle,
-                      style: const TextStyle(fontSize: 13, color: EposBrand.textSecondary),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: EposBrand.textSecondary,
+                      ),
                     ),
                   ],
                 ),

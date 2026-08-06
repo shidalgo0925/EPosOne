@@ -99,6 +99,19 @@ final appStartupProvider = FutureProvider<AppStartupState>((ref) async {
     );
   }
 
+  // Plataforma lista + cajeros EN1/locales → PIN (sin wizard local).
+  if (isPlatform &&
+      lifecycle == InstallationLifecycleState.readyToOperate &&
+      hasCashiers) {
+    return AppStartupState(
+      route: StartupRoute.pin,
+      config: config,
+      hasCashiers: true,
+      hasOpenRegister: openRegister != null,
+      lifecycle: lifecycle,
+    );
+  }
+
   // Setup + cajeros locales o EN1 → PIN. Sin cajeros → onboarding.
   if (!config.isSetupComplete || !hasCashiers) {
     return AppStartupState(

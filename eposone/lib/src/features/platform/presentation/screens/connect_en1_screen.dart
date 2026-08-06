@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -8,17 +9,24 @@ import 'package:eposone/src/features/platform/data/en1_provisioning_api.dart';
 import 'package:eposone/src/features/platform/data/en1_provisioning_repository.dart';
 import 'package:eposone/src/features/platform/data/provisioning_store.dart';
 import 'package:eposone/src/features/platform/domain/connection_status.dart';
+import 'package:eposone/src/features/platform/domain/onboarding_session.dart';
+import 'package:eposone/src/features/pos/presentation/screens/barcode_scanner_screen.dart';
 import 'package:eposone/src/features/settings/data/repositories/business_config_repository.dart';
 import 'package:eposone/src/features/sync/domain/entities/en1_sync_mode.dart';
 
-/// Pantalla Hito 1: conectar / reaprovisionar tablet en EasyNodeOne (EN1-02).
+/// Pantalla Camino C / reaprovisionar: URL + código (pegar / escanear QR).
 ///
 /// [reprovision] o dispositivo ya provisionado: mismo UUID, nuevo código,
 /// rota token y exige bootstrap de nuevo (ADR-014).
 class ConnectEn1Screen extends ConsumerStatefulWidget {
-  const ConnectEn1Screen({super.key, this.reprovision = false});
+  const ConnectEn1Screen({
+    super.key,
+    this.reprovision = false,
+    this.initialCode,
+  });
 
   final bool reprovision;
+  final String? initialCode;
 
   @override
   ConsumerState<ConnectEn1Screen> createState() => _ConnectEn1ScreenState();
@@ -40,6 +48,10 @@ class _ConnectEn1ScreenState extends ConsumerState<ConnectEn1Screen> {
   void initState() {
     super.initState();
     _reprovision = widget.reprovision;
+    final initial = widget.initialCode?.trim();
+    if (initial != null && initial.isNotEmpty) {
+      _codeCtrl.text = extractProvisioningCodeFromScan(initial) ?? initial;
+    }
     _loadDraft();
   }
 
@@ -109,6 +121,7 @@ class _ConnectEn1ScreenState extends ConsumerState<ConnectEn1Screen> {
             .copyWith(
               businessName:
                   config.businessName ?? config.empresaName ?? current.businessName,
+              isSetupComplete: true,
               en1SyncEnabled: true,
               en1SyncMode: En1SyncMode.live,
               en1ApiUrl: config.apiBaseUrl,
@@ -158,9 +171,32 @@ class _ConnectEn1ScreenState extends ConsumerState<ConnectEn1Screen> {
         ConnectionStatus.error => const Color(0xFFC62828),
       };
 
+  Future<void> _pasteCode() async {
+    final data = await Clipboard.getData(Clipboard.kTextPlain);
+    final raw = data?.text?.trim();
+    if (raw == null || raw.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Portapapeles vacío')),
+      );
+      return;
+    }
+    final code = extractProvisioningCodeFromScan(raw) ?? raw;
+    setState(() => _codeCtrl.text = code);
+  }
+
+  Future<void> _scanCode() async {
+    final raw = await Navigator.of(context).push<String>(
+      MaterialPageRoute(builder: (_) => const BarcodeScannerScreen()),
+    );
+    if (raw == null || raw.isEmpty || !mounted) return;
+    final code = extractProvisioningCodeFromScan(raw) ?? raw;
+    setState(() => _codeCtrl.text = code);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final title = _reprovision ? 'Reaprovisionar EN1' : 'Conectar EasyNodeOne';
+    final title = _reprovision ? 'Reaprovisionar EN1' : 'Activar con código';
     final cta = _reprovision ? 'Reaprovisionar dispositivo' : 'Registrar dispositivo';
 
     return Scaffold(
@@ -186,9 +222,8 @@ class _ConnectEn1ScreenState extends ConsumerState<ConnectEn1Screen> {
                         ? 'Vuelve a registrar este dispositivo con un código de Caja. '
                             'Se mantiene el mismo UUID, se rota el Device Token y '
                             'deberás completar el bootstrap antes de operar.'
-                        : 'Registra este dispositivo en la plataforma. '
-                            'Solo necesitas la URL de EN1 y el código de provisioning '
-                            'asociado a una Caja (BackOffice).',
+                        : 'Pega o escanea el código de aprovisionamiento (QR = solo el código). '
+                            'Luego Register → Bootstrap → PIN.',
                     style: const TextStyle(
                       color: EposBrand.textSecondary,
                       fontSize: 14,
@@ -245,12 +280,47 @@ class _ConnectEn1ScreenState extends ConsumerState<ConnectEn1Screen> {
                       labelText: _reprovision
                           ? 'Código de provisioning (Caja)'
                           : 'Código de provisioning',
-                      hintText: 'Asociado a una Caja en EasyNodeOne',
+                      hintText: 'Pega o escanea el código',
                       prefixIcon: const Icon(Icons.vpn_key_outlined),
+                      suffixIcon: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            tooltip: 'Pegar',
+                            onPressed: _busy ? null : _pasteCode,
+                            icon: const Icon(Icons.content_paste),
+                          ),
+                          IconButton(
+                            tooltip: 'Escanear QR',
+                            onPressed: _busy ? null : _scanCode,
+                            icon: const Icon(Icons.qr_code_scanner),
+                          ),
+                        ],
+                      ),
                     ),
                     textCapitalization: TextCapitalization.characters,
                     validator: (v) =>
                         (v == null || v.trim().isEmpty) ? 'Requerido' : null,
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _busy ? null : _pasteCode,
+                          icon: const Icon(Icons.content_paste, size: 18),
+                          label: const Text('Pegar'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _busy ? null : _scanCode,
+                          icon: const Icon(Icons.qr_code_scanner, size: 18),
+                          label: const Text('Escanear QR'),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 24),
                   FilledButton(
