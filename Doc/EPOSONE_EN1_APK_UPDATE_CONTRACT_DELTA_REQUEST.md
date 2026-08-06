@@ -6,7 +6,7 @@
 | **De** | P2 / Local (EPosOne APK) |
 | **Para** | P1 / CODITO (EN1) |
 | **Motivo** | Habilitar que el dispositivo **descargue e instale** la APK oficial desde EN1 (canal comercial / OTA controlado) |
-| **Estado** | **BORRADOR · pendiente congelar en EN1** |
+| **Estado** | **ESPERANDO P1** — borrador Local listo · **no implementar cliente** hasta freeze |
 | **Relacionado** | [`ADR-014`](ADR-014-EPOSONE-INSTALLATION-PROVISIONING-BOOTSTRAP.md) (gate versión mínima) · [`ADR-007`](ADR-007-EPOSONE-COMMERCIAL-LICENSING.md) §2.4 distribución pública · Provisioning EN1-02 · Bootstrap Hito 2 |
 
 > **P2 no implementa cliente OTA hasta que este delta (o equivalente) sea oficial y congelado.**  

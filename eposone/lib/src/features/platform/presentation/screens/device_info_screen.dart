@@ -17,6 +17,8 @@ import 'package:eposone/src/features/licensing/domain/license_service.dart';
 import 'package:eposone/src/features/platform/data/device_registry.dart';
 import 'package:eposone/src/features/platform/data/en1_bootstrap_repository.dart';
 import 'package:eposone/src/features/platform/data/en1_cashier_catalog_store.dart';
+import 'package:eposone/src/features/platform/data/en1_device_auth_recovery.dart';
+import 'package:eposone/src/features/platform/data/en1_provisioning_api.dart';
 import 'package:eposone/src/features/platform/data/en1_provisioning_repository.dart';
 import 'package:eposone/src/features/platform/data/platform_prefs.dart';
 import 'package:eposone/src/features/platform/domain/connection_status.dart';
@@ -281,12 +283,34 @@ class _DeviceInfoScreenState extends ConsumerState<DeviceInfoScreen> {
     try {
       await En1ProvisioningRepository().refreshConfig();
       if (!mounted) return;
+      final cfg = await En1ProvisioningRepository().getConfig();
+      if (En1DeviceAuthRecovery.isRevokedDeviceStatus(cfg?.deviceStatus)) {
+        final route = await En1DeviceAuthRecovery.recoverAndLockSession(
+          ref,
+          reason:
+              'Dispositivo revocado o inactivo en EN1 (${cfg?.deviceStatus}).',
+        );
+        if (!mounted) return;
+        context.go(route);
+        return;
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Configuración actualizada desde EN1')),
       );
       await _load();
     } catch (e) {
       if (!mounted) return;
+      if (En1DeviceAuthRecovery.isUnauthorized(e)) {
+        final route = await En1DeviceAuthRecovery.recoverAndLockSession(
+          ref,
+          reason: e is En1ProvisioningException
+              ? e.userMessage
+              : 'Dispositivo no autorizado. Reaprovisiona.',
+        );
+        if (!mounted) return;
+        context.go(route);
+        return;
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('$e'), backgroundColor: Colors.red.shade700),
       );

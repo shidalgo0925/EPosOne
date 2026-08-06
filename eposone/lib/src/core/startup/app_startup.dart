@@ -13,7 +13,7 @@ import 'package:eposone/src/features/platform/domain/platform_mode.dart';
 import 'package:eposone/src/features/settings/data/repositories/business_config_repository.dart';
 import 'package:eposone/src/features/settings/domain/entities/business_config.dart';
 
-enum StartupRoute { platformWelcome, bootstrap, onboarding, pin }
+enum StartupRoute { platformWelcome, connect, bootstrap, onboarding, pin }
 
 class AppStartupState {
   final StartupRoute route;
@@ -76,9 +76,18 @@ final appStartupProvider = FutureProvider<AppStartupState>((ref) async {
     );
   }
 
+  final mode = await PlatformPrefs.getMode();
+  // Plataforma sin token (p. ej. tras 401/revocación) → Connect, no bootstrap.
+  if (mode == PlatformMode.platform && !provisioned) {
+    return AppStartupState(
+      route: StartupRoute.connect,
+      config: config,
+      lifecycle: InstallationLifecycleState.notProvisioned,
+    );
+  }
+
   // ADR-014: modo integrado sin bootstrap/licencia OK → pantalla bloqueante.
   final lifecycle = await InstallationLifecycle.evaluate();
-  final mode = await PlatformPrefs.getMode();
   final isPlatform = mode == PlatformMode.platform || provisioned;
   if (isPlatform && lifecycle != InstallationLifecycleState.readyToOperate) {
     return AppStartupState(

@@ -1,4 +1,5 @@
 import 'package:eposone/src/features/licensing/domain/license_service.dart';
+import 'package:eposone/src/features/platform/data/en1_device_auth_recovery.dart';
 import 'package:eposone/src/features/platform/data/installation_lifecycle_store.dart';
 import 'package:eposone/src/features/platform/data/platform_prefs.dart';
 import 'package:eposone/src/features/platform/data/provisioning_store.dart';
@@ -41,6 +42,19 @@ class InstallationLifecycle {
     }
 
     if (!provisioned) {
+      await InstallationLifecycleStore.save(
+        InstallationLifecycleState.notProvisioned,
+      );
+      return InstallationLifecycleState.notProvisioned;
+    }
+
+    final config = await ProvisioningStore.loadConfig();
+    if (En1DeviceAuthRecovery.isRevokedDeviceStatus(config?.deviceStatus)) {
+      await En1DeviceAuthRecovery.clearCredentialsForReprovision(
+        reason:
+            'Dispositivo revocado o inactivo en EN1 (${config?.deviceStatus}). '
+            'Reaprovisiona con un código de Caja.',
+      );
       await InstallationLifecycleStore.save(
         InstallationLifecycleState.notProvisioned,
       );

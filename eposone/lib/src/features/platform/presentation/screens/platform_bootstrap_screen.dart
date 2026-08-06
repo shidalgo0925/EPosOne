@@ -6,7 +6,9 @@ import 'package:eposone/src/core/startup/app_startup.dart';
 import 'package:eposone/src/core/theme/eposone_theme.dart';
 import 'package:eposone/src/features/auth/presentation/screens/pin_screen.dart';
 import 'package:eposone/src/features/platform/data/en1_bootstrap_repository.dart';
+import 'package:eposone/src/features/platform/data/en1_device_auth_recovery.dart';
 import 'package:eposone/src/features/platform/data/en1_provisioning_api.dart';
+import 'package:eposone/src/features/platform/data/en1_provisioning_repository.dart';
 import 'package:eposone/src/features/platform/data/installation_lifecycle.dart';
 import 'package:eposone/src/features/platform/domain/installation_lifecycle_state.dart';
 import 'package:eposone/src/features/pos/presentation/providers/pos_page_provider.dart';
@@ -60,6 +62,20 @@ class _PlatformBootstrapScreenState
         },
       );
 
+      // device.status revocado desde EN1 → forzar Connect.
+      final cfg = await En1ProvisioningRepository().getConfig();
+      if (En1DeviceAuthRecovery.isRevokedDeviceStatus(cfg?.deviceStatus)) {
+        final route = await En1DeviceAuthRecovery.recoverAndLockSession(
+          ref,
+          reason:
+              'Dispositivo revocado o inactivo en EN1 (${cfg?.deviceStatus}). '
+              'Reaprovisiona con un código de Caja.',
+        );
+        if (!mounted) return;
+        context.go(route);
+        return;
+      }
+
       final state = await InstallationLifecycle.evaluate();
       ref.invalidate(productsListProvider);
       ref.invalidate(categoriesListProvider);
@@ -89,6 +105,8 @@ class _PlatformBootstrapScreenState
       switch (startup.route) {
         case StartupRoute.platformWelcome:
           context.go('/platform/welcome');
+        case StartupRoute.connect:
+          context.go('/platform/connect?reprovision=1');
         case StartupRoute.bootstrap:
           // No debería ocurrir si ready; reintenta UI.
           setState(() {
@@ -102,6 +120,19 @@ class _PlatformBootstrapScreenState
       }
     } catch (e) {
       if (!mounted) return;
+
+      if (En1DeviceAuthRecovery.isUnauthorized(e)) {
+        final route = await En1DeviceAuthRecovery.recoverAndLockSession(
+          ref,
+          reason: e is En1ProvisioningException
+              ? e.userMessage
+              : 'Dispositivo no autorizado. Reaprovisiona el dispositivo.',
+        );
+        if (!mounted) return;
+        context.go(route);
+        return;
+      }
+
       final message = switch (e) {
         En1ProvisioningException(:final userMessage) => userMessage,
         En1BootstrapException(:final message) => message,
@@ -191,6 +222,41 @@ class _PlatformBootstrapScreenState
                     onPressed: _run,
                     child: const Text('Reintentar'),
                   ),
+                  if (_blockedState ==
+                      InstallationLifecycleState.bootstrapCompleted) ...[
+                    const SizedBox(height: 12),
+                    OutlinedButton(
+                      onPressed: () => context.push('/platform/license'),
+                      child: const Text('Ver licencia'),
+                    ),
+                    const SizedBox(height: 8),
+                    TextButton(
+                      onPressed: () async {
+                        final route =
+                            await En1DeviceAuthRecovery.recoverAndLockSession(
+                          ref,
+                          reason:
+                              'Reaprovisionamiento solicitado tras bloqueo de licencia.',
+                        );
+                        if (!mounted) return;
+                        context.go(route);
+                      },
+                      child: const Text('Reaprovisionar dispositivo'),
+                    ),
+                  ] else if (_error != null) ...[
+                    const SizedBox(height: 8),
+                    TextButton(
+                      onPressed: () async {
+                        final route =
+                            await En1DeviceAuthRecovery.recoverAndLockSession(
+                          ref,
+                        );
+                        if (!mounted) return;
+                        context.go(route);
+                      },
+                      child: const Text('Reaprovisionar dispositivo'),
+                    ),
+                  ],
                 ],
                 const Spacer(),
                 const Text(

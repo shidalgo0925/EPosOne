@@ -2,7 +2,7 @@
 
 | Campo | Valor |
 |-------|--------|
-| **Estado** | **Borrador** · bloqueado hasta freeze del delta EN1 |
+| **Estado** | **Borrador bloqueado** · espera freeze P1 ([cierre espera](EPOSONE_EN1_APK_UPDATE_WAIT_P1_2026-08-05.md)) |
 | **Fecha** | 5 ago 2026 |
 | **Contrato pendiente** | [`EPOSONE_EN1_APK_UPDATE_CONTRACT_DELTA_REQUEST.md`](EPOSONE_EN1_APK_UPDATE_CONTRACT_DELTA_REQUEST.md) |
 | **ADR** | [`ADR-014`](ADR-014-EPOSONE-INSTALLATION-PROVISIONING-BOOTSTRAP.md) |
