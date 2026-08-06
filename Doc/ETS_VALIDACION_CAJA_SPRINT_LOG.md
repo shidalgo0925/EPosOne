@@ -5,7 +5,7 @@
 **Roadmap P0:** [`EPOSONE_P0_CERT_ROADMAP_V1.md`](EPOSONE_P0_CERT_ROADMAP_V1.md)  
 **Inicio:** 6 ago 2026  
 **APK:** `eposone/build/app/outputs/flutter-apk/app-release.apk` (post Tracks A/B · `9579365` o posterior)  
-**Estado del módulo Caja:** 🟡 En validación funcional
+**Estado del módulo Caja:** 🟡 Preparación cerrada ([`EPOSONE_P0_CAJA_PREP_CLOSE_2026-08-06.md`](EPOSONE_P0_CAJA_PREP_CLOSE_2026-08-06.md)) · validación funcional tablet **pendiente**
 
 ---
 

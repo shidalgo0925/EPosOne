@@ -11,7 +11,7 @@
 
 | # | Módulo | Estado | Log / checklist |
 |---|--------|--------|-----------------|
-| 1 | **Caja** — apertura / cierre / arqueo | 🟡 En curso | [`ETS_VALIDACION_CAJA_SPRINT_LOG.md`](ETS_VALIDACION_CAJA_SPRINT_LOG.md) · [`EPOSONE_P0_CAJA_CERT_CHECKLIST_V1.md`](EPOSONE_P0_CAJA_CERT_CHECKLIST_V1.md) |
+| 1 | **Caja** — apertura / cierre / arqueo | 🟡 Prep cerrada · funcional tablet pendiente | [`EPOSONE_P0_CAJA_PREP_CLOSE_2026-08-06.md`](EPOSONE_P0_CAJA_PREP_CLOSE_2026-08-06.md) · [`ETS_VALIDACION_CAJA_SPRINT_LOG.md`](ETS_VALIDACION_CAJA_SPRINT_LOG.md) · [`EPOSONE_P0_CAJA_CERT_CHECKLIST_V1.md`](EPOSONE_P0_CAJA_CERT_CHECKLIST_V1.md) |
 | 2 | Pedidos + recibos | Pendiente | Reusar / cerrar ETS Pedido |
 | 3 | Cancelación / Anulación / Devolución | Pendiente | — |
 | 4 | Sync EP1 ↔ EN1 + Offline → Online | Pendiente | — |
