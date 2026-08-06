@@ -29,4 +29,11 @@ class PlatformPrefs {
   static Future<void> markCompletedForExistingInstall() async {
     await completeOnboarding(PlatformMode.local);
   }
+
+  /// Tras desconectar EN1: vuelve a mostrar wizard de bienvenida.
+  static Future<void> resetOnboarding() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_onboardingDoneKey);
+    await prefs.remove(_modeKey);
+  }
 }

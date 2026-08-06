@@ -6,6 +6,7 @@ import 'package:isar/isar.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:eposone/src/core/database/database_provider.dart';
 import 'package:eposone/src/core/providers/business_config_provider.dart';
+import 'package:eposone/src/core/session/pos_session.dart';
 import 'package:eposone/src/core/theme/eposone_theme.dart';
 import 'package:eposone/src/core/time/en1_clock_guard.dart';
 import 'package:eposone/src/core/time/en1_date_time_service.dart';
@@ -23,6 +24,7 @@ import 'package:eposone/src/features/platform/domain/platform_mode.dart';
 import 'package:eposone/src/features/platform/domain/provisioning_config.dart';
 import 'package:eposone/src/features/pos/presentation/providers/pos_page_provider.dart';
 import 'package:eposone/src/features/products/presentation/providers/product_provider.dart';
+import 'package:eposone/src/features/settings/data/repositories/business_config_repository.dart';
 import 'package:eposone/src/features/sync/domain/entities/sync_entity_kind.dart';
 import 'package:eposone/src/features/sync/domain/entities/sync_operation.dart';
 import 'package:eposone/src/features/sync/presentation/providers/en1_connection_status.dart';
@@ -194,6 +196,84 @@ class _DeviceInfoScreenState extends ConsumerState<DeviceInfoScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Log de reloj copiado')),
     );
+  }
+
+  bool _disconnecting = false;
+
+  Future<void> _reprovision() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Reaprovisionar dispositivo'),
+        content: const Text(
+          'Se pedirá un código de Caja de EN1. El UUID no cambia; '
+          'el Device Token se rota y el bootstrap será obligatorio otra vez.\n\n'
+          '¿Continuar?',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Continuar')),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    context.push('/platform/connect?reprovision=1');
+  }
+
+  Future<void> _disconnectEn1() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Desconectar EasyNodeOne'),
+        content: const Text(
+          'Se borrará el token y la configuración de provisioning en este dispositivo. '
+          'El UUID local se conserva. Deberás volver a conectar con un código de Caja.\n\n'
+          '¿Desconectar?',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: const Color(0xFFC62828)),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Desconectar'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+
+    setState(() => _disconnecting = true);
+    try {
+      final isar = await ref.read(databaseProvider.future);
+      final configRepo = BusinessConfigRepository(isar);
+      final current = await configRepo.getConfig();
+      await configRepo.saveConfig(
+        current
+            .copyWith(
+              en1SyncEnabled: false,
+              en1ApiToken: '',
+              en1ApiUrl: '',
+            )
+            .markAsModified(),
+      );
+      await En1ProvisioningRepository().disconnect();
+      ref.read(posSessionProvider.notifier).lock();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Dispositivo desconectado de EN1')),
+      );
+      context.go('/platform/welcome');
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('No se pudo desconectar: $e'),
+          backgroundColor: Colors.red.shade800,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _disconnecting = false);
+    }
   }
 
   Future<void> _refresh() async {
@@ -513,6 +593,33 @@ class _DeviceInfoScreenState extends ConsumerState<DeviceInfoScreen> {
                           )
                         : const Icon(Icons.restaurant_menu),
                     label: const Text('Reparar páginas Comida / Bar'),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text('Aprovisionamiento',
+                      style: TextStyle(fontWeight: FontWeight.w700, color: EposBrand.navy)),
+                  const SizedBox(height: 8),
+                  FilledButton.icon(
+                    onPressed: (_bootstrapping || _disconnecting) ? null : _reprovision,
+                    icon: const Icon(Icons.vpn_key),
+                    label: const Text('Reaprovisionar dispositivo'),
+                  ),
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    onPressed: (_bootstrapping || _disconnecting) ? null : _disconnectEn1,
+                    icon: _disconnecting
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.link_off),
+                    label: const Text('Desconectar EN1'),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Reaprovisionar: mismo UUID + código de Caja → token nuevo + bootstrap.\n'
+                    'Desconectar: borra token local (UUID se conserva).',
+                    style: TextStyle(fontSize: 12, color: EposBrand.textSecondary),
                   ),
                   if (_progressLabel != null) ...[
                     const SizedBox(height: 12),

@@ -92,8 +92,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ];
       final isPublic = publicRoutes.contains(path);
 
-      // ADR-014: bootstrap no debe redirigirse a /pos aunque haya sesión residual.
-      if (path == '/platform/bootstrap') {
+      // ADR-014: bootstrap y reaprovisionamiento no deben redirigirse a /pos.
+      if (path == '/platform/bootstrap' || path == '/platform/connect') {
         return null;
       }
 
@@ -121,7 +121,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     routes: [
       GoRoute(path: '/splash', builder: (_, __) => const SplashScreen()),
       GoRoute(path: '/platform/welcome', builder: (_, __) => const PlatformWelcomeScreen()),
-      GoRoute(path: '/platform/connect', builder: (_, __) => const ConnectEn1Screen()),
+      GoRoute(
+        path: '/platform/connect',
+        builder: (_, state) => ConnectEn1Screen(
+          reprovision: state.uri.queryParameters['reprovision'] == '1',
+        ),
+      ),
       GoRoute(path: '/platform/bootstrap', builder: (_, __) => const PlatformBootstrapScreen()),
       GoRoute(path: '/platform/device', builder: (_, __) => const DeviceInfoScreen()),
       GoRoute(path: '/platform/license', builder: (_, __) => const LicenseStatusScreen()),

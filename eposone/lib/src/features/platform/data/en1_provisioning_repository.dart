@@ -29,6 +29,7 @@ class En1ProvisioningRepository {
   Future<ProvisioningConfig> provision({
     required String apiBaseUrl,
     required String provisioningCode,
+    String? appVersion,
   }) async {
     final code = provisioningCode.trim();
     if (code.isEmpty) {
@@ -43,7 +44,10 @@ class En1ProvisioningRepository {
     await ProvisioningStore.setStatus(ConnectionStatus.registering);
 
     try {
-      final snapshot = await DeviceRegistry.snapshot(appVersion: _appVersion);
+      final version = (appVersion == null || appVersion.isEmpty)
+          ? _appVersion
+          : appVersion;
+      final snapshot = await DeviceRegistry.snapshot(appVersion: version);
       final request = DeviceRegistrationRequest(
         deviceUuid: snapshot.uuid,
         deviceName: snapshot.deviceName,
@@ -121,5 +125,6 @@ class En1ProvisioningRepository {
     await En1CashierCatalogStore.clearAll();
     await ProvisioningStore.clearConfig();
     await InstallationLifecycle.reset();
+    await PlatformPrefs.resetOnboarding();
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:eposone/src/core/database/database_provider.dart';
 import 'package:eposone/src/core/theme/eposone_theme.dart';
 import 'package:eposone/src/features/platform/data/en1_provisioning_api.dart';
@@ -10,11 +11,14 @@ import 'package:eposone/src/features/platform/domain/connection_status.dart';
 import 'package:eposone/src/features/settings/data/repositories/business_config_repository.dart';
 import 'package:eposone/src/features/sync/domain/entities/en1_sync_mode.dart';
 
-/// Pantalla Hito 1: conectar tablet a EasyNodeOne (provisioning).
+/// Pantalla Hito 1: conectar / reaprovisionar tablet en EasyNodeOne (EN1-02).
 ///
-/// No toca el POS Core. Sync de catálogo permanece stub.
+/// [reprovision] o dispositivo ya provisionado: mismo UUID, nuevo código,
+/// rota token y exige bootstrap de nuevo (ADR-014).
 class ConnectEn1Screen extends ConsumerStatefulWidget {
-  const ConnectEn1Screen({super.key});
+  const ConnectEn1Screen({super.key, this.reprovision = false});
+
+  final bool reprovision;
 
   @override
   ConsumerState<ConnectEn1Screen> createState() => _ConnectEn1ScreenState();
@@ -29,22 +33,34 @@ class _ConnectEn1ScreenState extends ConsumerState<ConnectEn1Screen> {
   ConnectionStatus _status = ConnectionStatus.notConfigured;
   String? _error;
   bool _busy = false;
+  bool _reprovision = false;
+  String? _deviceUuid;
 
   @override
   void initState() {
     super.initState();
+    _reprovision = widget.reprovision;
     _loadDraft();
   }
 
   Future<void> _loadDraft() async {
     final draft = await ProvisioningStore.getApiUrlDraft();
+    final existing = await _repo.getConfig();
     final status = await _repo.getStatus();
     final err = await _repo.getLastError();
+    final isReprovision = widget.reprovision || existing != null;
+
     if (!mounted) return;
     setState(() {
-      if (draft != null && draft.isNotEmpty) _urlCtrl.text = draft;
+      _reprovision = isReprovision;
+      _deviceUuid = existing?.deviceUuid;
       _status = status;
       _error = err;
+      if (existing != null && existing.apiBaseUrl.isNotEmpty) {
+        _urlCtrl.text = existing.apiBaseUrl;
+      } else if (draft != null && draft.isNotEmpty) {
+        _urlCtrl.text = draft;
+      }
     });
   }
 
@@ -53,6 +69,19 @@ class _ConnectEn1ScreenState extends ConsumerState<ConnectEn1Screen> {
     _urlCtrl.dispose();
     _codeCtrl.dispose();
     super.dispose();
+  }
+
+  void _goBack() {
+    if (_busy) return;
+    if (_reprovision && context.canPop()) {
+      context.pop();
+      return;
+    }
+    if (_reprovision) {
+      context.go('/platform/device');
+      return;
+    }
+    context.go('/platform/welcome');
   }
 
   Future<void> _register() async {
@@ -64,24 +93,29 @@ class _ConnectEn1ScreenState extends ConsumerState<ConnectEn1Screen> {
     });
 
     try {
+      final pkg = await PackageInfo.fromPlatform();
+      final appVersion = '${pkg.version}+${pkg.buildNumber}';
       final config = await _repo.provision(
         apiBaseUrl: _urlCtrl.text.trim(),
         provisioningCode: _codeCtrl.text.trim(),
+        appVersion: appVersion,
       );
 
-      // Aplica identidad mínima en BusinessConfig (sin tocar pantallas POS).
       final isar = await ref.read(databaseProvider.future);
       final configRepo = BusinessConfigRepository(isar);
       final current = await configRepo.getConfig();
       await configRepo.saveConfig(
-        current.copyWith(
-          businessName: config.businessName ?? config.empresaName ?? current.businessName,
-          en1SyncEnabled: true,
-          en1SyncMode: En1SyncMode.live,
-          en1ApiUrl: config.apiBaseUrl,
-          en1ApiToken: config.accessToken,
-          en1BranchId: config.branchRef,
-        ).markAsModified(),
+        current
+            .copyWith(
+              businessName:
+                  config.businessName ?? config.empresaName ?? current.businessName,
+              en1SyncEnabled: true,
+              en1SyncMode: En1SyncMode.live,
+              en1ApiUrl: config.apiBaseUrl,
+              en1ApiToken: config.accessToken,
+              en1BranchId: config.branchRef,
+            )
+            .markAsModified(),
       );
 
       if (!mounted) return;
@@ -93,14 +127,16 @@ class _ConnectEn1ScreenState extends ConsumerState<ConnectEn1Screen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Conectado · POS ${config.posName ?? config.posId} · '
-            'Caja ${config.cajaName ?? config.cajaId}',
+            _reprovision
+                ? 'Reaprovisionado · token rotado · bootstrap obligatorio'
+                : 'Conectado · POS ${config.posName ?? config.posId} · '
+                    'Caja ${config.cajaName ?? config.cajaId}',
           ),
           backgroundColor: Colors.green.shade700,
         ),
       );
 
-      // ADR-014: bootstrap obligatorio antes de onboarding/PIN/POS.
+      // ADR-014: bootstrap obligatorio tras register / reprovision.
       context.go('/platform/bootstrap');
     } catch (e) {
       final message = e is En1ProvisioningException
@@ -124,13 +160,16 @@ class _ConnectEn1ScreenState extends ConsumerState<ConnectEn1Screen> {
 
   @override
   Widget build(BuildContext context) {
+    final title = _reprovision ? 'Reaprovisionar EN1' : 'Conectar EasyNodeOne';
+    final cta = _reprovision ? 'Reaprovisionar dispositivo' : 'Registrar dispositivo';
+
     return Scaffold(
       backgroundColor: EposBrand.background,
       appBar: AppBar(
-        title: const Text('Conectar EasyNodeOne'),
+        title: Text(title),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: _busy ? null : () => context.go('/platform/welcome'),
+          onPressed: _busy ? null : _goBack,
         ),
       ),
       body: SafeArea(
@@ -142,12 +181,40 @@ class _ConnectEn1ScreenState extends ConsumerState<ConnectEn1Screen> {
               child: ListView(
                 padding: const EdgeInsets.all(24),
                 children: [
-                  const Text(
-                    'Registra este dispositivo en la plataforma. '
-                    'Solo necesitas la URL de EN1 y el código de provisioning '
-                    'asociado a una Caja (BackOffice).',
-                    style: TextStyle(color: EposBrand.textSecondary, fontSize: 14),
+                  Text(
+                    _reprovision
+                        ? 'Vuelve a registrar este dispositivo con un código de Caja. '
+                            'Se mantiene el mismo UUID, se rota el Device Token y '
+                            'deberás completar el bootstrap antes de operar.'
+                        : 'Registra este dispositivo en la plataforma. '
+                            'Solo necesitas la URL de EN1 y el código de provisioning '
+                            'asociado a una Caja (BackOffice).',
+                    style: const TextStyle(
+                      color: EposBrand.textSecondary,
+                      fontSize: 14,
+                    ),
                   ),
+                  if (_reprovision && _deviceUuid != null) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: EposBrand.orange.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: EposBrand.orange.withValues(alpha: 0.35),
+                        ),
+                      ),
+                      child: Text(
+                        'UUID (sin cambio): $_deviceUuid',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 20),
                   _StatusBanner(status: _status, color: _statusColor, error: _error),
                   const SizedBox(height: 20),
@@ -174,10 +241,12 @@ class _ConnectEn1ScreenState extends ConsumerState<ConnectEn1Screen> {
                   TextFormField(
                     controller: _codeCtrl,
                     enabled: !_busy,
-                    decoration: const InputDecoration(
-                      labelText: 'Código de provisioning',
+                    decoration: InputDecoration(
+                      labelText: _reprovision
+                          ? 'Código de provisioning (Caja)'
+                          : 'Código de provisioning',
                       hintText: 'Asociado a una Caja en EasyNodeOne',
-                      prefixIcon: Icon(Icons.vpn_key_outlined),
+                      prefixIcon: const Icon(Icons.vpn_key_outlined),
                     ),
                     textCapitalization: TextCapitalization.characters,
                     validator: (v) =>
@@ -195,19 +264,25 @@ class _ConnectEn1ScreenState extends ConsumerState<ConnectEn1Screen> {
                               color: Colors.white,
                             ),
                           )
-                        : const Text('Registrar dispositivo'),
+                        : Text(cta),
                   ),
                   const SizedBox(height: 12),
                   TextButton(
-                    onPressed: _busy ? null : () => context.go('/platform/welcome'),
+                    onPressed: _busy ? null : _goBack,
                     child: const Text('Volver'),
                   ),
                   const SizedBox(height: 16),
-                  const Text(
-                    'Contrato EN1-02 · POST /api/v1/devices/register\n'
-                    'Header X-EN1-Provisioning-Code · la jerarquía viene en la respuesta.\n'
-                    'La sincronización de productos y ventas se activará en el Hito 2.',
-                    style: TextStyle(fontSize: 11, color: EposBrand.textSecondary),
+                  Text(
+                    _reprovision
+                        ? 'EN1-02 · POST /api/v1/devices/register (reprovision · 200/201)\n'
+                            'Header X-EN1-Provisioning-Code · mismo device_uuid · token nuevo.\n'
+                            'Tras éxito → bootstrap obligatorio (ADR-014).'
+                        : 'Contrato EN1-02 · POST /api/v1/devices/register\n'
+                            'Header X-EN1-Provisioning-Code · la jerarquía viene en la respuesta.',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: EposBrand.textSecondary,
+                    ),
                   ),
                 ],
               ),
@@ -255,7 +330,10 @@ class _StatusBanner extends StatelessWidget {
           ),
           if (error != null && error!.isNotEmpty) ...[
             const SizedBox(height: 8),
-            Text(error!, style: const TextStyle(fontSize: 13, color: EposBrand.textPrimary)),
+            Text(
+              error!,
+              style: const TextStyle(fontSize: 13, color: EposBrand.textPrimary),
+            ),
           ],
         ],
       ),
