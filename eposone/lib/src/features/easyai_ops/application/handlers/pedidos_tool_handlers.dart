@@ -1,7 +1,6 @@
 import '../../domain/ops_context.dart';
 import '../../domain/ops_tool_definition.dart';
 import '../../domain/ops_verb.dart';
-import 'caja_tool_handlers.dart';
 
 /// Pedidos — lectura + cancelar (Fase 2). Crear/actualizar/cerrar = pendiente.
 class PedidosToolHandlers {

@@ -248,14 +248,6 @@ class En1CashierCatalogStore {
     return false;
   }
 
-  static Future<int?> pinVersionOf(int cashierContactId) async {
-    final all = await listMetaOnly();
-    for (final c in all) {
-      if (c.cashierContactId == cashierContactId) return c.pinVersion;
-    }
-    return null;
-  }
-
   static Future<void> clearAll() async {
     final prefs = await SharedPreferences.getInstance();
     final all = await listMetaOnly();

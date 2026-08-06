@@ -1,6 +1,5 @@
 import '../domain/ops_context.dart';
 import '../domain/ops_tool_definition.dart';
-import '../domain/ops_verb.dart';
 import 'handlers/caja_tool_handlers.dart';
 import 'handlers/dispositivos_tool_handlers.dart';
 import 'handlers/licencias_tool_handlers.dart';
@@ -86,10 +85,4 @@ class OpsToolRegistry {
         t.contains('select ') ||
         t.startsWith('db.');
   }
-}
-
-/// Forbidden verb / id helpers.
-abstract final class OpsVerbGuard {
-  static bool isAllowedVerb(String verb) =>
-      OpsVerb.values.any((v) => v.id == verb);
 }

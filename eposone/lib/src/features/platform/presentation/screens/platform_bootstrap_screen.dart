@@ -106,7 +106,7 @@ class _PlatformBootstrapScreenState
         case StartupRoute.platformWelcome:
           context.go('/platform/welcome');
         case StartupRoute.connect:
-          context.go('/platform/connect?reprovision=1');
+          context.go(En1DeviceAuthRecovery.connectRoute);
         case StartupRoute.bootstrap:
           // No debería ocurrir si ready; reintenta UI.
           setState(() {

@@ -219,7 +219,7 @@ class _DeviceInfoScreenState extends ConsumerState<DeviceInfoScreen> {
       ),
     );
     if (ok != true || !mounted) return;
-    context.push('/platform/connect?reprovision=1');
+    context.push(En1DeviceAuthRecovery.connectRoute);
   }
 
   Future<void> _disconnectEn1() async {

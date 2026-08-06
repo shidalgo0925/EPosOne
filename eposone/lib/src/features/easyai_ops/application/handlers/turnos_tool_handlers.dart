@@ -1,7 +1,6 @@
 import '../../domain/ops_context.dart';
 import '../../domain/ops_tool_definition.dart';
 import '../../domain/ops_verb.dart';
-import 'caja_tool_handlers.dart';
 
 /// Turnos = CashRegister en EPOSOne V1 (mismo dominio que caja).
 class TurnosToolHandlers {

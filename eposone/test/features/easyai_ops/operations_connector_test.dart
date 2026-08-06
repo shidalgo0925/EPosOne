@@ -1,4 +1,14 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:eposone/src/features/easyai_ops/application/handlers/caja_tool_handlers.dart';
+import 'package:eposone/src/features/easyai_ops/application/handlers/dispositivos_tool_handlers.dart';
+import 'package:eposone/src/features/easyai_ops/application/handlers/licencias_tool_handlers.dart';
+import 'package:eposone/src/features/easyai_ops/application/handlers/occ_tool_handlers.dart';
+import 'package:eposone/src/features/easyai_ops/application/handlers/pedidos_tool_handlers.dart';
+import 'package:eposone/src/features/easyai_ops/application/handlers/reportes_tool_handlers.dart';
+import 'package:eposone/src/features/easyai_ops/application/handlers/telemetria_tool_handlers.dart';
+import 'package:eposone/src/features/easyai_ops/application/handlers/turnos_tool_handlers.dart';
+import 'package:eposone/src/features/easyai_ops/application/handlers/ventas_tool_handlers.dart';
+import 'package:eposone/src/features/easyai_ops/application/ops_tool_registry.dart';
 import 'package:eposone/src/features/easyai_ops/easyai_ops.dart';
 
 void main() {
@@ -177,6 +187,14 @@ void main() {
       final id = t['id']! as String;
       expect(OpsToolRegistry.looksLikeRawDataAccess(id), isFalse);
     }
+  });
+
+  test('describeTool returns catalog entry for wired tool', () {
+    final d = connector.describeTool('occ.consultar.pulso');
+    expect(d, isNotNull);
+    expect(d!['id'], 'occ.consultar.pulso');
+    expect(d['wired'], isTrue);
+    expect(connector.describeTool('db.raw'), isNull);
   });
 
   test('fase2 write tools report wired=true in catalog', () {

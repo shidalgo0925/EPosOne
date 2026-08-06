@@ -2,11 +2,6 @@ import '../../domain/ops_context.dart';
 import '../../domain/ops_tool_definition.dart';
 import '../../domain/ops_verb.dart';
 
-typedef OpsWriteFn = Future<Map<String, Object?>> Function(
-  Map<String, Object?> input,
-  OpsInvokeSession session,
-);
-
 /// Caja — consultar / analizar / abrir / cerrar (ADR-017).
 class CajaToolHandlers {
   CajaToolHandlers({

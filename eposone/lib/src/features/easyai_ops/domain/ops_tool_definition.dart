@@ -8,6 +8,12 @@ typedef OpsToolHandler = Future<Map<String, Object?>> Function(
   OpsInvokeSession session,
 );
 
+/// Escritura de tool (abrir/cerrar/cancelar, …).
+typedef OpsWriteFn = Future<Map<String, Object?>> Function(
+  Map<String, Object?> input,
+  OpsInvokeSession session,
+);
+
 /// Sesión de invocación EasyAI → Connector (ADR-017 Fase 2).
 ///
 /// Escrituras exigen [authorized] == true y [actorId] no vacío.
@@ -36,27 +42,6 @@ class OpsInvokeSession {
 
   /// `none` | `pin` | `session` | `host`
   final String authMethod;
-
-  OpsInvokeSession copyWith({
-    String? actorId,
-    String? actorName,
-    String? role,
-    int? cashierContactId,
-    String? channel,
-    bool? authorized,
-    String? authMethod,
-    bool clearContactId = false,
-  }) =>
-      OpsInvokeSession(
-        actorId: actorId ?? this.actorId,
-        actorName: actorName ?? this.actorName,
-        role: role ?? this.role,
-        cashierContactId:
-            clearContactId ? null : (cashierContactId ?? this.cashierContactId),
-        channel: channel ?? this.channel,
-        authorized: authorized ?? this.authorized,
-        authMethod: authMethod ?? this.authMethod,
-      );
 }
 
 /// Public tool descriptor — never exposes tables.

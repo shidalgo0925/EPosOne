@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:eposone/src/core/session/pos_session.dart';
 import 'package:eposone/src/core/startup/app_startup.dart';
 import 'package:eposone/src/core/theme/eposone_theme.dart';
+import 'package:eposone/src/features/platform/data/en1_device_auth_recovery.dart';
 import 'package:eposone/src/features/platform/data/installation_lifecycle.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
@@ -50,7 +51,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
       case StartupRoute.platformWelcome:
         context.go('/platform/welcome');
       case StartupRoute.connect:
-        context.go('/platform/connect?reprovision=1');
+        context.go(En1DeviceAuthRecovery.connectRoute);
       case StartupRoute.bootstrap:
         context.go('/platform/bootstrap');
       case StartupRoute.onboarding:
