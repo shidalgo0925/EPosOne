@@ -269,7 +269,8 @@ No cambiar endpoints ni DTOs en esta fase.
 | Reglas de negocio | §6 |
 | Impacto Startup / Bootstrap / Licencias / Sync | §7–§10 |
 | Gate APK (`InstallationLifecycle` + `/platform/bootstrap`) | **Hecho** (1 ago 2026) |
-| Delta contrato EN1 | **No** (pendiente P1 / handoff) |
+| Delta contrato EN1 (campos instalación genéricos) | **No** (pendiente P1 / handoff) |
+| Delta contrato **APK update / OTA** | **Borrador Local** → [`EPOSONE_EN1_APK_UPDATE_CONTRACT_DELTA_REQUEST.md`](EPOSONE_EN1_APK_UPDATE_CONTRACT_DELTA_REQUEST.md) · cliente [`EPOSONE_EN1_APK_UPDATE_CLIENT_SPEC_V1.md`](EPOSONE_EN1_APK_UPDATE_CLIENT_SPEC_V1.md) · **sin código hasta freeze** |
 
 ---
 
