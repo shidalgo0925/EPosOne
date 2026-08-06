@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -36,6 +37,73 @@ class _PlatformWelcomeScreenState extends ConsumerState<PlatformWelcomeScreen> {
     return _defaultEn1;
   }
 
+  Future<void> _openCreateBusiness() async {
+    final base = await _resolveBaseUrl();
+    final uri = Uri.parse(
+      base.endsWith('/') ? '${base}start' : '$base/start',
+    );
+
+    var launched = false;
+    try {
+      if (await canLaunchUrl(uri)) {
+        launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      }
+    } catch (_) {
+      launched = false;
+    }
+
+    if (!mounted) return;
+
+    if (launched) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Cuando termines en EN1, vuelve y usa «Activar con código» o «Ya tengo una cuenta».',
+          ),
+          duration: Duration(seconds: 5),
+        ),
+      );
+      return;
+    }
+
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('No se pudo abrir EN1'),
+        content: Text(
+          'La tablet no alcanzó el sitio (sin internet o DNS).\n\n'
+          'Abre en un navegador con red:\n$uri\n\n'
+          'Luego vuelve a la APK con el código o inicia sesión.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () async {
+              await Clipboard.setData(ClipboardData(text: uri.toString()));
+              if (ctx.mounted) Navigator.pop(ctx);
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('URL copiada')),
+                );
+              }
+            },
+            child: const Text('Copiar URL'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              setState(() => _selected = _WelcomeChoice.activateCode);
+            },
+            child: const Text('Activar con código'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cerrar'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _continue() async {
     final choice = _selected;
     if (choice == null) return;
@@ -46,16 +114,7 @@ class _PlatformWelcomeScreenState extends ConsumerState<PlatformWelcomeScreen> {
 
       switch (choice) {
         case _WelcomeChoice.createBusiness:
-          final base = await _resolveBaseUrl();
-          final uri = Uri.parse('$base/start');
-          final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
-          if (!ok && mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Abre en el navegador: $uri')),
-            );
-          }
-          // Tras crear negocio en web, vuelve y usa código / cuenta.
-          break;
+          await _openCreateBusiness();
         case _WelcomeChoice.haveAccount:
           context.go('/platform/onboarding/login');
         case _WelcomeChoice.activateCode:
@@ -76,78 +135,96 @@ class _PlatformWelcomeScreenState extends ConsumerState<PlatformWelcomeScreen> {
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 520),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const SizedBox(height: 24),
-                  const Center(child: EposBrandIcon(size: 72)),
-                  const SizedBox(height: 16),
-                  const Center(child: EposOneLogo(fontSize: 32)),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Bienvenido a EPOSOne',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          color: EposBrand.navy,
-                          fontWeight: FontWeight.w700,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
+                    children: [
+                      const SizedBox(height: 8),
+                      const Center(child: EposBrandIcon(size: 64)),
+                      const SizedBox(height: 12),
+                      const Center(child: EposOneLogo(fontSize: 28)),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Bienvenido a EPOSOne',
+                        textAlign: TextAlign.center,
+                        style:
+                            Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                  color: EposBrand.navy,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Instala esta caja en pocos pasos. La modalidad la define EN1.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: EposBrand.textSecondary,
+                          fontSize: 14,
                         ),
+                      ),
+                      const SizedBox(height: 20),
+                      _ChoiceCard(
+                        selected: _selected == _WelcomeChoice.createBusiness,
+                        icon: Icons.storefront_outlined,
+                        title: 'Crear un negocio',
+                        subtitle:
+                            'Abre EN1 (/start) para cuenta, plan y panel de instalación.',
+                        onTap: _busy
+                            ? null
+                            : () => setState(
+                                  () =>
+                                      _selected = _WelcomeChoice.createBusiness,
+                                ),
+                      ),
+                      const SizedBox(height: 10),
+                      _ChoiceCard(
+                        selected: _selected == _WelcomeChoice.haveAccount,
+                        icon: Icons.login,
+                        title: 'Ya tengo una cuenta',
+                        subtitle:
+                            'Inicia sesión EN1, elige caja y registra este dispositivo.',
+                        onTap: _busy
+                            ? null
+                            : () => setState(
+                                  () => _selected = _WelcomeChoice.haveAccount,
+                                ),
+                      ),
+                      const SizedBox(height: 10),
+                      _ChoiceCard(
+                        selected: _selected == _WelcomeChoice.activateCode,
+                        icon: Icons.vpn_key_outlined,
+                        title: 'Activar con código',
+                        subtitle:
+                            'Pega o escanea el código de aprovisionamiento.',
+                        onTap: _busy
+                            ? null
+                            : () => setState(
+                                  () =>
+                                      _selected = _WelcomeChoice.activateCode,
+                                ),
+                      ),
+                      const SizedBox(height: 10),
+                      _ChoiceCard(
+                        selected: _selected == _WelcomeChoice.restore,
+                        icon: Icons.phonelink_setup,
+                        title: 'Restaurar instalación',
+                        subtitle:
+                            'Recupera el vínculo de una caja ya autorizada en EN1.',
+                        onTap: _busy
+                            ? null
+                            : () => setState(
+                                  () => _selected = _WelcomeChoice.restore,
+                                ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Instala esta caja en pocos pasos. La modalidad la define EN1.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: EposBrand.textSecondary, fontSize: 15),
-                  ),
-                  const SizedBox(height: 28),
-                  _ChoiceCard(
-                    selected: _selected == _WelcomeChoice.createBusiness,
-                    icon: Icons.storefront_outlined,
-                    title: 'Crear un negocio',
-                    subtitle: 'Abre EN1 (/start) para cuenta, plan y panel de instalación.',
-                    onTap: _busy
-                        ? null
-                        : () => setState(
-                              () => _selected = _WelcomeChoice.createBusiness,
-                            ),
-                  ),
-                  const SizedBox(height: 12),
-                  _ChoiceCard(
-                    selected: _selected == _WelcomeChoice.haveAccount,
-                    icon: Icons.login,
-                    title: 'Ya tengo una cuenta',
-                    subtitle: 'Inicia sesión EN1, elige caja y registra este dispositivo.',
-                    onTap: _busy
-                        ? null
-                        : () => setState(
-                              () => _selected = _WelcomeChoice.haveAccount,
-                            ),
-                  ),
-                  const SizedBox(height: 12),
-                  _ChoiceCard(
-                    selected: _selected == _WelcomeChoice.activateCode,
-                    icon: Icons.vpn_key_outlined,
-                    title: 'Activar con código',
-                    subtitle: 'Pega o escanea el código de aprovisionamiento.',
-                    onTap: _busy
-                        ? null
-                        : () => setState(
-                              () => _selected = _WelcomeChoice.activateCode,
-                            ),
-                  ),
-                  const SizedBox(height: 12),
-                  _ChoiceCard(
-                    selected: _selected == _WelcomeChoice.restore,
-                    icon: Icons.phonelink_setup,
-                    title: 'Restaurar instalación',
-                    subtitle: 'Recupera el vínculo de una caja ya autorizada en EN1.',
-                    onTap: _busy
-                        ? null
-                        : () => setState(() => _selected = _WelcomeChoice.restore),
-                  ),
-                  const Spacer(),
-                  FilledButton(
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+                  child: FilledButton(
                     onPressed: (_selected == null || _busy) ? null : _continue,
                     child: _busy
                         ? const SizedBox(
@@ -164,9 +241,8 @@ class _PlatformWelcomeScreenState extends ConsumerState<PlatformWelcomeScreen> {
                                 : 'Continuar',
                           ),
                   ),
-                  const SizedBox(height: 12),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
@@ -209,7 +285,11 @@ class _ChoiceCard extends StatelessWidget {
           ),
           child: Row(
             children: [
-              Icon(icon, size: 32, color: selected ? EposBrand.orange : EposBrand.navy),
+              Icon(
+                icon,
+                size: 32,
+                color: selected ? EposBrand.orange : EposBrand.navy,
+              ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
