@@ -4,6 +4,7 @@
 |-------|--------|
 | Fecha | 2026-08-07 |
 | EN1 PROD | `075dec7` · ADR-035 v1.4 |
+| LOCAL commit | `ccba984` |
 | Contrato | `POST /api/v1/activation/redeem` `{ email, activation_code, device_uuid, product_code }` |
 | Alcance | Solo Standalone · Connected intacto (`/platform/connect`) |
 
