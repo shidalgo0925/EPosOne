@@ -19,13 +19,17 @@ import 'package:eposone/src/features/pos/presentation/providers/pos_page_provide
 import 'package:eposone/src/features/products/presentation/providers/product_provider.dart';
 import 'package:eposone/src/features/sync/presentation/providers/sync_provider.dart';
 
-/// Checklist visible P0.21 (fases del repositorio → filas amigables).
+/// Checklist visible P0.21 (orden = fases reales del repositorio).
 const _kBootstrapSteps = <({String id, String label, Set<String> phases})>[
-  (id: 'license', label: 'Descargando licencia', phases: {'license', 'fetch'}),
   (
     id: 'config',
     label: 'Descargando configuración',
-    phases: {'fetch', 'categories', 'catalog'},
+    phases: {'fetch', 'catalog'},
+  ),
+  (
+    id: 'params',
+    label: 'Descargando catálogo y parámetros',
+    phases: {'categories', 'products', 'images'},
   ),
   (
     id: 'cashiers',
@@ -33,11 +37,15 @@ const _kBootstrapSteps = <({String id, String label, Set<String> phases})>[
     phases: {'cashiers'},
   ),
   (
-    id: 'params',
-    label: 'Descargando catálogo y parámetros',
-    phases: {'products', 'images', 'pos', 'cleanup'},
+    id: 'license',
+    label: 'Descargando licencia',
+    phases: {'license'},
   ),
-  (id: 'done', label: 'Finalizando', phases: {'done'}),
+  (
+    id: 'done',
+    label: 'Finalizando',
+    phases: {'pos', 'cleanup', 'done'},
+  ),
 ];
 
 /// Bootstrap bloqueante post-provisioning (ADR-014). Sin bypass al POS.

@@ -140,6 +140,7 @@ class En1BootstrapRepository {
         knownCashiersVersion: knownCashiersVersion,
       );
       final products = payload.products;
+      var emptyCatalogAllowed = false;
       if (products.isEmpty) {
         final existingProducts = await _isar.products
             .filter()
@@ -147,12 +148,18 @@ class En1BootstrapRepository {
             .isDeletedEqualTo(false)
             .count();
         if (existingProducts == 0) {
-          throw En1BootstrapException(
-            'EN1 bootstrap no devolvió productos. Verifica Device Token y organización.',
+          // Org nueva / catálogo aún vacío en EN1: no bloquear onboarding.
+          emptyCatalogAllowed = true;
+          report(
+            'catalog',
+            'Sin productos aún · continuando con licencia y cajeros…',
           );
+          debugPrint(
+            '[EN1 Bootstrap] Catálogo vacío (org nueva). Bootstrap continúa.',
+          );
+        } else {
+          report('catalog', 'Catálogo sin cambios · actualizando cajeros…');
         }
-        // Respuesta incremental: conservar catálogo local existente.
-        report('catalog', 'Catálogo sin cambios · actualizando cajeros…');
       }
 
       if (payload.config != null && provisioned != null) {
@@ -375,8 +382,10 @@ class En1BootstrapRepository {
         stockUpdated: stockUpdated,
         imageFailures: imageFail,
         completedAt: completedAt,
-        message:
-            'Bootstrap EN1: ${products.length} productos · $imageOk imágenes · $stockUpdated saldos',
+        message: emptyCatalogAllowed
+            ? 'Dispositivo listo. Aún no hay productos en el catálogo — '
+                'puede abrir caja y cargarlos desde EN1.'
+            : 'Bootstrap EN1: ${products.length} productos · $imageOk imágenes · $stockUpdated saldos',
       );
       report('done', result.message, current: 1, total: 1);
       debugPrint('[EN1 Bootstrap] ${result.message}');

@@ -101,6 +101,13 @@ class _ConnectEn1ScreenState extends ConsumerState<ConnectEn1Screen> {
 
   Future<void> _register() async {
     if (!_formKey.currentState!.validate()) return;
+    // Evitar URL truncada / basura en draft (p. ej. easytech.serv).
+    final rawUrl = _urlCtrl.text.trim();
+    final fixedUrl = _normalizeApiUrl(rawUrl);
+    if (fixedUrl != rawUrl) {
+      _urlCtrl.text = fixedUrl;
+    }
+
     setState(() {
       _busy = true;
       _status = ConnectionStatus.registering;
@@ -111,7 +118,7 @@ class _ConnectEn1ScreenState extends ConsumerState<ConnectEn1Screen> {
       final pkg = await PackageInfo.fromPlatform();
       final appVersion = '${pkg.version}+${pkg.buildNumber}';
       final config = await _repo.provision(
-        apiBaseUrl: _urlCtrl.text.trim(),
+        apiBaseUrl: fixedUrl,
         provisioningCode: _codeCtrl.text.trim(),
         appVersion: appVersion,
       );
@@ -155,9 +162,18 @@ class _ConnectEn1ScreenState extends ConsumerState<ConnectEn1Screen> {
       // ADR-014: bootstrap obligatorio tras register / reprovision.
       context.go('/platform/bootstrap');
     } catch (e) {
-      final message = e is En1ProvisioningException
+      var message = e is En1ProvisioningException
           ? e.userMessage
-          : 'No se pudo conectar con EasyNodeOne. Intenta de nuevo.';
+          : 'No se pudo conectar. Intente de nuevo.';
+      if (e is En1ProvisioningException &&
+          (e.kind == En1ProvisioningErrorKind.invalidActivationCode ||
+              e.kind == En1ProvisioningErrorKind.codeExpired ||
+              e.kind == En1ProvisioningErrorKind.codeUsed ||
+              e.kind == En1ProvisioningErrorKind.codeRevoked)) {
+        message =
+            '$message\n\nEn el Portal de Instalación genere un código nuevo '
+            '(el anterior puede haber vencido o ya usarse) y péguelo aquí.';
+      }
       if (!mounted) return;
       setState(() {
         _busy = false;
@@ -165,6 +181,21 @@ class _ConnectEn1ScreenState extends ConsumerState<ConnectEn1Screen> {
         _error = message;
       });
     }
+  }
+
+  /// Corrige hosts truncados o incompletos hacia el PRD oficial.
+  String _normalizeApiUrl(String raw) {
+    final t = raw.trim().replaceAll(RegExp(r'/+$'), '');
+    if (t.isEmpty) return En1Hosts.apiBase;
+    final lower = t.toLowerCase();
+    if (lower.contains('easytech.serv') && !lower.contains('easytech.services')) {
+      return En1Hosts.apiBase;
+    }
+    if (lower == 'https://eposone.easytech.serv' ||
+        lower.startsWith('https://eposone.easytech.serv/')) {
+      return En1Hosts.apiBase;
+    }
+    return t;
   }
 
   Color get _statusColor => switch (_status) {
@@ -262,12 +293,12 @@ class _ConnectEn1ScreenState extends ConsumerState<ConnectEn1Screen> {
                     decoration: const InputDecoration(
                       labelText: 'URL API EasyNodeOne',
                       hintText: En1Hosts.apiBase,
+                      helperText: En1Hosts.apiBase,
                       prefixIcon: Icon(Icons.link),
                     ),
                     keyboardType: TextInputType.url,
                     validator: (v) {
-                      final t = v?.trim() ?? '';
-                      if (t.isEmpty) return 'Requerido';
+                      final t = _normalizeApiUrl(v?.trim() ?? '');
                       final uri = Uri.tryParse(t);
                       if (uri == null || !uri.hasScheme || uri.host.isEmpty) {
                         return 'URL inválida';
