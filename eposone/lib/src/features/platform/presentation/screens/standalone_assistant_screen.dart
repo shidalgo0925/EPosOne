@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:eposone/src/core/database/database_provider.dart';
+import 'package:eposone/src/core/database/istmo_seed_data.dart';
 import 'package:eposone/src/core/startup/app_startup.dart';
 import 'package:eposone/src/core/theme/eposone_theme.dart';
 import 'package:eposone/src/core/utils/pin_hash.dart';
@@ -12,9 +13,6 @@ import 'package:eposone/src/features/cash_register/data/repositories/cash_regist
 import 'package:eposone/src/features/platform/data/activation_claims_store.dart';
 import 'package:eposone/src/features/platform/data/standalone_assistant_draft_store.dart';
 import 'package:eposone/src/features/pos/domain/entities/order_type.dart';
-import 'package:eposone/src/features/products/data/repositories/product_repository.dart';
-import 'package:eposone/src/features/products/domain/entities/category.dart';
-import 'package:eposone/src/features/products/domain/entities/product.dart';
 import 'package:eposone/src/features/settings/data/repositories/business_config_repository.dart';
 
 /// ADR-033 — Asistente Standalone hasta READY_TO_SELL (sin Bootstrap Connected).
@@ -31,8 +29,7 @@ class _StandaloneAssistantScreenState
   static const _titles = [
     'Empresa',
     'Impuestos y moneda',
-    'Categoría',
-    'Producto',
+    'Menú Itsmo',
     'Caja local',
     'Cajero administrador',
     'Impresora',
@@ -40,13 +37,10 @@ class _StandaloneAssistantScreenState
   ];
 
   final _page = PageController();
-  final _businessName = TextEditingController();
+  final _businessName = TextEditingController(text: 'Café Amor');
   final _ruc = TextEditingController();
   final _address = TextEditingController();
   final _taxRate = TextEditingController(text: '7');
-  final _categoryName = TextEditingController(text: 'General');
-  final _productName = TextEditingController();
-  final _productPrice = TextEditingController(text: '1.00');
   final _cashLabel = TextEditingController(text: 'Caja 1');
   final _cashierName = TextEditingController(text: 'Administrador');
   final _pin = TextEditingController();
@@ -83,6 +77,8 @@ class _StandaloneAssistantScreenState
     final draft = await StandaloneAssistantDraftStore.load();
     if (draft != null) {
       _applyDraft(draft);
+    } else if (_businessName.text.trim().isEmpty) {
+      _businessName.text = 'Café Amor';
     }
     if (!mounted) return;
     setState(() => _loading = false);
@@ -106,9 +102,9 @@ class _StandaloneAssistantScreenState
     _taxRate.text = d.taxRate.toStringAsFixed(
       d.taxRate == d.taxRate.roundToDouble() ? 0 : 1,
     );
-    _categoryName.text = d.categoryName;
-    _productName.text = d.productName;
-    _productPrice.text = d.productPrice.toStringAsFixed(2);
+    if (_businessName.text.trim().isEmpty) {
+      _businessName.text = 'Café Amor';
+    }
     _cashLabel.text = d.cashLabel;
     _cashierName.text = d.cashierName;
     _openingAmount.text = d.openingAmount.toStringAsFixed(2);
@@ -125,11 +121,9 @@ class _StandaloneAssistantScreenState
         currencySymbol: _currencySymbol,
         taxName: _taxName,
         taxRate: double.tryParse(_taxRate.text) ?? 7,
-        categoryName: _categoryName.text.trim().isEmpty
-            ? 'General'
-            : _categoryName.text.trim(),
-        productName: _productName.text.trim(),
-        productPrice: double.tryParse(_productPrice.text) ?? 0,
+        categoryName: 'Itsmo Brew',
+        productName: 'Menú Itsmo (~110)',
+        productPrice: 0,
         cashLabel: _cashLabel.text.trim().isEmpty
             ? 'Caja 1'
             : _cashLabel.text.trim(),
@@ -151,9 +145,6 @@ class _StandaloneAssistantScreenState
     _ruc.dispose();
     _address.dispose();
     _taxRate.dispose();
-    _categoryName.dispose();
-    _productName.dispose();
-    _productPrice.dispose();
     _cashLabel.dispose();
     _cashierName.dispose();
     _pin.dispose();
@@ -173,19 +164,10 @@ class _StandaloneAssistantScreenState
           return 'Indique un impuesto válido (0 o más).';
         }
       case 2:
-        if (_categoryName.text.trim().isEmpty) {
-          return 'Indique al menos una categoría.';
-        }
+        break; // Menú Itsmo precargado
       case 3:
-        if (_productName.text.trim().isEmpty) {
-          return 'Indique al menos un producto.';
-        }
-        if ((double.tryParse(_productPrice.text) ?? -1) < 0) {
-          return 'El precio debe ser 0 o mayor.';
-        }
-      case 4:
         if (_cashLabel.text.trim().isEmpty) return 'Nombre de caja requerido.';
-      case 5:
+      case 4:
         if (_pin.text.length < 4 || _pin.text.length > 6) {
           return 'El PIN debe tener entre 4 y 6 dígitos.';
         }
@@ -195,9 +177,8 @@ class _StandaloneAssistantScreenState
             _pin.text == '0000') {
           return 'Elija un PIN menos predecible.';
         }
+      case 5:
       case 6:
-        break;
-      case 7:
         break;
     }
     return null;
@@ -240,7 +221,7 @@ class _StandaloneAssistantScreenState
   }
 
   Future<void> _finish() async {
-    for (var i = 0; i < 6; i++) {
+    for (var i = 0; i < 5; i++) {
       final e = _validateStep(i);
       if (e != null) {
         setState(() {
@@ -260,16 +241,20 @@ class _StandaloneAssistantScreenState
     try {
       final isar = await ref.read(databaseProvider.future);
       final configRepo = BusinessConfigRepository(isar);
-      final productRepo = ProductRepository(isar);
       final cashierRepo = CashierRepository(isar);
       final cashRepo = CashRegisterRepository(isar);
 
-      final existing = await configRepo.getConfig();
+      // Menú Itsmo Brew (~110 productos + páginas Comida/Bar) en este dispositivo.
+      await seedIstmoCatalog(isar);
+
       final tax = double.tryParse(_taxRate.text) ?? 7;
+      final afterSeed = await configRepo.getConfig();
       await configRepo.saveConfig(
-        existing
+        afterSeed
             .copyWith(
-              businessName: _businessName.text.trim(),
+              businessName: _businessName.text.trim().isEmpty
+                  ? 'Café Amor'
+                  : _businessName.text.trim(),
               ruc: _ruc.text.trim().isEmpty ? null : _ruc.text.trim(),
               address:
                   _address.text.trim().isEmpty ? null : _address.text.trim(),
@@ -287,19 +272,6 @@ class _StandaloneAssistantScreenState
             )
             .markAsModified(),
       );
-
-      final catName = _categoryName.text.trim().isEmpty
-          ? 'General'
-          : _categoryName.text.trim();
-      final category = Category.create(name: catName);
-      await productRepo.saveCategory(category);
-
-      final product = Product.create(
-        name: _productName.text.trim(),
-        price: double.tryParse(_productPrice.text) ?? 0,
-        categoryId: category.localId,
-      );
-      await productRepo.saveProduct(product);
 
       if (await cashierRepo.countCashiers() == 0) {
         await cashierRepo.saveCashier(
@@ -391,8 +363,7 @@ class _StandaloneAssistantScreenState
                 children: [
                   _stepEmpresa(),
                   _stepImpuestos(),
-                  _stepCategoria(),
-                  _stepProducto(),
+                  _stepMenuItsmo(),
                   _stepCaja(),
                   _stepCajero(),
                   _stepImpresora(),
@@ -487,38 +458,25 @@ class _StandaloneAssistantScreenState
         ),
       ]);
 
-  Widget _stepCategoria() => _pad([
-        const Text(
-          'Al menos una categoría para organizar el menú.',
-          style: TextStyle(color: EposBrand.textSecondary),
-        ),
+  Widget _stepMenuItsmo() => _pad([
+        const Icon(Icons.restaurant_menu, size: 56, color: EposBrand.orange),
         const SizedBox(height: 16),
-        TextField(
-          controller: _categoryName,
-          decoration: const InputDecoration(
-            labelText: 'Categoría *',
-            hintText: 'General',
-          ),
-        ),
-      ]);
-
-  Widget _stepProducto() => _pad([
-        const Text(
-          'Al menos un producto vendible.',
-          style: TextStyle(color: EposBrand.textSecondary),
-        ),
-        const SizedBox(height: 16),
-        TextField(
-          controller: _productName,
-          decoration: const InputDecoration(labelText: 'Nombre del producto *'),
+        Text(
+          'Menú Itsmo Brew',
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: EposBrand.navy,
+              ),
         ),
         const SizedBox(height: 12),
-        TextField(
-          controller: _productPrice,
-          decoration: InputDecoration(
-            labelText: 'Precio ($_currencySymbol) *',
-          ),
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        const Text(
+          'Al terminar el asistente se cargará en este dispositivo el '
+          'catálogo demo Itsmo Brew (~110 productos, páginas Comida y Bar, '
+          'precios con ITBMS incluido).\n\n'
+          'El negocio (p. ej. Café Amor) queda local; el menú no viene de EN1.',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: EposBrand.textSecondary, height: 1.4),
         ),
       ]);
 
@@ -600,16 +558,16 @@ class _StandaloneAssistantScreenState
         ),
         const SizedBox(height: 8),
         Text(
-          '${_businessName.text.trim().isEmpty ? 'Su negocio' : _businessName.text.trim()}\n'
-          'Categoría: ${_categoryName.text.trim()}\n'
-          'Producto: ${_productName.text.trim()} · $_currencySymbol${_productPrice.text}\n'
+          '${_businessName.text.trim().isEmpty ? 'Café Amor' : _businessName.text.trim()}\n'
+          'Menú: Itsmo Brew (~110 productos)\n'
           'Caja: ${_cashLabel.text.trim()}',
           textAlign: TextAlign.center,
           style: const TextStyle(color: EposBrand.textSecondary, height: 1.45),
         ),
         const SizedBox(height: 16),
         const Text(
-          'Al continuar se guarda la configuración local y podrá ingresar con su PIN para vender.',
+          'Al continuar se carga el menú, se guarda la configuración local '
+          'y podrá ingresar con su PIN para vender.',
           textAlign: TextAlign.center,
           style: TextStyle(color: EposBrand.textSecondary),
         ),
