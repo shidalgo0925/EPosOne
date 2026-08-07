@@ -5,6 +5,7 @@ import 'package:eposone/src/core/database/database_provider.dart';
 import 'package:eposone/src/core/printing/receipt_document_service.dart';
 import 'package:eposone/src/core/providers/business_config_provider.dart';
 import 'package:eposone/src/core/session/pos_session.dart';
+import 'package:eposone/src/core/ui/user_facing_error.dart';
 import 'package:eposone/src/features/cash_register/data/cash_shift_sync_service.dart';
 import 'package:eposone/src/features/cash_register/data/repositories/cash_register_repository.dart';
 import 'package:eposone/src/features/platform/presentation/utils/installation_gate.dart';
@@ -96,7 +97,15 @@ class _CashOpenScreenState extends ConsumerState<CashOpenScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text(
+              userFacingError(
+                e,
+                fallback: 'No se pudo abrir la caja. Intente de nuevo.',
+              ),
+            ),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } finally {

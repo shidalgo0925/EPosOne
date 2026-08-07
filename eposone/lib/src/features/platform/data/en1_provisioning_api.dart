@@ -11,6 +11,9 @@ enum En1ProvisioningErrorKind {
   timeout,
   serverUnavailable,
   invalidActivationCode,
+  codeExpired,
+  codeUsed,
+  codeRevoked,
   unauthorized,
   conflict,
   validation,
@@ -186,10 +189,25 @@ class En1ProvisioningApi {
   En1ProvisioningErrorKind? _kindFromServerCode(String? code) {
     if (code == null || code.isEmpty) return null;
     final c = code.toLowerCase();
-    if (c.contains('provisioning') && (c.contains('invalid') || c.contains('required') || c.contains('expired'))) {
+    if (c.contains('expired') || c == 'code_expired' || c == 'provisioning_code_expired') {
+      return En1ProvisioningErrorKind.codeExpired;
+    }
+    if (c.contains('already_used') ||
+        c.contains('code_used') ||
+        c.contains('consumed') ||
+        c == 'provisioning_code_used') {
+      return En1ProvisioningErrorKind.codeUsed;
+    }
+    if (c.contains('revoked') || c.contains('code_revoked')) {
+      return En1ProvisioningErrorKind.codeRevoked;
+    }
+    if (c.contains('provisioning') &&
+        (c.contains('invalid') || c.contains('required'))) {
       return En1ProvisioningErrorKind.invalidActivationCode;
     }
-    if (c.contains('activation') || c.contains('code_invalid') || c.contains('invalid_code')) {
+    if (c.contains('activation') ||
+        c.contains('code_invalid') ||
+        c.contains('invalid_code')) {
       return En1ProvisioningErrorKind.invalidActivationCode;
     }
     return switch (code) {
@@ -207,28 +225,36 @@ class En1ProvisioningApi {
 
   String _userMessageFor(En1ProvisioningErrorKind kind, int status, String? serverMsg) {
     return switch (kind) {
+      En1ProvisioningErrorKind.codeExpired =>
+        'Este código ya venció. Solicite uno nuevo en el Portal de Instalación.',
+      En1ProvisioningErrorKind.codeUsed =>
+        'Este código ya fue utilizado. Solicite uno nuevo en el Portal.',
+      En1ProvisioningErrorKind.codeRevoked =>
+        'Este código fue anulado. Solicite uno nuevo en el Portal de Instalación.',
       En1ProvisioningErrorKind.invalidActivationCode =>
-        'Código de conexión inválido. Verifica el código emitido en EasyNodeOne.',
+        'El código no es válido. Verifique el código del Portal e intente de nuevo.',
       En1ProvisioningErrorKind.unauthorized =>
-        'Dispositivo no autorizado. Solicita un nuevo código o contacta al administrador.',
+        'Este dispositivo no está autorizado. Solicite un código nuevo al administrador.',
       En1ProvisioningErrorKind.conflict =>
-        'Este dispositivo ya está registrado. Revisa el estado en el BackOffice EN1.',
+        'Este dispositivo ya está registrado. Use reaprovisionamiento desde el Portal si necesita reactivarlo.',
       En1ProvisioningErrorKind.validation =>
-        'Datos de registro inválidos. Verifica la URL y el código de provisioning.',
+        'Los datos de registro no son válidos. Verifique la URL y el código.',
       En1ProvisioningErrorKind.notFound =>
-        'Servidor EN1 no disponible o URL incorrecta (recurso no encontrado).',
+        'No se encontró el servicio. Verifique la dirección del servidor.',
       En1ProvisioningErrorKind.serverError =>
-        'Error interno del servidor EN1. Intenta más tarde.',
+        'El servidor tiene un problema temporal. Intente más tarde.',
       En1ProvisioningErrorKind.serverUnavailable =>
-        'Servidor EN1 no disponible. Verifica la URL y que el servicio esté activo.',
+        'El servidor no está disponible. Verifique la dirección e intente de nuevo.',
       En1ProvisioningErrorKind.offline =>
-        'Sin conexión a Internet. Verifica la red e intenta de nuevo.',
+        'Sin conexión a Internet. Verifique la red e intente de nuevo.',
       En1ProvisioningErrorKind.timeout =>
-        'Tiempo de espera agotado. El servidor EN1 no respondió a tiempo.',
+        'El servidor tardó demasiado en responder. Intente de nuevo.',
       En1ProvisioningErrorKind.unknown =>
-        serverMsg?.trim().isNotEmpty == true
-            ? serverMsg!.trim()
-            : 'No se pudo conectar con EasyNodeOne (HTTP $status).',
+        (serverMsg != null &&
+                serverMsg.trim().isNotEmpty &&
+                !serverMsg.toLowerCase().contains('http'))
+            ? serverMsg.trim()
+            : 'No se pudo conectar. Intente de nuevo.',
     };
   }
 

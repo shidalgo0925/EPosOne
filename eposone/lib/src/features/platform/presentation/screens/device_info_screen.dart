@@ -10,6 +10,7 @@ import 'package:eposone/src/core/session/pos_session.dart';
 import 'package:eposone/src/core/theme/eposone_theme.dart';
 import 'package:eposone/src/core/time/en1_clock_guard.dart';
 import 'package:eposone/src/core/time/en1_date_time_service.dart';
+import 'package:eposone/src/core/ui/user_facing_error.dart';
 import 'package:eposone/src/features/auth/presentation/screens/pin_screen.dart';
 import 'package:eposone/src/features/auth/presentation/utils/cashier_session_guard.dart';
 import 'package:eposone/src/features/licensing/domain/license_enums.dart';
@@ -269,7 +270,9 @@ class _DeviceInfoScreenState extends ConsumerState<DeviceInfoScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('No se pudo desconectar: $e'),
+          content: Text(
+            'No se pudo desconectar. Intente de nuevo.',
+          ),
           backgroundColor: Colors.red.shade800,
         ),
       );
@@ -312,7 +315,14 @@ class _DeviceInfoScreenState extends ConsumerState<DeviceInfoScreen> {
         return;
       }
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('$e'), backgroundColor: Colors.red.shade700),
+        SnackBar(
+          content: Text(
+            e is En1ProvisioningException
+                ? e.userMessage
+                : 'No se pudo actualizar. Intente de nuevo.',
+          ),
+          backgroundColor: Colors.red.shade700,
+        ),
       );
       await _load();
     } finally {
@@ -354,7 +364,12 @@ class _DeviceInfoScreenState extends ConsumerState<DeviceInfoScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('$e'), backgroundColor: Colors.red.shade700),
+        SnackBar(
+          content: Text(
+            userFacingError(e, fallback: 'No se pudo completar la descarga.'),
+          ),
+          backgroundColor: Colors.red.shade700,
+        ),
       );
       ref.invalidate(syncOperationsProvider);
     } finally {
@@ -390,7 +405,12 @@ class _DeviceInfoScreenState extends ConsumerState<DeviceInfoScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('$e'), backgroundColor: Colors.red.shade700),
+        SnackBar(
+          content: Text(
+            userFacingError(e, fallback: 'No se pudo reparar el menú.'),
+          ),
+          backgroundColor: Colors.red.shade700,
+        ),
       );
     } finally {
       if (mounted) setState(() => _repairingPages = false);

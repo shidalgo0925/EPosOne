@@ -212,15 +212,27 @@ class OnboardingIssuedCode {
 }
 
 /// Extrae código de provisioning desde QR (string puro o deep link).
+///
+/// Gate1 / QR Contract:
+/// - `eposone://provision?code=`
+/// - `https://…/eposone/install?code=`
+/// - string plano del código
 String? extractProvisioningCodeFromScan(String raw) {
   final t = raw.trim();
   if (t.isEmpty) return null;
   final uri = Uri.tryParse(t);
-  if (uri != null &&
-      (uri.scheme == 'eposone' || t.contains('provision')) &&
-      uri.queryParameters['code'] != null) {
-    final c = uri.queryParameters['code']!.trim();
-    return c.isEmpty ? null : c;
+  if (uri != null && uri.queryParameters['code'] != null) {
+    final schemeOk = uri.scheme == 'eposone' ||
+        uri.scheme == 'https' ||
+        uri.scheme == 'http';
+    final pathOk = uri.host == 'provision' ||
+        uri.path.contains('provision') ||
+        uri.path.contains('/eposone/install') ||
+        t.contains('provision');
+    if (schemeOk && pathOk) {
+      final c = uri.queryParameters['code']!.trim();
+      return c.isEmpty ? null : c;
+    }
   }
   // Código plano (contrato: QR = solo el string del code).
   if (t.contains('://')) return null;

@@ -1,39 +1,27 @@
-# Gate 2 — LOCAL Asistente APK (arranque)
+# Gate 2 / Sprint LOCAL P0.19–P0.30 — estado
 
 | Campo | Valor |
 |-------|--------|
 | **Fecha** | 6 ago 2026 |
-| **Estado** | **Implementado (MVP)** · tag contrato `eposone-onboarding-p0-v1.4` |
-| **Freeze** | [`GATE1_HTTP_FROZEN_FOR_LOCAL.md`](GATE1_HTTP_FROZEN_FOR_LOCAL.md) |
-| **Remoto** | `en1-codito` → Easy-NodeOne |
+| **Pack Ana** | [`EPOSONE_P0_LOCAL_SPRINT_V1.md`](../EPOSONE_P0_LOCAL_SPRINT_V1.md) |
+| **Freeze** | Gate1 + QR Contract (`eposone://provision?code=`) |
 
-## Entregado
+## Entregado en este sprint (código)
 
-| Item | Estado |
-|------|--------|
-| Pack `Doc/EN1_ONBOARDING_P0/` importado | ✅ |
-| Welcome 4 caminos (sin Modo Local) | ✅ |
-| Cliente Login / Session / Issue-code (User Bearer) | ✅ |
-| Selección org + caja → Register existente | ✅ |
-| Camino C: código + pegar + QR → Register | ✅ |
-| Restore = Login + select (composición sin `/restore`) | ✅ |
-| Crear negocio → abre https://eposone.easytech.services/start | ✅ |
-| Defaults API/login → PRD `eposone.easytech.services` (no appdev) | ✅ |
-| Convergencia Register → Bootstrap → PIN | ✅ |
-| Register / Bootstrap / Sync / Licencias / Cashiers intactos | ✅ (solo consumidores) |
+| ID | Item | Estado |
+|----|------|--------|
+| P0.20 | Deep link `app_links` + intent-filters | ✅ |
+| P0.21 | Bootstrap checklist visible | ✅ |
+| P0.22 | Reintentar + Cancelar (sin borrar token) | ✅ |
+| P0.23 | No re-register tras fallo bootstrap | ✅ (ya existía) |
+| P0.24 | Auto-reintento si offline | ✅ (timer 5s × 8) |
+| P0.27 | Mensajes código expirado/usado/revocado | ✅ (heurística + codes) |
+| P0.28 | `userFacingError` + sanitize connect/caja | ✅ parcial |
+| P0.29 | “EPOSOne está listo” | ✅ |
+| P0.30 | Checklist E2E doc | ✅ doc |
+| P0.19 | Consumidor reaprovisionamiento completo | ⏳ EN1 P0.17 |
+| P0.25–26 | PIN/caja + licencia | ✅ / soft |
 
-## Tokens
+## Gate 2 previo (intactos)
 
-- User Bearer: `OnboardingUserSessionStore` · solo `/api/v1/onboarding/*`
-- Device Bearer: `ProvisioningStore` · operación POS (sin cambio)
-
-## Rutas nuevas
-
-- `/platform/onboarding/login`
-- `/platform/onboarding/select`
-- Welcome / Connect actualizados
-
-## Próximo
-
-- Validar contra PRD (`eposone.easytech.services`) con cia demo
-- APK release para CODITO Gate 2 sign-off
+Welcome 4 caminos · Login/Session/Issue · Register · Bootstrap · defaults PRD.

@@ -236,7 +236,7 @@ class En1BootstrapApi {
         'Endpoint bootstrap no encontrado. Verifica la URL de EN1.',
       En1ProvisioningErrorKind.serverError =>
         'Error interno EN1 al descargar bootstrap. Intenta más tarde.',
-      _ => 'No se pudo descargar el bootstrap desde EasyNodeOne (HTTP $status).',
+      _ => 'No se pudo descargar la configuración. Intente de nuevo.',
     };
 
     final ex = En1ProvisioningException(

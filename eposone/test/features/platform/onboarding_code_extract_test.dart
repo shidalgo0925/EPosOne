@@ -13,6 +13,15 @@ void main() {
     );
   });
 
+  test('extractProvisioningCodeFromScan https install', () {
+    expect(
+      extractProvisioningCodeFromScan(
+        'https://eposone.easytech.services/eposone/install?code=XYZ-9',
+      ),
+      'XYZ-9',
+    );
+  });
+
   test('extractProvisioningCodeFromScan rejects unrelated url', () {
     expect(
       extractProvisioningCodeFromScan('https://example.com/foo'),
