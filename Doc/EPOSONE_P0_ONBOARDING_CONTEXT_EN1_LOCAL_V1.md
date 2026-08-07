@@ -278,6 +278,7 @@ Hasta entonces: Gate 2 APK = **asistente tablet MVP**; producto P0 = **no cerrad
 | [`Doc/EPOSONE_P0_LOCAL_SPRINT_V1.md`](EPOSONE_P0_LOCAL_SPRINT_V1.md) | Sprint LOCAL Ana P0.19–P0.30 |
 | [`Doc/EPOSONE_P0_ONBOARDING_E2E_CERT_CHECKLIST_V1.md`](EPOSONE_P0_ONBOARDING_E2E_CERT_CHECKLIST_V1.md) | Certificación E2E |
 | Este archivo | **Documento maestro** P0 · modelo comercial · portal · descubrimientos · prioridades |
+| [`Doc/ADR-032-EPOSONE-IMPLEMENTATION-MODEL-V1.md`](ADR-032-EPOSONE-IMPLEMENTATION-MODEL-V1.md) | **PROPOSED** · Autogestionada (Standalone) vs Asistida (Connected) · sin impl |
 | [`Doc/EN1_ONBOARDING_P0/GATE1_HTTP_FROZEN_FOR_LOCAL.md`](EN1_ONBOARDING_P0/GATE1_HTTP_FROZEN_FOR_LOCAL.md) | HTTP freeze |
 | [`Doc/EN1_ONBOARDING_P0/RESTORE_CONTRACT_V1.md`](EN1_ONBOARDING_P0/RESTORE_CONTRACT_V1.md) | Restore compuesto |
 | [`Doc/EN1_ONBOARDING_P0/QR_CONTRACT_V1.md`](EN1_ONBOARDING_P0/QR_CONTRACT_V1.md) | QR técnico = código |

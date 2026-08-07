@@ -56,6 +56,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
         context.go('/platform/bootstrap');
       case StartupRoute.onboarding:
         context.go('/onboarding');
+      case StartupRoute.standaloneAssistant:
+        context.go('/platform/standalone/assistant');
       case StartupRoute.pin:
         context.go('/pin');
     }

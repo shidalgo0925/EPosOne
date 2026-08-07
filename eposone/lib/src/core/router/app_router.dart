@@ -48,6 +48,8 @@ import 'package:eposone/src/features/platform/presentation/screens/platform_boot
 import 'package:eposone/src/features/platform/presentation/screens/device_info_screen.dart';
 import 'package:eposone/src/features/platform/presentation/screens/onboarding_login_screen.dart';
 import 'package:eposone/src/features/platform/presentation/screens/onboarding_select_screen.dart';
+import 'package:eposone/src/features/platform/presentation/screens/standalone_activation_screen.dart';
+import 'package:eposone/src/features/platform/presentation/screens/standalone_assistant_screen.dart';
 import 'package:eposone/src/features/licensing/presentation/screens/license_status_screen.dart';
 import 'package:eposone/src/features/orders/presentation/screens/order_operation_screen.dart';
 import 'package:eposone/src/features/reports/presentation/screens/reports_hub_screen.dart';
@@ -89,6 +91,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         '/platform/welcome',
         '/platform/connect',
         '/platform/bootstrap',
+        '/platform/activate',
+        '/platform/standalone/assistant',
         '/platform/onboarding/login',
         '/platform/onboarding/select',
         '/onboarding',
@@ -96,9 +100,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ];
       final isPublic = publicRoutes.contains(path);
 
-      // ADR-014 / Gate 2: asistente y bootstrap no redirigen a /pos.
+      // ADR-014 / Gate 2 / ADR-033: asistente y bootstrap no redirigen a /pos.
       if (path == '/platform/bootstrap' ||
           path == '/platform/connect' ||
+          path == '/platform/activate' ||
+          path == '/platform/standalone/assistant' ||
           path.startsWith('/platform/onboarding')) {
         return null;
       }
@@ -133,6 +139,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           reprovision: state.uri.queryParameters['reprovision'] == '1',
           initialCode: state.uri.queryParameters['code'],
         ),
+      ),
+      GoRoute(
+        path: '/platform/activate',
+        builder: (_, state) => StandaloneActivationScreen(
+          initialRaw: state.uri.queryParameters['token'] ??
+              state.uri.queryParameters['code'],
+        ),
+      ),
+      GoRoute(
+        path: '/platform/standalone/assistant',
+        builder: (_, __) => const StandaloneAssistantScreen(),
       ),
       GoRoute(
         path: '/platform/onboarding/login',

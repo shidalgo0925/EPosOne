@@ -3,17 +3,27 @@ import 'package:eposone/src/core/database/database_provider.dart';
 import 'package:eposone/src/core/time/en1_date_time_service.dart';
 import 'package:eposone/src/features/auth/data/repositories/cashier_repository.dart';
 import 'package:eposone/src/features/cash_register/data/repositories/cash_register_repository.dart';
+import 'package:eposone/src/features/platform/data/activation_claims_store.dart';
 import 'package:eposone/src/features/platform/data/device_registry.dart';
 import 'package:eposone/src/features/platform/data/en1_cashier_catalog_store.dart';
 import 'package:eposone/src/features/platform/data/installation_lifecycle.dart';
 import 'package:eposone/src/features/platform/data/platform_prefs.dart';
 import 'package:eposone/src/features/platform/data/provisioning_store.dart';
+import 'package:eposone/src/features/platform/data/standalone_assistant_draft_store.dart';
 import 'package:eposone/src/features/platform/domain/installation_lifecycle_state.dart';
 import 'package:eposone/src/features/platform/domain/platform_mode.dart';
+import 'package:eposone/src/features/products/data/repositories/product_repository.dart';
 import 'package:eposone/src/features/settings/data/repositories/business_config_repository.dart';
 import 'package:eposone/src/features/settings/domain/entities/business_config.dart';
 
-enum StartupRoute { platformWelcome, connect, bootstrap, onboarding, pin }
+enum StartupRoute {
+  platformWelcome,
+  connect,
+  bootstrap,
+  onboarding,
+  standaloneAssistant,
+  pin,
+}
 
 class AppStartupState {
   final StartupRoute route;
@@ -77,6 +87,39 @@ final appStartupProvider = FutureProvider<AppStartupState>((ref) async {
   }
 
   final mode = await PlatformPrefs.getMode();
+
+  // ADR-033: Standalone activado → asistente local hasta READY_TO_SELL.
+  if (mode == PlatformMode.local) {
+    final standaloneOk = await ActivationClaimsStore.hasValidStandalone();
+    final ready = await StandaloneAssistantDraftStore.isReadyToSell();
+    final draft = await StandaloneAssistantDraftStore.load();
+    final productRepo = ProductRepository(isar);
+    final products = await productRepo.getAllProducts();
+    final categories = await productRepo.getAllCategories();
+    final readyCriteria = ready &&
+        config.isSetupComplete &&
+        hasCashiers &&
+        products.isNotEmpty &&
+        categories.isNotEmpty;
+
+    if (standaloneOk && !readyCriteria) {
+      return AppStartupState(
+        route: StartupRoute.standaloneAssistant,
+        config: config,
+        hasCashiers: hasCashiers,
+        hasOpenRegister: openRegister != null,
+        lifecycle: InstallationLifecycleState.readyToOperate,
+      );
+    }
+    // Draft huérfano sin claims → activación.
+    if (!standaloneOk && draft != null) {
+      return const AppStartupState(
+        route: StartupRoute.platformWelcome,
+        lifecycle: InstallationLifecycleState.notProvisioned,
+      );
+    }
+  }
+
   // Plataforma sin token (p. ej. tras 401/revocación) → Connect, no bootstrap.
   if (mode == PlatformMode.platform && !provisioned) {
     return AppStartupState(
@@ -114,6 +157,14 @@ final appStartupProvider = FutureProvider<AppStartupState>((ref) async {
 
   // Setup + cajeros locales o EN1 → PIN. Sin cajeros → onboarding.
   if (!config.isSetupComplete || !hasCashiers) {
+    // Preferir asistente ADR-033 si hay claims Standalone.
+    if (await ActivationClaimsStore.hasValidStandalone()) {
+      return AppStartupState(
+        route: StartupRoute.standaloneAssistant,
+        config: config,
+        lifecycle: lifecycle,
+      );
+    }
     return AppStartupState(
       route: StartupRoute.onboarding,
       config: config,

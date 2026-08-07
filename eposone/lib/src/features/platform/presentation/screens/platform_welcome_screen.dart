@@ -110,7 +110,7 @@ class _PlatformWelcomeScreenState extends ConsumerState<PlatformWelcomeScreen> {
         case _WelcomeChoice.haveAccount:
           context.go('/platform/onboarding/login');
         case _WelcomeChoice.activateCode:
-          context.go('/platform/connect');
+          context.go('/platform/activate');
         case _WelcomeChoice.restore:
           context.go('/platform/onboarding/login?restore=1');
       }
@@ -190,7 +190,8 @@ class _PlatformWelcomeScreenState extends ConsumerState<PlatformWelcomeScreen> {
                         icon: Icons.vpn_key_outlined,
                         title: 'Activar con código',
                         subtitle:
-                            'Pega o escanea el código de aprovisionamiento.',
+                            'Pegue o escanee el QR/token de activación (Standalone) '
+                            'o el código de caja (Connected).',
                         onTap: _busy
                             ? null
                             : () => setState(

@@ -234,8 +234,9 @@ class _PlatformBootstrapScreenState
           _error = 'El dispositivo aún no está listo. Intente de nuevo.';
         });
       case StartupRoute.onboarding:
-        // Preferir PIN si hay cajeros; onboarding local es último recurso.
         context.go('/pin');
+      case StartupRoute.standaloneAssistant:
+        context.go('/platform/standalone/assistant');
       case StartupRoute.pin:
         context.go('/pin');
     }

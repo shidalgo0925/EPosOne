@@ -50,6 +50,20 @@ class _En1DeepLinkBinderState extends State<En1DeepLinkBinder> {
   }
 
   void _route(Uri uri) {
+    // ADR-035: transporte de activación.
+    if (uri.path.toLowerCase().contains('activate') ||
+        uri.host.toLowerCase() == 'activate') {
+      final token = uri.queryParameters['token']?.trim();
+      if (token != null && token.isNotEmpty) {
+        if (_lastCode == 'act:$token') return;
+        _lastCode = 'act:$token';
+        widget.router.go(
+          '/platform/activate?token=${Uri.encodeComponent(token)}',
+        );
+        return;
+      }
+    }
+
     final code = extractProvisioningCodeFromScan(uri.toString());
     if (code == null || code.isEmpty) {
       debugPrint('[EN1 DeepLink] ignorado: $uri');
@@ -57,6 +71,13 @@ class _En1DeepLinkBinderState extends State<En1DeepLinkBinder> {
     }
     if (_lastCode == code) return;
     _lastCode = code;
+    // Preferir activate si parece token largo.
+    if (code.length >= 20) {
+      widget.router.go(
+        '/platform/activate?token=${Uri.encodeComponent(code)}',
+      );
+      return;
+    }
     widget.router.go('/platform/connect?code=${Uri.encodeComponent(code)}');
   }
 
