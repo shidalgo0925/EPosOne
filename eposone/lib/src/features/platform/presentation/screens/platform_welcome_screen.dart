@@ -49,7 +49,7 @@ class _PlatformWelcomeScreenState extends ConsumerState<PlatformWelcomeScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'Cuando termines en EN1, vuelve y usa «Activar con código» o «Ya tengo una cuenta».',
+            'Cuando termines el registro, vuelve y usa «Activar EPOSOne» con el código del correo.',
           ),
           duration: Duration(seconds: 5),
         ),
@@ -64,7 +64,7 @@ class _PlatformWelcomeScreenState extends ConsumerState<PlatformWelcomeScreen> {
         content: Text(
           'La tablet no alcanzó el sitio (sin internet o DNS).\n\n'
           'Abre en un navegador con red:\n$uri\n\n'
-          'Luego vuelve a la APK con el código o inicia sesión.',
+          'Luego vuelve a la APK con el correo y el código de activación.',
         ),
         actions: [
           TextButton(
@@ -84,7 +84,7 @@ class _PlatformWelcomeScreenState extends ConsumerState<PlatformWelcomeScreen> {
               Navigator.pop(ctx);
               setState(() => _selected = _WelcomeChoice.activateCode);
             },
-            child: const Text('Activar con código'),
+            child: const Text('Activar EPOSOne'),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx),
@@ -188,10 +188,10 @@ class _PlatformWelcomeScreenState extends ConsumerState<PlatformWelcomeScreen> {
                       _ChoiceCard(
                         selected: _selected == _WelcomeChoice.activateCode,
                         icon: Icons.vpn_key_outlined,
-                        title: 'Activar con código',
+                        title: 'Activar EPOSOne',
                         subtitle:
-                            'Pegue o escanee el QR/token de activación (Standalone) '
-                            'o el código de caja (Connected).',
+                            'Correo + código de 6 dígitos del email '
+                            '(Standalone). Connected: instalación aparte.',
                         onTap: _busy
                             ? null
                             : () => setState(

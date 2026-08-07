@@ -2,19 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:eposone/src/core/theme/eposone_theme.dart';
 import 'package:eposone/src/features/platform/data/activation_claims_store.dart';
 import 'package:eposone/src/features/platform/data/device_registry.dart';
 import 'package:eposone/src/features/platform/data/en1_activation_api.dart';
 import 'package:eposone/src/features/platform/data/platform_prefs.dart';
+import 'package:eposone/src/features/platform/data/standalone_assistant_draft_store.dart';
 import 'package:eposone/src/features/platform/domain/en1_hosts.dart';
 import 'package:eposone/src/features/platform/domain/platform_mode.dart';
-import 'package:eposone/src/features/pos/presentation/screens/barcode_scanner_screen.dart';
 
-/// Primera apertura Standalone — ACTIVAR EPOSONE (sin URL/Register/Bootstrap).
+/// GO LOCAL — Activar EPOSOne (ADR-035 v1.4): correo + código 6 dígitos.
 ///
-/// Entradas: App Link (auto) · escanear QR · continuar pendiente · manual (fallback).
-/// Connected: ruta explícita aparte (`/platform/connect`).
+/// Sin URL EN1, sin Register/Bootstrap, sin “código de caja”.
+/// Connected: enlace secundario → `/platform/connect`.
 class StandaloneActivationScreen extends ConsumerStatefulWidget {
   const StandaloneActivationScreen({
     super.key,
@@ -22,10 +23,8 @@ class StandaloneActivationScreen extends ConsumerStatefulWidget {
     this.autoRedeem = true,
   });
 
-  /// Transporte crudo (URL App Link / QR). No mostrar al usuario.
+  /// Legado App Link `?token=` — no se usa en el camino canónico v1.4.
   final String? initialRaw;
-
-  /// Si hay token en [initialRaw] o pendiente, intentar redeem sin UI intermedia.
   final bool autoRedeem;
 
   @override
@@ -36,12 +35,12 @@ class StandaloneActivationScreen extends ConsumerStatefulWidget {
 class _StandaloneActivationScreenState
     extends ConsumerState<StandaloneActivationScreen> {
   final _api = En1ActivationApi();
-  final _manualCtrl = TextEditingController();
+  final _emailCtrl = TextEditingController();
+  final _codeCtrl = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
 
   bool _busy = false;
-  bool _showManual = false;
   String? _error;
-  String? _status; // mensaje suave durante redeem silencioso
 
   @override
   void initState() {
@@ -50,53 +49,66 @@ class _StandaloneActivationScreenState
   }
 
   Future<void> _boot() async {
-    // Ya activado Standalone → asistente.
     if (await ActivationClaimsStore.hasValidStandalone()) {
+      final ready = await StandaloneAssistantDraftStore.isReadyToSell();
       if (!mounted) return;
-      context.go('/platform/standalone/assistant');
+      context.go(
+        ready ? '/pin' : '/platform/standalone/assistant',
+      );
       return;
     }
 
-    final fromLink = widget.initialRaw?.trim();
-    final pending = await ActivationClaimsStore.loadPendingToken();
-
-    // Router pasa ?token= ya extraído, o App Link completo.
-    String? token;
-    if (fromLink != null && fromLink.isNotEmpty) {
-      token = extractActivationToken(fromLink);
-      // Query param del App Link (sin esquema): solo si autoRedeem desde deep link.
-      if (token == null &&
-          widget.autoRedeem &&
-          !fromLink.contains('://') &&
-          !fromLink.contains(' ') &&
-          fromLink.length > 8) {
-        token = fromLink;
-      }
-    }
-    token ??= pending;
-
-    if (token != null && token.isNotEmpty && widget.autoRedeem) {
-      await _redeemSilent(token);
+    final pending = await ActivationClaimsStore.loadPendingEmailCode();
+    if (pending != null && mounted) {
+      _emailCtrl.text = pending.email;
+      _codeCtrl.text = pending.code;
     }
   }
 
   @override
   void dispose() {
-    _manualCtrl.dispose();
+    _emailCtrl.dispose();
+    _codeCtrl.dispose();
     super.dispose();
   }
 
-  Future<void> _redeemSilent(String token) async {
+  Future<void> _openRegister() async {
+    final uri = Uri.parse(En1Hosts.commercialStart);
+    try {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+        return;
+      }
+    } catch (_) {}
+    if (!mounted) return;
+    await Clipboard.setData(ClipboardData(text: uri.toString()));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Abre en el navegador: ${uri.toString()}')),
+    );
+  }
+
+  Future<void> _activate() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    final email = _emailCtrl.text.trim();
+    final code = _codeCtrl.text.trim().replaceAll(RegExp(r'\s+'), '');
+
     setState(() {
       _busy = true;
       _error = null;
-      _status = 'Activando EPOSOne…';
     });
-    await ActivationClaimsStore.savePendingToken(token);
+
+    await ActivationClaimsStore.savePendingEmailCode(
+      email: email,
+      activationCode: code,
+    );
+
     try {
       final uuid = await DeviceRegistry.getOrCreateUuid();
-      final claims = await _api.redeem(
-        token: token,
+      final claims = await _api.redeemWithEmailCode(
+        email: email,
+        activationCode: code,
         deviceUuid: uuid,
         apiBaseUrl: En1Hosts.apiBase,
       );
@@ -105,11 +117,9 @@ class _StandaloneActivationScreenState
         if (!mounted) return;
         setState(() {
           _busy = false;
-          _status = null;
           _error = claims.isConnected
               ? 'Esta activación es para EPOSOne Connected. '
-                  'Use la ruta de instalación Connected (código de caja), '
-                  'no este asistente Standalone.'
+                  'Use «Instalación Connected» con el código de caja.'
               : 'No pudimos usar esta activación en este dispositivo.';
         });
         return;
@@ -118,77 +128,21 @@ class _StandaloneActivationScreenState
       await ActivationClaimsStore.save(claims);
       await PlatformPrefs.completeOnboarding(PlatformMode.local);
       if (!mounted) return;
-      // Transición casi invisible → asistente.
       context.go('/platform/standalone/assistant');
     } on En1ActivationException catch (e) {
       if (!mounted) return;
       setState(() {
         _busy = false;
-        _status = null;
         _error = e.userMessage;
       });
     } catch (_) {
       if (!mounted) return;
       setState(() {
         _busy = false;
-        _status = null;
         _error =
             'No pudimos verificar tu activación. Revisa tu conexión e intenta nuevamente.';
       });
     }
-  }
-
-  Future<void> _scan() async {
-    setState(() => _error = null);
-    final result = await Navigator.of(context).push<String>(
-      MaterialPageRoute(builder: (_) => const BarcodeScannerScreen()),
-    );
-    if (!mounted) return;
-    if (result == null || result.trim().isEmpty) return;
-
-    final token = extractActivationToken(result.trim());
-    if (token == null) {
-      setState(() {
-        _error =
-            'Ese QR no es una activación EPOSOne. Escanee el QR de activación '
-            'que recibió al registrarse (no el código de caja Connected).';
-      });
-      return;
-    }
-    await _redeemSilent(token);
-  }
-
-  Future<void> _continuePending() async {
-    final pending = await ActivationClaimsStore.loadPendingToken();
-    if (pending == null || pending.isEmpty) {
-      setState(() => _error = 'No hay una activación pendiente en este dispositivo.');
-      return;
-    }
-    await _redeemSilent(pending);
-  }
-
-  Future<void> _submitManual() async {
-    final raw = _manualCtrl.text.trim();
-    if (raw.isEmpty) {
-      setState(() => _error = 'Ingrese el enlace o código de activación.');
-      return;
-    }
-    final token = extractActivationToken(raw);
-    if (token == null) {
-      // Manual: permitir pegar solo el token si el usuario lo recibió por correo
-      // (fallback). No mezclar con códigos de caja: copy explícito.
-      if (raw.contains('://') || raw.toLowerCase().contains('caja')) {
-        setState(() {
-          _error =
-              'Use el enlace de activación Standalone (…/activate?token=…). '
-              'Los códigos de caja Connected van por otra opción.';
-        });
-        return;
-      }
-      await _redeemSilent(raw);
-      return;
-    }
-    await _redeemSilent(token);
   }
 
   @override
@@ -196,10 +150,10 @@ class _StandaloneActivationScreenState
     return Scaffold(
       backgroundColor: EposBrand.background,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
             children: [
               const SizedBox(height: 12),
               const Center(child: EposBrandIcon(size: 72)),
@@ -214,20 +168,12 @@ class _StandaloneActivationScreenState
               ),
               const SizedBox(height: 8),
               const Text(
-                'Instale y active su negocio. No necesita configurar cajas en la nube.',
+                'Usa el correo con el que te registraste y el código de '
+                'activación de 6 dígitos que recibiste por email.',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: EposBrand.textSecondary, height: 1.35),
               ),
-              const Spacer(),
-              if (_status != null) ...[
-                Text(
-                  _status!,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: EposBrand.textPrimary),
-                ),
-                const SizedBox(height: 16),
-                const Center(child: CircularProgressIndicator()),
-              ],
+              const SizedBox(height: 28),
               if (_error != null) ...[
                 Text(
                   _error!,
@@ -236,75 +182,73 @@ class _StandaloneActivationScreenState
                 ),
                 const SizedBox(height: 16),
               ],
-              if (!_busy) ...[
-                FilledButton.icon(
-                  onPressed: _scan,
-                  icon: const Icon(Icons.qr_code_scanner),
-                  label: const Text('Escanear QR de activación'),
+              TextFormField(
+                controller: _emailCtrl,
+                enabled: !_busy,
+                keyboardType: TextInputType.emailAddress,
+                autofillHints: const [AutofillHints.email],
+                decoration: const InputDecoration(
+                  labelText: 'Correo',
+                  prefixIcon: Icon(Icons.email_outlined),
                 ),
-                const SizedBox(height: 12),
-                OutlinedButton(
-                  onPressed: _continuePending,
-                  child: const Text('Continuar activación pendiente'),
+                validator: (v) {
+                  final t = v?.trim() ?? '';
+                  if (t.isEmpty) return 'Ingresa tu correo';
+                  if (!t.contains('@') || !t.contains('.')) {
+                    return 'Correo no válido';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _codeCtrl,
+                enabled: !_busy,
+                keyboardType: TextInputType.number,
+                maxLength: 6,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                decoration: const InputDecoration(
+                  labelText: 'Código de activación',
+                  hintText: '6 dígitos',
+                  prefixIcon: Icon(Icons.pin_outlined),
+                  counterText: '',
                 ),
-                const SizedBox(height: 8),
-                TextButton(
-                  onPressed: () => setState(() {
-                    _showManual = !_showManual;
-                    _error = null;
-                  }),
-                  child: Text(
-                    _showManual
-                        ? 'Ocultar código manual'
-                        : 'Problemas para activar',
-                  ),
+                validator: (v) {
+                  final t = (v ?? '').trim();
+                  if (t.length != 6) {
+                    return 'El código tiene 6 dígitos';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 24),
+              FilledButton(
+                onPressed: _busy ? null : _activate,
+                child: _busy
+                    ? const SizedBox(
+                        height: 22,
+                        width: 22,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Activar'),
+              ),
+              const SizedBox(height: 32),
+              TextButton(
+                onPressed: _busy ? null : _openRegister,
+                child: const Text(
+                  '¿Aún no tienes cuenta? Regístrate',
+                  style: TextStyle(fontSize: 13),
                 ),
-                if (_showManual) ...[
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: _manualCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Enlace de activación',
-                      hintText: 'Pegue el enlace que recibió por correo',
-                    ),
-                    minLines: 1,
-                    maxLines: 3,
-                  ),
-                  const SizedBox(height: 8),
-                  FilledButton(
-                    onPressed: _submitManual,
-                    child: const Text('Activar con enlace'),
-                  ),
-                ],
-                const SizedBox(height: 24),
-                TextButton(
-                  onPressed: () => context.go('/platform/connect'),
-                  child: const Text(
-                    'Instalación Connected (código de caja)',
-                    style: TextStyle(fontSize: 12),
-                  ),
+              ),
+              TextButton(
+                onPressed: _busy
+                    ? null
+                    : () => context.go('/platform/connect'),
+                child: const Text(
+                  'Instalación Connected (código de caja)',
+                  style: TextStyle(fontSize: 12),
                 ),
-                TextButton(
-                  onPressed: () async {
-                    await Clipboard.setData(
-                      const ClipboardData(text: En1Hosts.commercialStart),
-                    );
-                    if (!mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          'Si aún no tiene cuenta, regístrese en eposone.easytech.services/start',
-                        ),
-                      ),
-                    );
-                  },
-                  child: const Text(
-                    '¿Aún no se registró?',
-                    style: TextStyle(fontSize: 12),
-                  ),
-                ),
-              ],
-              const Spacer(),
+              ),
             ],
           ),
         ),

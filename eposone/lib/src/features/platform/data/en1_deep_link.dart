@@ -8,7 +8,8 @@ import 'package:eposone/src/features/platform/data/activation_claims_store.dart'
 import 'package:eposone/src/features/platform/domain/onboarding_session.dart';
 
 /// Deep links EN1:
-/// - Activación Standalone (ADR-035): `…/activate?token=` · `eposone://activate?token=`
+/// - Activación Standalone canónica: correo + código 6 dígitos en `/platform/activate`
+///   (App Link `?token=` queda legado; no es el UX PROD ADR-035 v1.4).
 /// - Provision Connected (explícito): `eposone://provision?code=` · install?code=
 class En1DeepLinkBinder extends StatefulWidget {
   const En1DeepLinkBinder({

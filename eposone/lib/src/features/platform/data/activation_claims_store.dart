@@ -89,11 +89,15 @@ class ActivationClaims {
 class ActivationClaimsStore {
   static const _key = 'en1_activation_claims_v1';
   static const _pendingTokenKey = 'en1_activation_pending_token_v1';
+  static const _pendingEmailKey = 'en1_activation_pending_email_v1';
+  static const _pendingCodeKey = 'en1_activation_pending_code_v1';
 
   static Future<void> save(ActivationClaims claims) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_key, jsonEncode(claims.toJson()));
     await prefs.remove(_pendingTokenKey);
+    await prefs.remove(_pendingEmailKey);
+    await prefs.remove(_pendingCodeKey);
   }
 
   static Future<ActivationClaims?> load() async {
@@ -119,7 +123,28 @@ class ActivationClaimsStore {
     return c != null && c.isStandalone && c.licenseId > 0;
   }
 
-  /// Token recibido (App Link / QR) aún no canjeado — reanudación si falla redeem.
+  /// Credenciales de formulario (email + código) antes de redeem exitoso.
+  static Future<void> savePendingEmailCode({
+    required String email,
+    required String activationCode,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_pendingEmailKey, email.trim().toLowerCase());
+    await prefs.setString(
+      _pendingCodeKey,
+      activationCode.trim().replaceAll(RegExp(r'\s+'), ''),
+    );
+  }
+
+  static Future<({String email, String code})?> loadPendingEmailCode() async {
+    final prefs = await SharedPreferences.getInstance();
+    final email = prefs.getString(_pendingEmailKey)?.trim() ?? '';
+    final code = prefs.getString(_pendingCodeKey)?.trim() ?? '';
+    if (email.isEmpty || code.isEmpty) return null;
+    return (email: email, code: code);
+  }
+
+  /// Token recibido (App Link / QR) aún no canjeado — legado / puente.
   static Future<void> savePendingToken(String token) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_pendingTokenKey, token.trim());
@@ -138,13 +163,9 @@ class ActivationClaimsStore {
   }
 }
 
-/// Extrae token **solo** desde transporte ADR-035 explícito.
+/// Extrae token **solo** desde transporte ADR-035 explícito (legado App Link).
 ///
-/// Acepta:
-/// - `https://…/activate?token=`
-/// - `eposone://activate?token=`
-///
-/// **No** clasifica por longitud. **No** trata códigos de caja como activación.
+/// El camino canónico Standalone v1.4 es **email + activation_code** (6 dígitos).
 String? extractActivationToken(String raw) {
   final t = raw.trim();
   if (t.isEmpty) return null;
@@ -159,10 +180,8 @@ String? extractActivationToken(String raw) {
   final host = uri.host.toLowerCase();
   final path = uri.path.toLowerCase();
 
-  // eposone://activate?token=
   if (scheme == 'eposone' && host == 'activate') return token;
 
-  // https://host/activate?token=
   if ((scheme == 'https' || scheme == 'http') &&
       (path == '/activate' ||
           path.endsWith('/activate') ||

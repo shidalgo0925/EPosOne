@@ -75,6 +75,11 @@ class _StandaloneAssistantScreenState
       context.go('/platform/activate');
       return;
     }
+    if (await StandaloneAssistantDraftStore.isReadyToSell()) {
+      if (!mounted) return;
+      context.go('/pin');
+      return;
+    }
     final draft = await StandaloneAssistantDraftStore.load();
     if (draft != null) {
       _applyDraft(draft);
