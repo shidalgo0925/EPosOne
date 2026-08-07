@@ -18,12 +18,25 @@ void main() {
     );
   });
 
-  test('looksLikeActivationTransport', () {
+  test('does NOT classify plain long strings as activation', () {
     expect(
-      looksLikeActivationTransport(
+      extractActivationToken('abcdefghijklmnopqrstuvwxyz012345'),
+      isNull,
+    );
+  });
+
+  test('does NOT treat provisioning-looking strings as activation', () {
+    expect(extractActivationToken('L2cG-RZg-MK4Kkyd'), isNull);
+    expect(extractActivationToken('1yJEY6V8gD2WK32W'), isNull);
+  });
+
+  test('isExplicitActivationTransport', () {
+    expect(
+      isExplicitActivationTransport(
         'https://eposone.easytech.services/activate?token=x',
       ),
       isTrue,
     );
+    expect(isExplicitActivationTransport('1yJEY6V8gD2WK32W'), isFalse);
   });
 }

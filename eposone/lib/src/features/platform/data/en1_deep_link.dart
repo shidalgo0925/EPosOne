@@ -1,16 +1,15 @@
 import 'dart:async';
 
 import 'package:app_links/app_links.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:eposone/src/features/platform/data/activation_claims_store.dart';
 import 'package:eposone/src/features/platform/domain/onboarding_session.dart';
 
-/// P0.20 — Deep link desde EN1 (Gate1 / QR Contract V1).
-///
-/// - `eposone://provision?code=<CODE>`
-/// - `https://…/eposone/install?code=<CODE>`
-///
-/// Solo extrae `code` → Connect (Register). No pide modo/org/plan.
+/// Deep links EN1:
+/// - Activación Standalone (ADR-035): `…/activate?token=` · `eposone://activate?token=`
+/// - Provision Connected (explícito): `eposone://provision?code=` · install?code=
 class En1DeepLinkBinder extends StatefulWidget {
   const En1DeepLinkBinder({
     super.key,
@@ -50,18 +49,14 @@ class _En1DeepLinkBinderState extends State<En1DeepLinkBinder> {
   }
 
   void _route(Uri uri) {
-    // ADR-035: transporte de activación.
-    if (uri.path.toLowerCase().contains('activate') ||
-        uri.host.toLowerCase() == 'activate') {
-      final token = uri.queryParameters['token']?.trim();
-      if (token != null && token.isNotEmpty) {
-        if (_lastCode == 'act:$token') return;
-        _lastCode = 'act:$token';
-        widget.router.go(
-          '/platform/activate?token=${Uri.encodeComponent(token)}',
-        );
-        return;
-      }
+    final token = extractActivationToken(uri.toString());
+    if (token != null && token.isNotEmpty) {
+      if (_lastCode == 'act:$token') return;
+      _lastCode = 'act:$token';
+      widget.router.go(
+        '/platform/activate?token=${Uri.encodeComponent(token)}',
+      );
+      return;
     }
 
     final code = extractProvisioningCodeFromScan(uri.toString());
@@ -69,15 +64,13 @@ class _En1DeepLinkBinderState extends State<En1DeepLinkBinder> {
       debugPrint('[EN1 DeepLink] ignorado: $uri');
       return;
     }
-    if (_lastCode == code) return;
-    _lastCode = code;
-    // Preferir activate si parece token largo.
-    if (code.length >= 20) {
-      widget.router.go(
-        '/platform/activate?token=${Uri.encodeComponent(code)}',
-      );
+    final lower = uri.toString().toLowerCase();
+    if (!lower.contains('provision') && uri.host.toLowerCase() != 'provision') {
+      debugPrint('[EN1 DeepLink] no es provision ni activate: $uri');
       return;
     }
+    if (_lastCode == code) return;
+    _lastCode = code;
     widget.router.go('/platform/connect?code=${Uri.encodeComponent(code)}');
   }
 

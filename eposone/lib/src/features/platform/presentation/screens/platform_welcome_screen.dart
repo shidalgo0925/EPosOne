@@ -112,7 +112,7 @@ class _PlatformWelcomeScreenState extends ConsumerState<PlatformWelcomeScreen> {
         case _WelcomeChoice.activateCode:
           context.go('/platform/activate');
         case _WelcomeChoice.restore:
-          context.go('/platform/onboarding/login?restore=1');
+          context.go('/platform/connect?reprovision=1');
       }
     } finally {
       if (mounted) setState(() => _busy = false);

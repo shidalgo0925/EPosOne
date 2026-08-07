@@ -103,23 +103,31 @@ class En1ActivationApi {
   String _userMessage(String code, String? serverMsg) {
     return switch (code) {
       'activation_token_invalid' =>
-        'El código de activación no es válido. Verifique e intente de nuevo.',
+        'No pudimos verificar tu activación. Solicita un nuevo enlace de activación.',
       'activation_token_expired' =>
-        'Este código ya venció. Solicite uno nuevo en el Portal.',
+        'Esta activación venció. Solicita un nuevo enlace de activación.',
       'activation_token_used' =>
-        'Este código ya fue utilizado. Solicite una nueva emisión.',
+        'Esta activación ya fue utilizada. Solicita un nuevo enlace de activación.',
       'activation_token_revoked' =>
-        'Este código fue anulado. Contacte a soporte.',
+        'Esta activación ya no es válida. Contacta a soporte.',
       'license_revoked' || 'license_expired' =>
-        'La licencia no está vigente. Contacte a Easy Technology Services.',
+        'Tu licencia no está vigente. Contacta a Easy Technology Services.',
       'ops_not_ready' =>
-        'La implementación Connected aún no está lista para aprovisionar.',
-      'product_mismatch' => 'Este código no corresponde a EPOSOne.',
+        'Esta activación es Connected y aún no está lista. Use la instalación Connected.',
+      'product_mismatch' =>
+        'Esta activación no corresponde a EPOSOne.',
       'modality_mismatch' =>
-        'La modalidad del código no coincide con este flujo.',
-      _ => (serverMsg != null && serverMsg.trim().isNotEmpty)
+        'Esta activación no corresponde a este tipo de instalación.',
+      'offline' =>
+        'No pudimos verificar tu activación. Revisa tu conexión e intenta nuevamente.',
+      'timeout' =>
+        'No pudimos verificar tu activación. Revisa tu conexión e intenta nuevamente.',
+      _ => (serverMsg != null &&
+              serverMsg.trim().isNotEmpty &&
+              !serverMsg.toLowerCase().contains('http') &&
+              !serverMsg.toLowerCase().contains('jwt'))
           ? serverMsg.trim()
-          : 'No se pudo activar el dispositivo.',
+          : 'No pudimos verificar tu activación. Intenta nuevamente.',
     };
   }
 

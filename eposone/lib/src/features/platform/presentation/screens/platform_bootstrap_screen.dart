@@ -235,6 +235,8 @@ class _PlatformBootstrapScreenState
         });
       case StartupRoute.onboarding:
         context.go('/pin');
+      case StartupRoute.activate:
+        context.go('/platform/activate');
       case StartupRoute.standaloneAssistant:
         context.go('/platform/standalone/assistant');
       case StartupRoute.pin:

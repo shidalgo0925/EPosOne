@@ -88,10 +88,12 @@ class ActivationClaims {
 
 class ActivationClaimsStore {
   static const _key = 'en1_activation_claims_v1';
+  static const _pendingTokenKey = 'en1_activation_pending_token_v1';
 
   static Future<void> save(ActivationClaims claims) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_key, jsonEncode(claims.toJson()));
+    await prefs.remove(_pendingTokenKey);
   }
 
   static Future<ActivationClaims?> load() async {
@@ -116,38 +118,60 @@ class ActivationClaimsStore {
     final c = await load();
     return c != null && c.isStandalone && c.licenseId > 0;
   }
+
+  /// Token recibido (App Link / QR) aún no canjeado — reanudación si falla redeem.
+  static Future<void> savePendingToken(String token) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_pendingTokenKey, token.trim());
+  }
+
+  static Future<String?> loadPendingToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    final t = prefs.getString(_pendingTokenKey)?.trim();
+    if (t == null || t.isEmpty) return null;
+    return t;
+  }
+
+  static Future<void> clearPendingToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_pendingTokenKey);
+  }
 }
 
-/// Extrae token de activación (ADR-035 transporte).
+/// Extrae token **solo** desde transporte ADR-035 explícito.
 ///
+/// Acepta:
 /// - `https://…/activate?token=`
 /// - `eposone://activate?token=`
-/// - token plano (sin `://` y sin parecer solo código corto de caja)
+///
+/// **No** clasifica por longitud. **No** trata códigos de caja como activación.
 String? extractActivationToken(String raw) {
   final t = raw.trim();
   if (t.isEmpty) return null;
+
   final uri = Uri.tryParse(t);
-  if (uri != null && uri.queryParameters['token'] != null) {
-    final tok = uri.queryParameters['token']!.trim();
-    if (tok.isEmpty) return null;
-    final path = uri.path.toLowerCase();
-    if (uri.host.toLowerCase() == 'activate' ||
-        path.contains('activate') ||
-        t.toLowerCase().contains('/activate')) {
-      return tok;
-    }
-    // Deep link genérico con ?token=
-    if (uri.scheme == 'eposone') return tok;
+  if (uri == null || !uri.hasScheme) return null;
+
+  final token = uri.queryParameters['token']?.trim();
+  if (token == null || token.isEmpty) return null;
+
+  final scheme = uri.scheme.toLowerCase();
+  final host = uri.host.toLowerCase();
+  final path = uri.path.toLowerCase();
+
+  // eposone://activate?token=
+  if (scheme == 'eposone' && host == 'activate') return token;
+
+  // https://host/activate?token=
+  if ((scheme == 'https' || scheme == 'http') &&
+      (path == '/activate' ||
+          path.endsWith('/activate') ||
+          path.contains('/activate'))) {
+    return token;
   }
-  if (t.contains('://')) return null;
-  // Token plano: más largo / sin patrón típico de código corto con guiones cortos.
-  if (t.length >= 20) return t;
+
   return null;
 }
 
-bool looksLikeActivationTransport(String raw) {
-  final lower = raw.trim().toLowerCase();
-  return lower.contains('/activate') ||
-      lower.startsWith('eposone://activate') ||
-      extractActivationToken(raw) != null;
-}
+bool isExplicitActivationTransport(String raw) =>
+    extractActivationToken(raw) != null;

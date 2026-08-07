@@ -18,6 +18,7 @@ import 'package:eposone/src/features/settings/domain/entities/business_config.da
 
 enum StartupRoute {
   platformWelcome,
+  activate,
   connect,
   bootstrap,
   onboarding,
@@ -79,8 +80,9 @@ final appStartupProvider = FutureProvider<AppStartupState>((ref) async {
   }
 
   if (!platformDone) {
+    // Standalone-first: ACTIVAR EPOSONE (no menú de aprovisionamiento).
     return AppStartupState(
-      route: StartupRoute.platformWelcome,
+      route: StartupRoute.activate,
       config: config,
       lifecycle: InstallationLifecycleState.notProvisioned,
     );
@@ -92,7 +94,6 @@ final appStartupProvider = FutureProvider<AppStartupState>((ref) async {
   if (mode == PlatformMode.local) {
     final standaloneOk = await ActivationClaimsStore.hasValidStandalone();
     final ready = await StandaloneAssistantDraftStore.isReadyToSell();
-    final draft = await StandaloneAssistantDraftStore.load();
     final productRepo = ProductRepository(isar);
     final products = await productRepo.getAllProducts();
     final categories = await productRepo.getAllCategories();
@@ -111,10 +112,10 @@ final appStartupProvider = FutureProvider<AppStartupState>((ref) async {
         lifecycle: InstallationLifecycleState.readyToOperate,
       );
     }
-    // Draft huérfano sin claims → activación.
-    if (!standaloneOk && draft != null) {
-      return const AppStartupState(
-        route: StartupRoute.platformWelcome,
+    if (!standaloneOk) {
+      return AppStartupState(
+        route: StartupRoute.activate,
+        config: config,
         lifecycle: InstallationLifecycleState.notProvisioned,
       );
     }
