@@ -244,6 +244,7 @@ class BusinessConfig extends SyncEntity {
         businessName: 'Mi Negocio',
         currency: 'USD',
         currencySymbol: '\$',
+        trackInventory: false,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );

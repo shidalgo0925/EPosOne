@@ -34,6 +34,7 @@ import 'package:eposone/src/features/sync/presentation/widgets/en1_status_chip.d
 import 'package:eposone/src/features/platform/data/provisioning_store.dart';
 import 'package:eposone/src/core/theme/eposone_theme.dart';
 import 'package:eposone/src/core/database/database_provider.dart';
+import 'package:eposone/src/core/database/istmo_seed_data.dart';
 import 'package:eposone/src/features/platform/data/en1_bootstrap_repository.dart';
 
 class PosScreen extends ConsumerStatefulWidget {
@@ -60,9 +61,22 @@ class _PosScreenState extends ConsumerState<PosScreen> {
       if (!await ensureInstallationReadyForPos(ref, context)) return;
       if (!mounted) return;
       PosLayout.lockLandscapeIfTablet(context);
+      await _maybeUnblockIstmoCatalog();
       _maybeRepairEmptyEn1Pages();
       enforceActiveEn1CashierSession(ref, context: context);
     });
+  }
+
+  /// Istmo con stock 0 + inventario activo → tiles grises e intocables.
+  Future<void> _maybeUnblockIstmoCatalog() async {
+    try {
+      final isar = await ref.read(databaseProvider.future);
+      final fixed = await ensureIstmoCatalogSellable(isar);
+      if (!fixed || !mounted) return;
+      ref.invalidate(businessConfigProvider);
+      ref.invalidate(productsListProvider);
+      if (mounted) setState(() {});
+    } catch (_) {}
   }
 
   /// Si Comida/Bar EN1 están rotas (sin productos o sin categorías), reparar sin red.

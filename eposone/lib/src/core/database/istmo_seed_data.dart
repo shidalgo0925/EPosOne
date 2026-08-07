@@ -68,7 +68,8 @@ Future<void> seedIstmoCatalog(Isar isar) async {
         sku: 'IST-$key',
         description: description,
         categoryId: categoryId,
-        stock: 0,
+        // Demo local: vendible aunque trackInventory quede activo por defecto.
+        stock: 999,
         fiscalCategoryCode: fiscalCategoryCode,
         createdAt: now,
         updatedAt: now,
@@ -470,6 +471,7 @@ Future<void> seedIstmoCatalog(Isar isar) async {
       isExemptEstablishment: false,
     ).markAsModified(),
   );
+  await ensureIstmoCatalogSellable(isar);
 }
 
 Future<void> _clearCatalog(Isar isar) async {
@@ -489,4 +491,37 @@ Future<bool> needsIstmoCatalog(Isar isar) async {
   final products = await isar.products.where().findAll();
   if (products.isEmpty) return true;
   return products.any((p) => !(p.sku?.startsWith('IST-') ?? false));
+}
+
+/// Repara catálogo Istmo “bloqueado” en POS (stock 0 + control de inventario).
+///
+/// El tile se ve atenuado y no responde al tap cuando
+/// `trackInventory && stock <= 0`.
+Future<bool> ensureIstmoCatalogSellable(Isar isar) async {
+  final products = await isar.products.where().findAll();
+  final istmo = products
+      .where((p) => p.sku?.startsWith('IST-') ?? false)
+      .toList();
+  if (istmo.isEmpty) return false;
+
+  var changed = false;
+  final configRepo = BusinessConfigRepository(isar);
+  final config = await configRepo.getConfig();
+  if (config.trackInventory) {
+    await configRepo.saveConfig(
+      config.copyWith(trackInventory: false).markAsModified(),
+    );
+    changed = true;
+  }
+
+  final needStock = istmo.where((p) => p.stock <= 0).toList();
+  if (needStock.isNotEmpty) {
+    await isar.writeTxn(() async {
+      for (final p in needStock) {
+        await isar.products.put(p.copyWith(stock: 999));
+      }
+    });
+    changed = true;
+  }
+  return changed;
 }
