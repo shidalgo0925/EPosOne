@@ -17,15 +17,7 @@ import 'package:eposone/src/features/platform/domain/platform_mode.dart';
 /// Sin URL EN1, sin Register/Bootstrap, sin “código de caja”.
 /// Connected: enlace secundario → `/platform/connect`.
 class StandaloneActivationScreen extends ConsumerStatefulWidget {
-  const StandaloneActivationScreen({
-    super.key,
-    this.initialRaw,
-    this.autoRedeem = true,
-  });
-
-  /// Legado App Link `?token=` — no se usa en el camino canónico v1.4.
-  final String? initialRaw;
-  final bool autoRedeem;
+  const StandaloneActivationScreen({super.key});
 
   @override
   ConsumerState<StandaloneActivationScreen> createState() =>

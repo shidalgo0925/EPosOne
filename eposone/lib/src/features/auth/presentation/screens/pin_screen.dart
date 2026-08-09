@@ -252,12 +252,9 @@ class _PinScreenState extends ConsumerState<PinScreen> {
     try {
       final isar = await ref.read(databaseProvider.future);
       final config = await BusinessConfigRepository(isar).getConfig();
-      if (!config.isEn1SyncReady) return;
       final sync = SyncRepository(isar);
-      final ok = await CashShiftSyncService(isar: isar, syncRepository: sync)
-          .enqueueIfReady(registerLocalId, config);
-      if (!ok) return;
-      await sync.runSyncCycle();
+      await CashShiftSyncService(isar: isar, syncRepository: sync)
+          .enqueueAndKickSync(registerLocalId, config);
     } catch (e) {
       debugPrint('[CashShift] PIN re-enqueue deferred: $e');
     }

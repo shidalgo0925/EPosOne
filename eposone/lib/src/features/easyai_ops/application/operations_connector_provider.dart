@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:isar/isar.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -192,16 +191,9 @@ Future<void> _enqueueCashShiftSync(
   String registerLocalId,
 ) async {
   final config = await BusinessConfigRepository(isar).getConfig();
-  if (!config.isEn1SyncReady) return;
   final sync = SyncRepository(isar);
-  final shiftSync = CashShiftSyncService(isar: isar, syncRepository: sync);
-  final ok = await shiftSync.enqueueIfReady(registerLocalId, config);
-  if (!ok) return;
-  try {
-    await sync.runSyncCycle();
-  } catch (e) {
-    debugPrint('[CashShift] ops runSyncCycle deferred: $e');
-  }
+  await CashShiftSyncService(isar: isar, syncRepository: sync)
+      .enqueueAndKickSync(registerLocalId, config);
 }
 
 Future<Map<String, Object?>> _cancelarPedido(

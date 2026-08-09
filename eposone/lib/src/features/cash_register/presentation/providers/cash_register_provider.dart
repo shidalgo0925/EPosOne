@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:eposone/src/core/database/database_provider.dart';
 import 'package:eposone/src/core/session/pos_session.dart';
@@ -112,23 +111,9 @@ class CashRegisterNotifier extends StateNotifier<AsyncValue<void>> {
   Future<void> _enqueueCashShiftSync(String registerLocalId) async {
     final isar = await _ref.read(databaseProvider.future);
     final config = await BusinessConfigRepository(isar).getConfig();
-    if (!config.isEn1SyncReady) {
-      debugPrint(
-        '[CashShift] notifier skip: isEn1SyncReady=false ($registerLocalId)',
-      );
-      return;
-    }
-
     final sync = SyncRepository(isar);
-    final shiftSync = CashShiftSyncService(isar: isar, syncRepository: sync);
-    final enqueued = await shiftSync.enqueueIfReady(registerLocalId, config);
-    if (!enqueued) return;
-    try {
-      await sync.runSyncCycle();
-    } catch (e) {
-      // Cola offline / auto-sync 30s reintentará cashRegister.
-      debugPrint('[CashShift] runSyncCycle deferred: $e');
-    }
+    await CashShiftSyncService(isar: isar, syncRepository: sync)
+        .enqueueAndKickSync(registerLocalId, config);
   }
 }
 

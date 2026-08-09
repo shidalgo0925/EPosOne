@@ -142,10 +142,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/platform/activate',
-        builder: (_, state) => StandaloneActivationScreen(
-          initialRaw: state.uri.queryParameters['token'] ??
-              state.uri.queryParameters['code'],
-        ),
+        builder: (_, __) => const StandaloneActivationScreen(),
       ),
       GoRoute(
         path: '/platform/standalone/assistant',

@@ -63,6 +63,22 @@ class CashShiftSyncService {
     return true;
   }
 
+  /// Encola (si listo) e intenta un `runSyncCycle` inmediato.
+  /// Errores de red/sync no fallan la operación local (reintento auto 30s).
+  Future<bool> enqueueAndKickSync(
+    String registerLocalId,
+    BusinessConfig config,
+  ) async {
+    final enqueued = await enqueueIfReady(registerLocalId, config);
+    if (!enqueued) return false;
+    try {
+      await _sync.runSyncCycle();
+    } catch (e) {
+      debugPrint('[CashShift] runSyncCycle deferred: $e');
+    }
+    return true;
+  }
+
   /// Procesa un turno pendiente: abre y/o cierra según estado local.
   Future<void> syncRegisterToEn1(
     String registerLocalId, {

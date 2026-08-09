@@ -9,7 +9,6 @@ import 'package:eposone/src/features/pos/presentation/providers/pos_page_provide
 import 'package:eposone/src/features/products/domain/entities/category.dart';
 import 'package:eposone/src/features/products/domain/entities/product.dart';
 import 'package:eposone/src/features/products/presentation/providers/product_provider.dart';
-import 'package:eposone/src/features/products/presentation/providers/category_provider.dart';
 
 class PosPagesSettingsScreen extends ConsumerWidget {
   const PosPagesSettingsScreen({super.key});

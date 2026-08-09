@@ -143,24 +143,6 @@ class ActivationClaimsStore {
     if (email.isEmpty || code.isEmpty) return null;
     return (email: email, code: code);
   }
-
-  /// Token recibido (App Link / QR) aún no canjeado — legado / puente.
-  static Future<void> savePendingToken(String token) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_pendingTokenKey, token.trim());
-  }
-
-  static Future<String?> loadPendingToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    final t = prefs.getString(_pendingTokenKey)?.trim();
-    if (t == null || t.isEmpty) return null;
-    return t;
-  }
-
-  static Future<void> clearPendingToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_pendingTokenKey);
-  }
 }
 
 /// Extrae token **solo** desde transporte ADR-035 explícito (legado App Link).
