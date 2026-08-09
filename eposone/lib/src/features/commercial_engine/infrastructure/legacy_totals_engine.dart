@@ -1,3 +1,4 @@
+import 'package:eposone/src/core/utils/money_math.dart';
 import 'package:eposone/src/features/commercial_engine/domain/commercial_policy_source.dart';
 import 'package:eposone/src/features/commercial_engine/domain/engines.dart';
 import 'package:eposone/src/features/commercial_engine/domain/totals_models.dart';
@@ -103,11 +104,12 @@ class LegacyTotalsEngine implements TotalsEngine {
     final taxable = (subtotal - discount).clamp(0, double.infinity);
     final merchandiseTotal =
         contract.taxIncluded ? taxable : taxable + taxAmount;
-    final tip = order.tipPercent == null
+    // Propina y total: truncar a 2 decimales (sin redondeo half-up).
+    final tipRaw = order.tipPercent == null
         ? order.tipAmount
-        : double.parse(
-            (merchandiseTotal * order.tipPercent! / 100).toStringAsFixed(2),
-          );
+        : merchandiseTotal * order.tipPercent! / 100;
+    final tip = MoneyMath.truncate(tipRaw);
+    final total = MoneyMath.truncate(merchandiseTotal + tip);
 
     final taxName = policies.taxName ?? contract.taxName ?? 'ITBMS';
     final detail = <CalculationDetail>[
@@ -148,7 +150,7 @@ class LegacyTotalsEngine implements TotalsEngine {
       taxes: taxAmount,
       tips: tip,
       rounding: 0,
-      total: merchandiseTotal + tip,
+      total: total,
       detail: detail,
     );
   }

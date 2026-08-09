@@ -21,7 +21,7 @@ class CalculationResult {
   final double tips;
   final double rounding;
 
-  /// Total final a cobrar, incluyendo propina y redondeo.
+  /// Total final a cobrar, incluyendo propina (propina/total truncados a 2 dec.).
   final double total;
 
   final List<CalculationDetail> detail;
