@@ -4,7 +4,8 @@
 |-------|--------|
 | Fecha | 2026-08-08 |
 | Prioridad | P2 — sync real Cash Shift HTTP v1 |
-| Commits | push master Standalone previo + este fix |
+| Commits | `6a6091b` (fix turnos) en master |
+| APK validación | `eposone/build/app/outputs/flutter-apk/app-release.apk` |
 
 ## Causa raíz (código)
 
