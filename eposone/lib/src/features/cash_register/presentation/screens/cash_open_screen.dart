@@ -42,13 +42,19 @@ class _CashOpenScreenState extends ConsumerState<CashOpenScreen> {
   Future<void> _enqueueEn1(String registerLocalId) async {
     final isar = await ref.read(databaseProvider.future);
     final config = await BusinessConfigRepository(isar).getConfig();
-    if (!config.isEn1SyncReady) return;
+    if (!config.isEn1SyncReady) {
+      debugPrint('[CashShift] open skip: isEn1SyncReady=false');
+      return;
+    }
     final sync = SyncRepository(isar);
-    await CashShiftSyncService(isar: isar, syncRepository: sync)
+    final ok = await CashShiftSyncService(isar: isar, syncRepository: sync)
         .enqueueIfReady(registerLocalId, config);
+    if (!ok) return;
     try {
       await sync.runSyncCycle();
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[CashShift] open runSyncCycle deferred: $e');
+    }
   }
 
   Future<void> _open() async {
@@ -78,7 +84,10 @@ class _CashOpenScreenState extends ConsumerState<CashOpenScreen> {
         );
       }
 
-      if (createdNew) {
+      // Nueva apertura, o reingreso a turno aún sin shift_id EN1.
+      final needsPush = createdNew ||
+          (register.serverId == null || register.serverId!.trim().isEmpty);
+      if (needsPush) {
         await _enqueueEn1(register.localId);
       }
 

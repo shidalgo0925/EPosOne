@@ -1263,12 +1263,14 @@ class OrderService {
   }
 
   /// ¿Hay algo que justifique auto-sync?
+  /// Incluye pedidos dirty y cola Sync (orders + cashRegister / turnos).
   Future<bool> hasPendingWork() async {
     if (await _repo.countDirty() > 0) return true;
     final pendingOps = await _sync.getRecent(limit: 50);
     return pendingOps.any(
       (op) =>
-          op.entityKind == SyncEntityKind.order &&
+          (op.entityKind == SyncEntityKind.order ||
+              op.entityKind == SyncEntityKind.cashRegister) &&
           (op.operationStatus == SyncOperationStatus.pending ||
               op.operationStatus == SyncOperationStatus.processing),
     );

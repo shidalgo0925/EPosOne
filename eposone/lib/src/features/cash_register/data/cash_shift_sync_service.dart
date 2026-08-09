@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:isar/isar.dart';
 import 'package:eposone/src/core/time/en1_date_time_service.dart';
 import 'package:eposone/src/features/cash_register/data/en1_cash_shift_api.dart';
@@ -21,15 +22,45 @@ class CashShiftSyncService {
   final SyncRepository _sync;
   final En1CashShiftApi _api;
 
-  /// Encola push si EN1 sync está listo y hay cajero EN1. No falla la operación local.
-  Future<void> enqueueIfReady(String registerLocalId, BusinessConfig config) async {
-    if (!config.isEn1SyncReady) return;
+  /// Encola push si EN1 sync está listo. No falla la operación local.
+  ///
+  /// Si falta `cashier_contact_id` se registra en log y **no** se encola
+  /// (el HTTP fallaría); hay que reintentar tras login EN1 (PIN Hito 2.5).
+  Future<bool> enqueueIfReady(
+    String registerLocalId,
+    BusinessConfig config,
+  ) async {
+    if (!config.isEn1SyncReady) {
+      debugPrint(
+        '[CashShift] skip enqueue: isEn1SyncReady=false '
+        '(register=$registerLocalId)',
+      );
+      return false;
+    }
     final register = await _repo.getRegisterById(registerLocalId);
-    if (register == null) return;
+    if (register == null) {
+      debugPrint(
+        '[CashShift] skip enqueue: register not found ($registerLocalId)',
+      );
+      return false;
+    }
     final contactId =
         register.currentCashierContactId ?? register.openedByCashierContactId;
-    if (contactId == null) return;
+    if (contactId == null) {
+      debugPrint(
+        '[CashShift] skip enqueue: cashier_contact_id missing '
+        '(register=$registerLocalId status=${register.status.name} '
+        'serverId=${register.serverId}). Use cajero EN1 (Hito 2.5).',
+      );
+      return false;
+    }
     await _sync.enqueuePush(SyncEntityKind.cashRegister, registerLocalId);
+    debugPrint(
+      '[CashShift] enqueued client_shift_id=$registerLocalId '
+      'contact=$contactId status=${register.status.name} '
+      'serverId=${register.serverId}',
+    );
+    return true;
   }
 
   /// Procesa un turno pendiente: abre y/o cierra según estado local.
@@ -107,6 +138,10 @@ class CashShiftSyncService {
 
     final synced = register.markAsSynced(shiftId.toString());
     await _repo.saveRegister(synced);
+    debugPrint(
+      '[CashShift] OPEN OK client_shift_id=${register.localId} '
+      'shift_id=$shiftId contact=$contactId',
+    );
     return synced;
   }
 
@@ -153,5 +188,10 @@ class CashShiftSyncService {
 
     await _api.closeShift(shiftId, body, config: config);
     await _repo.saveRegister(register.markAsSynced(register.serverId!));
+    debugPrint(
+      '[CashShift] CLOSE OK client_shift_id=${register.localId} '
+      'shift_id=$shiftId counted=$counted contact=$contactId '
+      'closed_at=${register.closeDate}',
+    );
   }
 }

@@ -9,6 +9,7 @@ import 'package:eposone/src/features/orders/presentation/providers/order_provide
 import 'package:eposone/src/features/platform/data/provisioning_store.dart';
 import 'package:eposone/src/features/pos/presentation/providers/open_ticket_provider.dart';
 import 'package:eposone/src/features/settings/data/repositories/business_config_repository.dart';
+import 'package:eposone/src/features/sync/data/repositories/sync_repository.dart';
 import 'package:eposone/src/features/sync/presentation/providers/sync_provider.dart';
 
 enum En1LinkState { unknown, connected, offline, syncing }
@@ -77,7 +78,15 @@ final en1AutoSyncKeeperProvider = Provider<void>((ref) {
 
     try {
       ref.read(syncRunningProvider.notifier).state = true;
+      // Pedidos (cola Order) + SyncOperation (incl. cashRegister / turnos HTTP v1).
       await ref.read(orderServiceProvider).flushPendingToEn1(config: config);
+      try {
+        await ref.read(syncRepositoryProvider).runSyncCycle(
+              ensureCatalogPull: false,
+            );
+      } catch (_) {
+        // Offline / error de turno: reintento en el próximo ciclo 30s.
+      }
       unawaited(En1ClockGuard.checkQuiet(apiBaseUrl: config?.en1ApiUrl));
       try {
         final cfg = await ref.read(businessConfigRepositoryProvider).getConfig();
@@ -87,6 +96,7 @@ final en1AutoSyncKeeperProvider = Provider<void>((ref) {
       } catch (_) {}
       ref.invalidate(syncPendingCountProvider);
       ref.invalidate(syncOperationsProvider);
+      ref.invalidate(syncLatestErrorProvider);
       ref.invalidate(localOrdersProvider);
       ref.invalidate(openTicketsListProvider);
       ref.invalidate(openTicketsCountProvider);

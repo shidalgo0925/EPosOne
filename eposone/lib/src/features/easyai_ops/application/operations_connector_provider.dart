@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:isar/isar.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -194,10 +195,13 @@ Future<void> _enqueueCashShiftSync(
   if (!config.isEn1SyncReady) return;
   final sync = SyncRepository(isar);
   final shiftSync = CashShiftSyncService(isar: isar, syncRepository: sync);
-  await shiftSync.enqueueIfReady(registerLocalId, config);
+  final ok = await shiftSync.enqueueIfReady(registerLocalId, config);
+  if (!ok) return;
   try {
     await sync.runSyncCycle();
-  } catch (_) {}
+  } catch (e) {
+    debugPrint('[CashShift] ops runSyncCycle deferred: $e');
+  }
 }
 
 Future<Map<String, Object?>> _cancelarPedido(

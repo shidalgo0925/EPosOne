@@ -11,11 +11,15 @@ import 'package:eposone/src/core/utils/pin_hash.dart';
 import 'package:eposone/src/features/auth/data/repositories/cashier_repository.dart';
 import 'package:eposone/src/features/auth/domain/cashier_display.dart';
 import 'package:eposone/src/features/auth/domain/entities/cashier.dart';
+import 'package:eposone/src/core/database/database_provider.dart';
+import 'package:eposone/src/features/cash_register/data/cash_shift_sync_service.dart';
 import 'package:eposone/src/features/cash_register/data/repositories/cash_register_repository.dart';
 import 'package:eposone/src/core/theme/eposone_theme.dart';
 import 'package:eposone/src/features/platform/data/en1_cashier_catalog_store.dart';
 import 'package:eposone/src/features/platform/presentation/utils/installation_gate.dart';
 import 'package:eposone/src/features/pos/presentation/utils/pos_layout.dart';
+import 'package:eposone/src/features/settings/data/repositories/business_config_repository.dart';
+import 'package:eposone/src/features/sync/data/repositories/sync_repository.dart';
 
 /// Cajero seleccionable: EN1 o local.
 class _LoginCashierOption {
@@ -222,6 +226,12 @@ class _PinScreenState extends ConsumerState<PinScreen> {
         ref
             .read(posSessionProvider.notifier)
             .setCashRegister(openRegister.localId);
+        // Turno abierto sin shift_id EN1 + cajero EN1 → empujar OPEN.
+        if (contactId != null &&
+            (openRegister.serverId == null ||
+                openRegister.serverId!.trim().isEmpty)) {
+          unawaited(_enqueueOpenShiftIfReady(openRegister.localId));
+        }
       }
 
       if (mounted) {
@@ -235,6 +245,21 @@ class _PinScreenState extends ConsumerState<PinScreen> {
       }
     } finally {
       if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _enqueueOpenShiftIfReady(String registerLocalId) async {
+    try {
+      final isar = await ref.read(databaseProvider.future);
+      final config = await BusinessConfigRepository(isar).getConfig();
+      if (!config.isEn1SyncReady) return;
+      final sync = SyncRepository(isar);
+      final ok = await CashShiftSyncService(isar: isar, syncRepository: sync)
+          .enqueueIfReady(registerLocalId, config);
+      if (!ok) return;
+      await sync.runSyncCycle();
+    } catch (e) {
+      debugPrint('[CashShift] PIN re-enqueue deferred: $e');
     }
   }
 
