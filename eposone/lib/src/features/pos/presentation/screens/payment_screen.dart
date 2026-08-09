@@ -6,6 +6,7 @@ import 'package:eposone/src/core/utils/view_insets.dart';
 import 'package:eposone/src/features/commercial_engine/commercial_engine.dart';
 import 'package:eposone/src/features/orders/domain/en1_tender_methods.dart';
 import 'package:eposone/src/features/orders/presentation/widgets/multi_tender_payment_dialog.dart';
+import 'package:eposone/src/features/pos/domain/payment_method_from_tenders.dart';
 import 'package:eposone/src/features/pos/presentation/providers/cart_provider.dart';
 import 'package:eposone/src/features/pos/presentation/providers/pos_provider.dart';
 import 'package:eposone/src/features/pos/presentation/providers/split_bill_provider.dart';
@@ -26,21 +27,9 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
   double? _tipPercent;
   TenderLiveStatus? _live;
 
-  PaymentMethod _saleMethodFromPosts(List<TenderAmount> posts) {
-    if (posts.any((t) => t.code == 'cash')) return PaymentMethod.cash;
-    if (posts.any((t) => t.code == 'yappy')) return PaymentMethod.yappy;
-    if (posts.any((t) =>
-        t.code == 'visa' ||
-        t.code == 'mastercard' ||
-        t.code == 'clave' ||
-        t.code == 'card')) {
-      return PaymentMethod.card;
-    }
-    if (posts.any((t) => t.code == 'ach' || t.code == 'transfer')) {
-      return PaymentMethod.transfer;
-    }
-    return PaymentMethod.other;
-  }
+  // Clasificación de venta: tender dominante (no “cualquier cash ⇒ efectivo”).
+  PaymentMethod _saleMethodFromPosts(List<TenderAmount> posts) =>
+      paymentMethodFromTenders(posts);
 
   ({
     List<CartItem> items,

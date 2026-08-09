@@ -299,7 +299,7 @@ class MultiTenderPaymentPanelState extends State<MultiTenderPaymentPanel> {
                 OutlinedButton.icon(
                   onPressed: _fillFullBalanceCash,
                   icon: const Icon(Icons.payments),
-                  label: const Text('Cobrar saldo completo'),
+                  label: const Text('Cobrar todo en efectivo'),
                 ),
                 const SizedBox(height: 16),
                 const Divider(),
