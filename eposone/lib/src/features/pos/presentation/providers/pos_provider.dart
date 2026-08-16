@@ -15,6 +15,7 @@ import 'package:eposone/src/features/fiscal/data/repositories/fiscal_repository.
 import 'package:eposone/src/features/fiscal/presentation/providers/fiscal_provider.dart';
 import 'package:eposone/src/features/orders/data/order_service.dart';
 import 'package:eposone/src/features/orders/domain/en1_tender_methods.dart';
+import 'package:eposone/src/features/orders/domain/order_pos_provenance.dart';
 import 'package:eposone/src/features/orders/presentation/providers/order_providers.dart';
 import 'package:eposone/src/features/sync/presentation/providers/sync_provider.dart';
 import 'package:eposone/src/features/customers/data/repositories/customer_repository.dart';
@@ -302,6 +303,7 @@ final completeSaleProvider = Provider<
               ?.linkedOrderLocalId;
         }
 
+        final provenance = await OrderPosProvenance.load();
         await ref.read(orderServiceProvider).createPaidOrderFromPosSale(
               localNumber: saved.receiptNumber ?? saved.localId,
               lines: itemsToSell
@@ -335,6 +337,9 @@ final completeSaleProvider = Provider<
               notes: notes,
               currency: config.currency,
               existingOrderLocalId: linkedOrderId,
+              organizationId: provenance.organizationId,
+              posRef: provenance.posRef,
+              registerRef: provenance.registerRef,
             );
         ref.invalidate(syncPendingCountProvider);
         ref.invalidate(syncOperationsProvider);

@@ -349,6 +349,9 @@ class OrderService {
     String? tableRef,
     String? notes,
     bool syncNow = true,
+    String? organizationId,
+    String? posRef,
+    String? registerRef,
   }) async {
     if (lines.isEmpty) throw StateError('Pedido POS sin líneas');
 
@@ -377,7 +380,10 @@ class OrderService {
     final createEventId = OrderMapper.newEventId();
     final draft = Order.createLocal(
       localNumber: localNumber,
+      organizationId: organizationId,
       branchRef: config?.en1BranchId,
+      posRef: posRef,
+      registerRef: registerRef,
       customerId: customerId,
       cashierId: cashierId,
       tableRef: tableRef,
@@ -728,6 +734,9 @@ class OrderService {
     String? notes,
     String? currency,
     String? existingOrderLocalId,
+    String? organizationId,
+    String? posRef,
+    String? registerRef,
   }) async {
     if (lines.isEmpty) throw StateError('Pedido POS sin líneas');
 
@@ -776,7 +785,10 @@ class OrderService {
     final createEventId = OrderMapper.newEventId();
     final draft = Order.createLocal(
       localNumber: localNumber,
+      organizationId: organizationId,
       branchRef: config?.en1BranchId,
+      posRef: posRef,
+      registerRef: registerRef,
       customerId: customerId,
       cashierId: cashierId,
       tableRef: tableRef,
@@ -1386,11 +1398,16 @@ class OrderService {
       ),
     );
 
+    // created_by se congela en el primer save. El actor de update va en eventos.
+    final createdBy = (order.cashierId != null && order.cashierId!.trim().isNotEmpty)
+        ? order.cashierId
+        : cashierId;
+
     final updated = order
         .copyWith(
           localNumber: localNumber,
           customerId: customerId,
-          cashierId: cashierId,
+          cashierId: createdBy,
           tableRef: tableRef,
           notes: notes,
           subtotal: subtotal,

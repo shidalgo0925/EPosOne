@@ -751,7 +751,7 @@ class OpenTicketsButton extends ConsumerWidget {
         children: [
           IconButton(
             icon: const Icon(Icons.receipt_long_outlined),
-            tooltip: 'Tickets abiertos',
+            tooltip: 'Mis pedidos abiertos',
             onPressed: () => showOpenTicketsSheet(context, ref),
           ),
           if (count > 0)

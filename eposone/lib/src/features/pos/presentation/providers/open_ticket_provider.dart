@@ -9,6 +9,7 @@ import 'package:eposone/src/features/pos/domain/entities/open_ticket.dart';
 import 'package:eposone/src/features/pos/domain/entities/open_ticket_line.dart';
 import 'package:eposone/src/features/pos/domain/entities/order_type.dart';
 import 'package:eposone/src/features/pos/domain/entities/predefined_ticket.dart';
+import 'package:eposone/src/features/pos/domain/open_ticket_authorship.dart';
 import 'package:eposone/src/features/pos/presentation/providers/cart_provider.dart';
 import 'package:eposone/src/features/products/data/repositories/product_repository.dart';
 import 'package:eposone/src/features/products/domain/modifier_codec.dart';
@@ -20,9 +21,17 @@ final openTicketsListProvider = FutureProvider<List<OpenTicket>>((ref) async {
   return repo.getAllOpenTickets();
 });
 
+final openTicketsScopeProvider =
+    StateProvider<OpenTicketsScope>((ref) => OpenTicketsScope.mine);
+
 final openTicketsCountProvider = FutureProvider<int>((ref) async {
-  final repo = ref.watch(openTicketRepositoryProvider);
-  return repo.countOpenTickets();
+  final tickets = await ref.watch(openTicketsListProvider.future);
+  final session = ref.watch(posSessionProvider);
+  return OpenTicketAuthorship.visible(
+    all: tickets,
+    scope: OpenTicketsScope.mine,
+    session: session,
+  ).length;
 });
 
 final availablePredefinedSlotsProvider =
@@ -119,10 +128,11 @@ class OpenTicketActions {
 
     for (final line in lines) {
       final product = await productRepo.getProductById(line.productId);
-      if (product == null || !product.isActive) {
+      if (product == null) {
         skipped.add(line.productName);
         continue;
       }
+      // Pedido ya creado: se cobra con snapshot aunque el SKU esté INACTIVE.
       cartItems.add(
         CartItem(
           id: line.localId,

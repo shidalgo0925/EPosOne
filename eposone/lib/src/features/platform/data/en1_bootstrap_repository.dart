@@ -449,30 +449,19 @@ class En1BootstrapRepository {
       if (missing != null) catById[cid] = missing;
     }
 
-    // Todos los EN1 no borrados → menú. Reactivar los que vengan “apagados”
-    // por status raro (evita perder p.ej. Batido tras re-sync).
-    var en1Products = await _isar.products
+    // Menú POS = EN1 ACTIVE. INACTIVE permanece en Isar (tickets/ventas
+    // históricas) pero no se reactiva ni se pone en Comida/Bar.
+    final en1All = await _isar.products
         .filter()
         .localIdStartsWith('en1_')
         .isDeletedEqualTo(false)
         .findAll();
-    final inactive = en1Products.where((p) => !p.isActive).toList();
-    if (inactive.isNotEmpty) {
-      await _isar.writeTxn(() async {
-        final nowFix = DateTime.now();
-        for (final p in inactive) {
-          await _isar.products
-              .put(p.copyWith(isActive: true, updatedAt: nowFix));
-        }
-      });
+    final en1Products = en1All.where((p) => p.isActive).toList();
+    final inactiveCount = en1All.length - en1Products.length;
+    if (inactiveCount > 0) {
       debugPrint(
-        '[EN1 Bootstrap] Reactivados ${inactive.length} productos EN1 para menú POS',
+        '[EN1 Bootstrap] $inactiveCount producto(s) INACTIVE omitidos del menú POS',
       );
-      en1Products = await _isar.products
-          .filter()
-          .localIdStartsWith('en1_')
-          .isDeletedEqualTo(false)
-          .findAll();
     }
 
     final comidaCatIds = {for (final c in comida) c.localId};

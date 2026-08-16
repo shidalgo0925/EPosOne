@@ -7,6 +7,7 @@ import 'package:eposone/src/core/session/pos_session.dart';
 import 'package:eposone/src/core/widgets/blocking_progress_overlay.dart';
 import 'package:eposone/src/features/commercial_engine/commercial_engine.dart';
 import 'package:eposone/src/features/orders/data/order_service.dart';
+import 'package:eposone/src/features/orders/domain/order_pos_provenance.dart';
 import 'package:eposone/src/features/orders/presentation/providers/order_providers.dart';
 import 'package:eposone/src/features/pos/data/repositories/open_ticket_repository.dart';
 import 'package:eposone/src/features/pos/domain/entities/order_type.dart';
@@ -106,6 +107,7 @@ Future<void> saveOpenTicketFlow(BuildContext context, WidgetRef ref) async {
               .toList();
 
           final session = ref.read(posSessionProvider);
+          final provenance = await OrderPosProvenance.load();
           final order =
               await ref.read(orderServiceProvider).upsertOpenOrderFromPosCart(
                     localNumber: params.label ?? ticket.label ?? ticket.localId,
@@ -124,6 +126,9 @@ Future<void> saveOpenTicketFlow(BuildContext context, WidgetRef ref) async {
                     tableRef: params.label ?? ticket.label,
                     notes: params.comment ?? ticket.comment,
                     syncNow: true,
+                    organizationId: provenance.organizationId,
+                    posRef: provenance.posRef,
+                    registerRef: provenance.registerRef,
                   );
 
           await ref.read(openTicketRepositoryProvider).linkOrder(

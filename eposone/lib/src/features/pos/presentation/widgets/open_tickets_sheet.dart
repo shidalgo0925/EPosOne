@@ -2,14 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:eposone/src/core/providers/business_config_provider.dart';
+import 'package:eposone/src/core/session/pos_session.dart';
 import 'package:eposone/src/core/theme/eposone_theme.dart';
 import 'package:eposone/src/core/time/en1_date_time_service.dart';
+import 'package:eposone/src/features/auth/data/repositories/cashier_repository.dart';
+import 'package:eposone/src/features/auth/domain/cashier_display.dart';
 import 'package:eposone/src/features/commercial_engine/commercial_engine.dart';
 import 'package:eposone/src/features/customers/presentation/providers/customer_provider.dart';
 import 'package:eposone/src/features/orders/domain/order_lifecycle.dart';
 import 'package:eposone/src/features/orders/presentation/providers/order_providers.dart';
 import 'package:eposone/src/features/pos/domain/entities/open_ticket.dart';
 import 'package:eposone/src/features/pos/domain/entities/order_type.dart';
+import 'package:eposone/src/features/pos/domain/open_ticket_authorship.dart';
 import 'package:eposone/src/features/pos/presentation/providers/open_ticket_provider.dart';
 import 'package:eposone/src/features/pos/presentation/utils/cart_guard.dart';
 import 'package:eposone/src/features/pos/presentation/widgets/open_ticket_bill_preview.dart';
@@ -31,6 +35,8 @@ class OpenTicketsSheet extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final ticketsAsync = ref.watch(openTicketsListProvider);
+    final scope = ref.watch(openTicketsScopeProvider);
+    final session = ref.watch(posSessionProvider);
     final config = ref.watch(businessConfigProvider);
     final symbol = config?.currencySymbol ?? 'B/.';
 
@@ -49,36 +55,71 @@ class OpenTicketsSheet extends ConsumerWidget {
                   color: EposBrand.divider,
                   borderRadius: BorderRadius.circular(2))),
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(16, 12, 8, 8),
             child: Row(
               children: [
-                const Text('Tickets abiertos',
-                    style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: EposBrand.navy)),
-                const Spacer(),
+                const Expanded(
+                  child: Text('Tickets abiertos',
+                      style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: EposBrand.navy)),
+                ),
                 IconButton(
                     icon: const Icon(Icons.close),
                     onPressed: () => Navigator.pop(context)),
               ],
             ),
           ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: SegmentedButton<OpenTicketsScope>(
+              segments: const [
+                ButtonSegment(
+                  value: OpenTicketsScope.mine,
+                  label: Text('Mis pedidos'),
+                  icon: Icon(Icons.person_outline, size: 18),
+                ),
+                ButtonSegment(
+                  value: OpenTicketsScope.all,
+                  label: Text('Todos'),
+                  icon: Icon(Icons.groups_outlined, size: 18),
+                ),
+              ],
+              selected: {scope},
+              onSelectionChanged: (next) {
+                ref.read(openTicketsScopeProvider.notifier).state = next.first;
+              },
+            ),
+          ),
           Expanded(
             child: ticketsAsync.when(
               data: (tickets) {
-                if (tickets.isEmpty) {
-                  return const Center(child: Text('No hay tickets guardados'));
+                final visible = OpenTicketAuthorship.visible(
+                  all: tickets,
+                  scope: scope,
+                  session: session,
+                );
+                if (visible.isEmpty) {
+                  return Center(
+                    child: Text(
+                      scope == OpenTicketsScope.mine
+                          ? 'No tienes pedidos abiertos'
+                          : 'No hay tickets guardados',
+                    ),
+                  );
                 }
                 return ListView.separated(
                   controller: scrollController,
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                  itemCount: tickets.length,
+                  itemCount: visible.length,
                   separatorBuilder: (_, __) => const SizedBox(height: 8),
                   itemBuilder: (_, i) => _OpenTicketCard(
-                    ticket: tickets[i],
-                    allTickets: tickets,
+                    ticket: visible[i],
+                    allTickets: visible,
                     symbol: symbol,
+                    showAuthor: scope == OpenTicketsScope.all ||
+                        !OpenTicketAuthorship.isMine(visible[i], session),
                   ),
                 );
               },
@@ -96,11 +137,13 @@ class _OpenTicketCard extends ConsumerWidget {
   final OpenTicket ticket;
   final List<OpenTicket> allTickets;
   final String symbol;
+  final bool showAuthor;
 
   const _OpenTicketCard({
     required this.ticket,
     required this.allTickets,
     required this.symbol,
+    this.showAuthor = false,
   });
 
   @override
@@ -139,6 +182,8 @@ class _OpenTicketCard extends ConsumerWidget {
                             style: const TextStyle(
                                 fontSize: 12, color: EposBrand.textSecondary),
                           ),
+                          if (showAuthor)
+                            _TicketAuthorLine(cashierId: ticket.cashierId),
                         ],
                       ),
                     ),
@@ -474,5 +519,34 @@ class _OpenTicketCard extends ConsumerWidget {
       }
     }
     reasonCtrl.dispose();
+  }
+}
+
+class _TicketAuthorLine extends ConsumerWidget {
+  final String? cashierId;
+
+  const _TicketAuthorLine({this.cashierId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    const style = TextStyle(fontSize: 12, color: EposBrand.navy);
+    final id = cashierId?.trim();
+    if (id == null || id.isEmpty) {
+      return const Text('Por: sin autor', style: style);
+    }
+
+    final repo = ref.watch(cashierRepositoryProvider);
+    return FutureBuilder<String>(
+      future: repo.getById(id).then(
+            (c) => CashierDisplay.displayName(name: c?.name),
+          ),
+      builder: (context, snap) {
+        final name = (snap.data == null ||
+                CashierDisplay.looksLikeIdNotName(snap.data))
+            ? 'Cajero'
+            : snap.data!;
+        return Text('Por: $name', style: style);
+      },
+    );
   }
 }
